@@ -1,0 +1,21 @@
+{
+  "name": "gamebook-engine",
+  "version": "0.1.0",
+  "description": "Moteur de livre-jeu interactif (Gamebook Engine)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest --run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.5.0",
+    "fast-check": "^3.19.0",
+    "jsdom": "^29.0.2",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vitest": "^1.5.0"
+  }
+}

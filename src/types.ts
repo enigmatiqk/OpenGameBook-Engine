@@ -1,0 +1,412 @@
+// ─── Inventaire ───────────────────────────────────────────────────────────────
+
+export interface EmplacementDefinition {
+  label: string
+  capacite: number           // nombre de "poids" acceptés (ex: 2 pour les mains)
+  types_acceptes: string[]   // types d'items acceptés dans cet emplacement
+}
+
+export interface InventaireItem {
+  id: string
+  label: string
+  quantite?: number
+  quantite_label?: string    // ex: "mesures", "charges"
+  usage?: string             // nom de la règle à appeler à la consommation
+  description?: string       // description affichée au survol
+  type?: string              // type d'item (ex: "arme_1main", "armure") — détermine le slot via emplacements_equipement
+  poids?: number             // slots occupés dans l'emplacement (défaut: 1)
+  bonus?: Record<string, number>  // bonus de stats apportés quand équipé
+  effets?: Effet[]           // effets appliqués quand l'item est porté
+}
+
+export type InventaireEntree = string | InventaireItem
+
+export interface ChoixInitialOption {
+  id: string
+  label: string
+  quantite?: number
+  quantite_label?: string
+  usage?: string
+  description?: string      // description affichée au survol
+}
+
+export interface ChoixInitial {
+  id: string
+  label: string
+  quantite: number          // combien d'options le joueur peut choisir
+  options: ChoixInitialOption[]
+}
+
+// ─── Stat definition in adventure template ───────────────────────────────────
+
+export interface StatDefinition {
+  valeur: number
+  init: string   // e.g. "2d6+6"
+  label: string
+  max?: "start" | number  // défaut implicite : "start"
+}
+
+// ─── Adventure template (personnage / regles) ─────────────────────────────────
+
+export interface PersonnageTemplate {
+  statistiques: Record<string, StatDefinition>
+  emplacements_equipement?: Record<string, EmplacementDefinition>
+  inventaire: InventaireEntree[]
+  choix_initial?: ChoixInitial[]
+}
+
+export interface CombatRules {
+  stat_attaque: string
+  stat_vie: string
+  degats_victoire: number
+  degats_defaite: number
+  attaque: ">" | ">="
+  fuite?: {
+    possible: "non" | "livre" | "section"
+    cout: string           // ex: "-2 endurance"
+  }
+  actions?: {
+    attaque?: string       // nom de la règle ex: "attaque_chance"
+    defense?: string
+    fuite?: string
+  }
+}
+
+export interface RegleTestStat {
+  type: "test_stat"
+  jet: string              // ex: "2d6"
+  stat: string             // stat comparée
+  condition: "<=" | "<" | ">=" | ">"
+  cout_min?: number        // minimum requis pour utiliser cette règle
+  resultats: Record<string, string>
+  effets: {
+    toujours?: string
+    [resultat: string]: string | undefined
+  }
+}
+
+export interface RegleComposite {
+  type: "composite"
+  utilise: string
+  effets: Record<string, string>
+}
+
+export interface RegleRestaurerStat {
+  type: "restaurer_stat"
+  stat: string
+  redefine?: "start" | "start+1" | number  // redéfinit la valeur initiale EN PREMIER
+  valeur: "start" | "start+1" | number
+  ignore_max?: boolean  // si true, ignore le plafond normal
+}
+
+export type Regle = RegleTestStat | RegleComposite | RegleRestaurerStat
+
+export interface Regles {
+  combat: CombatRules
+  victoire: { sections: number[] }
+  defaite: { endurance_min: number }
+  [key: string]: Regle | CombatRules | { sections: number[] } | { endurance_min: number }
+}
+
+// ─── Adventure content ────────────────────────────────────────────────────────
+
+export interface MonstreData {
+  id?: string                // identifiant unique pour les monstres persistants
+  nom: string
+  habilete?: number          // optionnel si monstre persistant réutilisé
+  endurance?: number         // optionnel si monstre persistant réutilisé
+  face?: number              // numéro du dé (pour mode "lancer_de")
+  persistant?: boolean       // true si le monstre persiste entre les sections
+}
+
+export interface ActionCombat {
+  declencheur: "degats_heros" | "degats_monstre" | "degats"
+  round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.)
+  section: number            // section vers laquelle aller
+  ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
+}
+
+export interface CombatData {
+  monstres: MonstreData[]
+  mode?: "sequentiel" | "fusion" | "lancer_de"
+  choix?: string             // formule de dés pour mode "lancer_de" (ex: "1d6")
+  attaque_heros?: string      // ex: "+1", "-1"
+  attaque_monstre?: string    // ex: "+2", "-1"
+  degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
+  actions?: ActionCombat[]   // actions déclenchées pendant le combat
+  victoire?: { section: number }
+  fuite?: { 
+    section: number
+    avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
+  }
+  defense?: {
+    type: "lancer_de"
+    choix: string             // formule de dés (ex: "1d6")
+    resultats: Record<string, string>  // ex: {"2": "-1", "4": "-1", "6": "-2"}
+  }
+  condition?: ChoiceCondition // condition pour afficher le bouton de combat
+}
+
+export interface Effet {
+  type: string
+  stat?: string
+  delta?: number
+  item?: string
+  raison?: string
+  ignore_max?: boolean
+  condition?: ChoiceCondition
+}
+
+// ─── Condition et coût sur un choix ──────────────────────────────────────────
+
+export interface ChoiceCondition {
+  type: 'item_quantite' | 'stat_min' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire'
+  item_id?: string    // pour item_quantite
+  stat?: string       // pour stat_min
+  quantite?: number   // pour item_quantite
+  valeur?: number     // pour stat_min
+  section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
+  not?: boolean       // pour retour : inverse la condition (true = "pas un retour")
+  action?: string     // pour action_resolved : nom de l'action
+}
+
+export interface CoutEffet {
+  type: 'item_quantite' | 'stat'
+  item_id?: string   // pour item_quantite
+  stat?: string      // pour stat
+  delta: number
+  raison?: string
+}
+
+export interface ItemGain {
+  id: string
+  label: string
+  type?: string
+  poids?: number
+  quantite?: number
+  remplace?: boolean | string  // true = remplace un item du même type, string = remplace l'item avec cet id
+  image?: string
+  image_ia?: string
+  description?: string
+  bonus?: Record<string, number>
+  effets?: Effet[]  // effets appliqués quand l'item est porté
+}
+
+export interface Choice {
+  texte: string
+  section: number
+  condition?: ChoiceCondition
+  cout?: CoutEffet[]
+  effets?: Effet[]
+  items?: ItemGain[]  // items gagnés en prenant ce choix
+  libre?: boolean
+  end?: "victoire" | "defaite"
+  action?: string
+  si_reussi?: {
+    effets?: Effet[]
+    items?: ItemGain[]
+    choix?: Choice
+  }
+  si_echoue?: {
+    effets?: Effet[]
+    items?: ItemGain[]
+    choix?: Choice
+    end?: "victoire" | "defaite"
+  }
+  stat_monstre?: string  // ex: "-3 endurance"
+}
+
+export interface Section {
+  numero: number
+  texte: string
+  image?: string
+  image_ia?: string
+  combat?: CombatData
+  effets?: Effet[]
+  choix: Choice[]
+  end?: "victoire" | "defaite"
+}
+
+export interface Intro {
+  titre: string
+  texte: string
+  image?: string
+  image_ia?: string
+}
+
+export interface Adventure {
+  collection?: string
+  titre: string
+  tags: string[]
+  repertoire_images: string
+  image_de_garde: string
+  image_de_garde_ia?: string
+  mode_emploi: string
+  images_annexes?: string[]
+  images_annexes_ia?: string[]
+  images_victoire?: string[]
+  images_victoire_ia?: string[]
+  images_defaite?: string[]
+  images_defaite_ia?: string[]
+  intro?: Intro
+  personnage: PersonnageTemplate
+  regles: Regles
+  sections: Section[]
+}
+
+export interface AdventureMetadata {
+  titre: string
+  collection?: string
+  image_de_garde: string
+  image_de_garde_ia?: string
+  repertoire_images: string
+  tags: string[]
+  path: string
+}
+
+// ─── Hero runtime state ───────────────────────────────────────────────────────
+
+export interface StatChange {
+  timestamp: number
+  stat: string
+  delta: number
+  raison: string
+}
+
+export interface Hero {
+  statistiques: Record<string, number>
+  statistiques_initiales: Record<string, number>
+  inventaire: InventaireEntree[]
+  historique: StatChange[]
+  monstres_stats?: Record<string, { habilete: number; endurance: number }>
+}
+
+// ─── Persistence ──────────────────────────────────────────────────────────────
+
+export interface SaveState {
+  adventureId: string
+  sectionCourante: number
+  hero: Hero
+  tempsJeuMs: number
+  timestamp: number
+}
+
+export interface LeaderboardEntry {
+  nom: string
+  tempsJeuMs: number
+  date: string
+  nombreSauvegardes?: number
+  statistiques?: Record<string, number>
+}
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+export interface ValidationResult {
+  valid: boolean
+  errors: string[]
+}
+
+// ─── Dice ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Un jet de dés en attente d'une action utilisateur.
+ * L'UI affiche un bouton, au clic calcule les dés et appelle resolveRoll().
+ */
+export interface PendingRoll {
+  id: string           // identifiant unique du jet
+  label: string        // libellé affiché sur le bouton ex: "Lancer les dés du monstre"
+  formula: string      // ex: "2d6"
+  context: string      // contexte machine ex: "hero_init:habilete", "combat:hero", "combat:ennemi"
+}
+
+export interface RollResult {
+  id: string
+  rolls: number[]      // résultats individuels de chaque dé
+  total: number        // somme des dés (sans modificateur — le moteur applique le modificateur)
+}
+
+export interface DiceRollResult {
+  stat: string
+  label: string
+  rolls: number[]
+  formula: string
+  total: number        // total final avec modificateur
+}
+
+// ─── Combat ───────────────────────────────────────────────────────────────────
+
+export interface Enemy {
+  nom: string
+  habilete: number
+  endurance: number
+}
+
+export interface CombatRound {
+  numero: number
+  rollHero: number[]
+  rollEnnemi: number[]
+  forceAttaqueHero: number
+  forceAttaqueEnnemi: number
+  degats: number
+  cible: 'hero' | 'ennemi'
+  // Pour l'affichage : stat du héros et bonus appliqué
+  heroStatValue?: number
+  heroBonusAttaque?: number
+  heroBonusDegats?: number
+  // Pour l'affichage : stat de l'ennemi
+  enemyStatValue?: number
+  // Pour la défense : résultat du lancer et modificateur appliqué
+  defenseRoll?: number[]
+  defenseModifier?: number
+}
+
+export interface CombatResult {
+  victoire: boolean
+  rounds: CombatRound[]
+  heroEnduranceFinale: number
+}
+
+// ─── Machine à états du combat ────────────────────────────────────────────────
+
+export type CombatPhase =
+  | { type: 'pending_ennemi' }                          // attente jet ennemi
+  | { type: 'pending_hero' }                            // attente jet héros
+  | { type: 'pending_defense'; defenseData: any }       // attente jet de défense
+  | { type: 'pending_action'; action: string }          // attente jet d'une action (chance...)
+  | { type: 'round_result'; round: CombatRound; availableActions: string[] }  // résultat, actions dispo
+  | { type: 'termine'; victoire: boolean; heroEnduranceFinale: number }
+
+export interface CombatState {
+  enemy: Enemy
+  roundNumber: number
+  heroVie: number
+  enemyVie: number
+  rounds: CombatRound[]
+  phase: CombatPhase
+  // dés du round courant (remplis au fur et à mesure)
+  currentRollEnnemi?: number[]
+  currentRollHero?: number[]
+  // fuite en cours (section vers laquelle fuir après le résultat de l'action)
+  fuiteEnCours?: number
+  // Mode sequentiel : liste des monstres restants
+  mode?: 'sequentiel' | 'fusion' | 'lancer_de'
+  monstresRestants?: MonstreData[]
+  monstreIndex?: number
+  // Données de combat (bonus d'attaque, dégâts, défense)
+  combatData?: any
+  // Tracking des actions de combat
+  compteurDegatsHeros?: number    // nombre de fois que le héros a subi des dégâts
+  compteurDegatsMonster?: number  // nombre de fois que le monstre a subi des dégâts
+  compteurDegats?: number         // nombre total de fois que quelqu'un a subi des dégâts
+  actionsDeclenches?: number[]    // indices des actions déjà déclenchées
+  actionDeclenche?: any           // action déclenchée au dernier round
+}
+
+// ─── Machine à états création héros ──────────────────────────────────────────
+
+export interface HeroInitState {
+  // stats déjà résolues
+  resolved: DiceRollResult[]
+  // prochaine stat à lancer (undefined = toutes résolues)
+  pending?: PendingRoll
+}
