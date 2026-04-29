@@ -197,7 +197,18 @@ export class CombatView {
       const sectionFuite = section?.combat?.fuite
       const fuiteAction = adventure?.regles.combat.actions?.fuite
       
-      if (sectionFuite?.section) {
+      // Déterminer la section de fuite : soit depuis combat.fuite, soit depuis l'action déclenchée AU ROUND COURANT
+      let sectionFuiteDestination = sectionFuite?.section
+      if (!sectionFuiteDestination && state.actionDeclenche?.action === 'fuite') {
+        sectionFuiteDestination = state.actionDeclenche.section
+      }
+      
+      // Les boutons de fuite ne s'affichent que si :
+      // 1. combat.fuite est défini, OU
+      // 2. Une action "fuite" a été déclenchée AU ROUND COURANT
+      const showFuiteButtons = sectionFuite?.section || state.actionDeclenche?.action === 'fuite'
+      
+      if (showFuiteButtons && sectionFuiteDestination) {
         // Bouton pour fuir directement
         const fuirDirectBtn = document.createElement('button')
         fuirDirectBtn.className = 'btn btn-secondary combat-fuite-direct-btn'
@@ -205,52 +216,77 @@ export class CombatView {
         fuirDirectBtn.textContent = '🏃 Fuir directement'
         fuirDirectBtn.addEventListener('click', () => {
           this.engine.startFuite()
-          this.engine.navigateTo(sectionFuite.section)
+          this.engine.navigateTo(sectionFuiteDestination)
           this.onCombatEnd()
         })
         actionsEl.appendChild(fuirDirectBtn)
         
         // Bouton pour tenter sa chance si la règle existe
         if (fuiteAction) {
-          const canUse = this.engine.canUseAction(fuiteAction)
+          const fuirChanceBtn = document.createElement('button')
+          fuirChanceBtn.className = 'btn btn-secondary combat-fuite-chance-btn'
+          fuirChanceBtn.type = 'button'
+          fuirChanceBtn.textContent = '🎲 Tenter sa chance pour fuir'
           
-          if (canUse.ok) {
-            const fuirChanceBtn = document.createElement('button')
-            fuirChanceBtn.className = 'btn btn-secondary combat-fuite-chance-btn'
-            fuirChanceBtn.type = 'button'
-            fuirChanceBtn.textContent = '🎲 Tenter sa chance pour fuir'
-            
-            fuirChanceBtn.addEventListener('click', () => {
-              this.engine.startFuite()
-              // Lance directement les dés sans afficher un bouton supplémentaire
-              const pending = this.engine.getActionPendingRoll({ 
-                texte: '', 
-                section: 0, 
-                action: fuiteAction 
-              })
-              if (!pending) return
-              
-              const { count, sides } = parseDiceFormula(pending.formula)
-              const rolls = rollDice(count, sides)
-              const effets = this.engine.resolveFuiteAction(rolls)
-              
-              // Affiche le résultat
-              const total = rolls.reduce((a: number, b: number) => a + b, 0)
-              const resEl = document.createElement('div')
-              resEl.className = 'combat-action-result combat-action-result--fuite'
-              resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total}</div>`
-                + effets.map((e: string) => `<div class="action-effet">${e}</div>`).join('')
-              
-              this.container?.appendChild(resEl)
-              
-              // Fuit après le résultat
-              setTimeout(() => {
-                this.engine.navigateTo(sectionFuite.section)
-                this.onCombatEnd()
-              }, 1500)
+          fuirChanceBtn.addEventListener('click', () => {
+            this.engine.startFuite()
+            // Lance directement les dés sans afficher un bouton supplémentaire
+            const pending = this.engine.getActionPendingRoll({ 
+              texte: '', 
+              section: 0, 
+              action: fuiteAction 
             })
-            actionsEl.appendChild(fuirChanceBtn)
+            if (!pending) return
+            
+            const { count, sides } = parseDiceFormula(pending.formula)
+            const rolls = rollDice(count, sides)
+            const effets = this.engine.resolveFuiteAction(rolls)
+            
+            // Affiche le résultat
+            const total = rolls.reduce((a: number, b: number) => a + b, 0)
+            const resEl = document.createElement('div')
+            resEl.className = 'combat-action-result combat-action-result--fuite'
+            resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total}</div>`
+              + effets.map((e: string) => `<div class="action-effet">${e}</div>`).join('')
+            
+            this.container?.appendChild(resEl)
+            
+            // Fuit après le résultat
+            setTimeout(() => {
+              this.engine.navigateTo(sectionFuiteDestination)
+              this.onCombatEnd()
+            }, 1500)
+          })
+          actionsEl.appendChild(fuirChanceBtn)
+        }
+      }
+
+      // Afficher les actions déclenchées (choix, etc.) - SAUF les fuites qui sont déjà gérées ci-dessus
+      // Logique :
+      // - Si l'action a une propriété "texte", afficher un bouton avec ce texte
+      // - Si l'action a une propriété "action", afficher un bouton selon l'action
+      // - Sinon, ne pas afficher de bouton (l'action se fait via "Round suivant")
+      if (state.actionDeclenche && state.actionDeclenche.action !== 'fuite' && state.actionDeclenche.action !== 'fuite_chance') {
+        const action = state.actionDeclenche
+        
+        // Afficher un bouton seulement si l'action a une propriété "texte" ou "action"
+        if (action.texte || action.action) {
+          const actionBtn = document.createElement('button')
+          actionBtn.className = 'btn btn-secondary combat-triggered-action-btn'
+          actionBtn.type = 'button'
+          
+          // Utiliser le texte personnalisé si disponible, sinon utiliser un libellé par défaut
+          if (action.texte) {
+            actionBtn.textContent = action.texte
+          } else if (action.action) {
+            actionBtn.textContent = `${action.action}`
           }
+          
+          actionBtn.addEventListener('click', () => {
+            this.engine.navigateTo(action.section)
+            this.onCombatEnd()
+          })
+          actionsEl.appendChild(actionBtn)
         }
       }
 
@@ -259,14 +295,8 @@ export class CombatView {
       nextBtn.type = 'button'
       nextBtn.textContent = state.heroVie <= 0 || state.enemyVie <= 0 ? 'Voir le résultat' : 'Round suivant →'
       nextBtn.addEventListener('click', () => {
-        // Si une action est déclenchée, naviguer vers la section spécifiée
-        if (state.actionDeclenche && state.actionDeclenche.section) {
-          this.engine.navigateTo(state.actionDeclenche.section)
-          this.onCombatEnd()
-        } else {
-          this.engine.advanceCombat()
-          if (!this.engine.getCombatState()) { this.onCombatEnd() } else { this._render() }
-        }
+        this.engine.advanceCombat()
+        if (!this.engine.getCombatState()) { this.onCombatEnd() } else { this._render() }
       })
       actionsEl.appendChild(nextBtn)
       el.appendChild(actionsEl)
@@ -287,6 +317,15 @@ export class CombatView {
       btn.textContent = 'Continuer'
       btn.addEventListener('click', () => { this.engine.advanceCombat(); this.onCombatEnd() })
       el.appendChild(btn)
+    }
+
+    // ── Navigation vers une section (action déclenchée sans texte ou action) ────
+    else if (phase.type === 'pending_navigation') {
+      // Naviguer automatiquement vers la section
+      setTimeout(() => {
+        this.engine.navigateTo((phase as any).section)
+        this.onCombatEnd()
+      }, 500)
     }
 
     return el

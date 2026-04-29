@@ -238,7 +238,8 @@ export class GameView {
     if (section.choix.length > 0) {
       const ul = document.createElement('ul')
       ul.className = 'choices-list'
-      for (const choice of section.choix) {
+      for (let choixIndex = 0; choixIndex < section.choix.length; choixIndex++) {
+        const choice = section.choix[choixIndex]
         const li = document.createElement('li')
         const btn = document.createElement('button')
         btn.className = 'choice-btn'
@@ -250,6 +251,16 @@ export class GameView {
           btn.disabled = true
           btn.classList.add('choice-btn--locked')
           btn.title = condCheck.raison ?? 'Condition non remplie'
+          li.appendChild(btn)
+          ul.appendChild(li)
+          continue
+        }
+
+        // Vérifie les utilisations restantes pour les choix locaux
+        if (!this.engine.isChoiceAvailable(choixIndex)) {
+          btn.disabled = true
+          btn.classList.add('choice-btn--locked')
+          btn.title = 'Utilisations épuisées'
           li.appendChild(btn)
           ul.appendChild(li)
           continue

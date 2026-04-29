@@ -120,9 +120,11 @@ export interface MonstreData {
 }
 
 export interface ActionCombat {
-  declencheur: "degats_heros" | "degats_monstre" | "degats"
-  round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.)
+  declencheur: "degats_heros" | "degats_monstre" | "degats" | "round"
+  round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
   section: number            // section vers laquelle aller
+  action?: string            // type d'action ('fuite', 'fuite_chance', 'attaque', 'defense', etc.)
+  choix?: string             // libellé personnalisé du bouton
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
 }
 
@@ -194,7 +196,9 @@ export interface ItemGain {
 
 export interface Choice {
   texte: string
-  section: number
+  section?: number
+  local?: boolean           // true = reste sur la même section, false/absent = change de section
+  utilisations?: number     // nombre de fois utilisable (absent = infini)
   condition?: ChoiceCondition
   cout?: CoutEffet[]
   effets?: Effet[]
@@ -289,6 +293,7 @@ export interface SaveState {
   hero: Hero
   tempsJeuMs: number
   timestamp: number
+  choixUtilisations?: Record<string, number>  // Track des utilisations par choix (clé: "section_numero-choix_index")
 }
 
 export interface LeaderboardEntry {
@@ -373,6 +378,7 @@ export type CombatPhase =
   | { type: 'pending_hero' }                            // attente jet héros
   | { type: 'pending_defense'; defenseData: any }       // attente jet de défense
   | { type: 'pending_action'; action: string }          // attente jet d'une action (chance...)
+  | { type: 'pending_navigation'; section: number }     // navigation vers une section (action déclenchée)
   | { type: 'round_result'; round: CombatRound; availableActions: string[] }  // résultat, actions dispo
   | { type: 'termine'; victoire: boolean; heroEnduranceFinale: number }
 
@@ -400,6 +406,7 @@ export interface CombatState {
   compteurDegats?: number         // nombre total de fois que quelqu'un a subi des dégâts
   actionsDeclenches?: number[]    // indices des actions déjà déclenchées
   actionDeclenche?: any           // action déclenchée au dernier round
+  actionsDeclenchees?: any[]      // toutes les actions déclenchées au dernier round
 }
 
 // ─── Machine à états création héros ──────────────────────────────────────────

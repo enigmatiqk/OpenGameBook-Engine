@@ -149,7 +149,7 @@ export class CombatResolver {
     }
 
     // Vérifier les actions de combat
-    let newState = {
+    let newState: CombatState = {
       ...state,
       currentRollHero: rolls,
       heroVie,
@@ -194,9 +194,19 @@ export class CombatResolver {
   /**
    * Passe au round suivant (ou termine le combat si une vie <= 0).
    * En mode sequentiel, passe au monstre suivant si l'ennemi est mort.
+   * Si une action est déclenchée sans texte ou action, la navigation se fait ici.
    */
   nextRound(state: CombatState): CombatState {
     if (state.phase.type !== 'round_result') throw new Error('Phase invalide')
+
+    // Si une action est déclenchée sans texte ou action, l'appliquer maintenant
+    if (state.actionDeclenche && !state.actionDeclenche.texte && !state.actionDeclenche.action) {
+      // Retourner un état spécial pour indiquer qu'on doit naviguer vers la section de l'action
+      return {
+        ...state,
+        phase: { type: 'pending_navigation', section: state.actionDeclenche.section },
+      }
+    }
 
     if (state.heroVie <= 0) {
       // Héros mort, combat terminé
@@ -247,6 +257,8 @@ export class CombatResolver {
       currentRollEnnemi: undefined,
       currentRollHero: undefined,
       roundNumber: state.roundNumber + 1,
+      actionDeclenche: undefined,
+      actionsDeclenchees: undefined,
       phase: { type: 'pending_ennemi' },
     }
   }
@@ -261,8 +273,8 @@ export class CombatResolver {
   }
 
   /**
-   * Vérifie et déclenche les actions de combat basées sur les dégâts
-   * Retourne { actionTriggered: ActionCombat | null, newState: CombatState }
+   * Vérifie et déclenche les actions de combat basées sur les dégâts ou les rounds
+   * Retourne { actionTriggered: ActionCombat[] | null, newState: CombatState }
    */
   checkCombatActions(state: CombatState, degatsHeros: number, degatsMonster: number): { actionTriggered: any | null; newState: CombatState } {
     if (!state.combatData?.actions || state.combatData.actions.length === 0) {
@@ -281,7 +293,9 @@ export class CombatResolver {
       newState.compteurDegats = (newState.compteurDegats ?? 0) + 1
     }
 
-    // Chercher une action qui se déclenche
+    // Chercher TOUTES les actions qui se déclenchent
+    const triggeredActions: any[] = []
+    
     for (let i = 0; i < state.combatData.actions.length; i++) {
       const action = state.combatData.actions[i]
       
@@ -304,6 +318,11 @@ export class CombatResolver {
         if (newState.compteurDegats === action.round) {
           shouldTrigger = true
         }
+      } else if (action.declencheur === 'round') {
+        // Déclenche au round spécifié, indépendamment des dégâts
+        if (state.roundNumber === action.round) {
+          shouldTrigger = true
+        }
       }
 
       if (shouldTrigger) {
@@ -316,8 +335,14 @@ export class CombatResolver {
           newState.enemyVie += degatsMonster
         }
 
-        return { actionTriggered: action, newState }
+        triggeredActions.push(action)
       }
+    }
+
+    // Retourner la première action (ou null si aucune)
+    // Les autres actions seront stockées dans actionsDeclenchees
+    if (triggeredActions.length > 0) {
+      return { actionTriggered: triggeredActions[0], newState: { ...newState, actionsDeclenchees: triggeredActions } }
     }
 
     return { actionTriggered: null, newState }

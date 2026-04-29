@@ -37,6 +37,9 @@ export class GameEngine {
   // Modifications de stats du monstre pour le prochain combat
   private nextCombatMonsterStatMods: string = ''
 
+  // Track des utilisations des choix locaux
+  private choixUtilisations: Record<string, number> = {}
+
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -229,6 +232,10 @@ export class GameEngine {
     this.currentSection = result.currentSection
     this.navigation.init()
     this.sectionsDepuisChargement = 0
+    // Charger les utilisations des choix locaux
+    if (save.choixUtilisations) {
+      this.choixUtilisations = { ...save.choixUtilisations }
+    }
   }
 
   navigateTo(sectionNumber: number): Section {
@@ -341,8 +348,12 @@ export class GameEngine {
     if (!this.adventure) throw new Error('No adventure loaded.')
     const section = this.adventure.sections.find(s => s.numero === this.currentSection)
     if (!section) throw new Error(`Section ${this.currentSection} introuvable`)
-    const validChoice = section.choix.find(c => c.section === choice.section && c.texte === choice.texte)
-    if (!validChoice) throw new Error(`Choix invalide : "${choice.texte}"`)
+    
+    // Valider le choix
+    const choixIndex = section.choix.findIndex(c => c.texte === choice.texte)
+    if (choixIndex === -1) throw new Error(`Choix invalide : "${choice.texte}"`)
+    const validChoice = section.choix[choixIndex]
+    
     if (choice.section === 0) throw new Error(`Ce choix nécessite une action : "${choice.texte}"`)
 
     // Track les modifications de stats du monstre pour le prochain combat
@@ -410,11 +421,43 @@ export class GameEngine {
       }
     }
 
-    return this.navigateTo(choice.section)
+    // Track les utilisations si c'est un choix local avec limite
+    if (validChoice.local && validChoice.utilisations !== undefined) {
+      const key = `${this.currentSection}-${choixIndex}`
+      this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
+    }
+
+    // Si c'est un choix local, rester sur la même section. Sinon, naviguer
+    if (validChoice.local) {
+      return section
+    } else if (choice.section !== undefined) {
+      return this.navigateTo(choice.section)
+    } else {
+      throw new Error(`Choix "${choice.texte}" n'a pas de section définie`)
+    }
   }
 
   checkChoiceCondition(choice: Choice): { ok: boolean; raison?: string } {
     return this.navigation.checkChoiceCondition(choice, this.hero)
+  }
+
+  /**
+   * Vérifie si un choix local a encore des utilisations disponibles
+   */
+  isChoiceAvailable(choixIndex: number): boolean {
+    const section = this.adventure?.sections.find(s => s.numero === this.currentSection)
+    if (!section || !section.choix[choixIndex]) return true
+    
+    const choice = section.choix[choixIndex]
+    
+    // Si ce n'est pas un choix local ou pas de limite d'utilisations, toujours disponible
+    if (!choice.local || choice.utilisations === undefined) return true
+    
+    // Vérifier le nombre d'utilisations
+    const key = `${this.currentSection}-${choixIndex}`
+    const utilisations = this.choixUtilisations[key] ?? 0
+    
+    return utilisations < choice.utilisations
   }
 
   getActionPendingRoll(choice: Choice): PendingRoll | null {
@@ -835,7 +878,11 @@ export class GameEngine {
 
   saveGame(): void {
     const state = this.saveModule.saveGame(this.adventure, this.hero, this.currentSection)
-    if (state) this.saveState = state
+    if (state) {
+      // Ajouter les utilisations des choix locaux
+      state.choixUtilisations = { ...this.choixUtilisations }
+      this.saveState = state
+    }
   }
 
   // ─── Accesseurs ───────────────────────────────────────────────────────────
