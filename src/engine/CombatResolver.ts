@@ -35,11 +35,19 @@ export class CombatResolver {
    * Initialise un état de combat — aucun dé n'est lancé.
    */
   initCombat(hero: Hero, enemy: Enemy, rules: CombatRules, mode?: string, monstres?: MonstreData[], combatData?: any): CombatState {
+    let modifiedEnemy = { ...enemy }
+    if (combatData?.modifier?.length > 0) {
+      for (const mod of combatData.modifier) {
+        if (mod.type === 'stat' && mod.stat) {
+          (modifiedEnemy as any)[mod.stat] = Math.max(0, ((modifiedEnemy as any)[mod.stat] ?? 0) + mod.delta)
+        }
+      }
+    }
     return {
-      enemy,
+      enemy: modifiedEnemy,
       roundNumber: 1,
       heroVie: hero.statistiques[rules.stat_vie] ?? 0,
-      enemyVie: enemy.endurance,
+      enemyVie: modifiedEnemy.endurance,
       rounds: [],
       phase: { type: 'pending_ennemi' },
       mode: mode as any,
@@ -161,6 +169,13 @@ export class CombatResolver {
     const degatsHeros = cible === 'hero' ? degats : 0
     const degatsMonster = cible === 'ennemi' ? degats : 0
 
+    // Tracker les dégâts totaux
+    newState.totalDegatsHeros = (state.totalDegatsHeros ?? 0) + degatsHeros
+    newState.totalDegatsMonster = (state.totalDegatsMonster ?? 0) + degatsMonster
+    if (state.enemy.id && degatsMonster > 0) {
+      newState.totalDegatsMonsterById = { ...(state.totalDegatsMonsterById ?? {}), [state.enemy.id]: ((state.totalDegatsMonsterById?.[state.enemy.id] ?? 0) + degatsMonster) }
+    }
+
     // Vérifier et déclencher les actions de combat
     const { actionTriggered, newState: stateAfterAction } = this.checkCombatActions(newState, degatsHeros, degatsMonster)
     newState = stateAfterAction
@@ -229,8 +244,8 @@ export class CombatResolver {
           const nextMonstre = state.monstresRestants[nextIndex]
           return {
             ...state,
-            enemy: { nom: nextMonstre.nom, habilete: nextMonstre.habilete, endurance: nextMonstre.endurance },
-            enemyVie: nextMonstre.endurance,
+            enemy: { nom: nextMonstre.nom, habilete: nextMonstre.habilete ?? 0, endurance: nextMonstre.endurance ?? 0 },
+            enemyVie: nextMonstre.endurance ?? 0,
             monstreIndex: nextIndex,
             currentRollEnnemi: undefined,
             currentRollHero: undefined,

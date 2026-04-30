@@ -21,7 +21,7 @@ export class GameEngineCombat {
     mode?: string
   ): CombatState {
     const monstre = monstres[0]
-    const enemy = { nom: monstre.nom, habilete: monstre.habilete, endurance: monstre.endurance }
+    const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
     return this.combatResolver.initCombat(hero, enemy, rules, mode, monstres)
   }
 
@@ -109,9 +109,9 @@ export class GameEngineCombat {
     const stat = m[2].toLowerCase()
     
     if (stat === 'endurance') {
-      return { ...monstre, endurance: Math.max(1, monstre.endurance + delta) }
+      return { ...monstre, endurance: Math.max(1, (monstre.endurance ?? 0) + delta) }
     } else if (stat === 'habilete') {
-      return { ...monstre, habilete: Math.max(1, monstre.habilete + delta) }
+      return { ...monstre, habilete: Math.max(1, (monstre.habilete ?? 0) + delta) }
     }
     
     return monstre

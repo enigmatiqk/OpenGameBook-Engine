@@ -125,7 +125,16 @@ export interface ActionCombat {
   section: number            // section vers laquelle aller
   action?: string            // type d'action ('fuite', 'fuite_chance', 'attaque', 'defense', etc.)
   choix?: string             // libellé personnalisé du bouton
+  texte?: string             // libellé personnalisé du bouton (alias de choix)
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
+  condition?: ChoiceCondition // condition pour déclencher l'action
+}
+
+export interface CombatModifier {
+  type: "stat"               // type de modification
+  stat: string               // nom de la stat (endurance, habilete, etc.)
+  delta: number              // modification à appliquer
+  raison?: string            // description de la modification
 }
 
 export interface CombatData {
@@ -136,7 +145,11 @@ export interface CombatData {
   attaque_monstre?: string    // ex: "+2", "-1"
   degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
   actions?: ActionCombat[]   // actions déclenchées pendant le combat
-  victoire?: { section: number }
+  modifier?: CombatModifier[] // modifications à appliquer avant le combat
+  victoire?: { 
+    section: number
+    effets?: Effet[]         // effets appliqués après la victoire
+  }
   fuite?: { 
     section: number
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
@@ -162,7 +175,7 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'stat_min' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire'
+  type: 'item_quantite' | 'stat_min' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros'
   item_id?: string    // pour item_quantite
   stat?: string       // pour stat_min
   quantite?: number   // pour item_quantite
@@ -170,6 +183,9 @@ export interface ChoiceCondition {
   section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
   not?: boolean       // pour retour : inverse la condition (true = "pas un retour")
   action?: string     // pour action_resolved : nom de l'action
+  id?: string         // pour combat_degats_monstre/heros : id du monstre persistant (optionnel)
+  degats_min?: number // pour combat_degats_monstre/heros : dégâts minimum
+  degats_max?: number // pour combat_degats_monstre/heros : dégâts maximum
 }
 
 export interface CoutEffet {
@@ -344,6 +360,7 @@ export interface Enemy {
   nom: string
   habilete: number
   endurance: number
+  id?: string  // id du monstre persistant
 }
 
 export interface CombatRound {
@@ -407,6 +424,10 @@ export interface CombatState {
   actionsDeclenches?: number[]    // indices des actions déjà déclenchées
   actionDeclenche?: any           // action déclenchée au dernier round
   actionsDeclenchees?: any[]      // toutes les actions déclenchées au dernier round
+  // Tracking des dégâts du combat pour les conditions
+  totalDegatsHeros?: number       // dégâts totaux infligés au héros
+  totalDegatsMonster?: number     // dégâts totaux infligés au monstre
+  totalDegatsMonsterById?: Record<string, number>  // dégâts totaux par monstre persistant
 }
 
 // ─── Machine à états création héros ──────────────────────────────────────────

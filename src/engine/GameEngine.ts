@@ -301,7 +301,7 @@ export class GameEngine {
           }
         }
         
-        const enemy = { nom: monstre.nom, habilete: monstre.habilete, endurance: monstre.endurance }
+        const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
         this.combatState = this.combatResolver.initCombat(
           this.hero, 
           enemy, 
@@ -704,7 +704,7 @@ export class GameEngine {
     if (!monstre) throw new Error(`Aucun monstre pour le résultat ${diceResult}`)
     
     // Initialise le combat avec le monstre sélectionné
-    const enemy = { nom: monstre.nom, habilete: monstre.habilete, endurance: monstre.endurance }
+    const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
     this.combatState = this.combatResolver.initCombat(this.hero, enemy, this.adventure.regles.combat)
   }
 
@@ -794,15 +794,26 @@ export class GameEngine {
       
       // Track le résultat du combat pour les conditions
       this.navigation.recordCombatResult(victoire)
+      this.navigation.recordCombatState(this.combatState)
       
       if (!victoire) {
         this.gameOver = true
         this.victory = false
       } else if (this.adventure) {
         const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-        const sectionVictoire = section?.combat?.victoire?.section
-        if (sectionVictoire) {
-          this.navigateTo(sectionVictoire)
+        const sectionVictoire = section?.combat?.victoire
+        
+        // Applique les effets de victoire
+        if (sectionVictoire?.effets && this.hero) {
+          for (const effet of sectionVictoire.effets) {
+            if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
+              this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? 'Victoire au combat')
+            }
+          }
+        }
+        
+        if (sectionVictoire?.section) {
+          this.navigateTo(sectionVictoire.section)
         }
       }
       // Synchronise l'endurance finale

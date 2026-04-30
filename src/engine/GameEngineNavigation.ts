@@ -1,4 +1,4 @@
-import type { Section, Choice, Hero } from '../types'
+import type { Section, Choice, Hero, CombatState } from '../types'
 
 /**
  * Gère la navigation entre sections et les conditions
@@ -8,6 +8,7 @@ export class GameEngineNavigation {
   private readonly NAV_HISTORY_SIZE = 2
   private sectionActionResults: Record<string, string> = {}
   private lastCombatVictory: boolean | null = null
+  private lastCombatState: CombatState | null = null
 
   /**
    * Initialise la navigation avec un historique optionnel
@@ -16,6 +17,7 @@ export class GameEngineNavigation {
     this.navHistory = debugHistory ?? []
     this.sectionActionResults = {}
     this.lastCombatVictory = null
+    this.lastCombatState = null
   }
 
   /**
@@ -54,6 +56,13 @@ export class GameEngineNavigation {
    */
   recordCombatResult(victoire: boolean): void {
     this.lastCombatVictory = victoire
+  }
+
+  /**
+   * Enregistre l'état du dernier combat
+   */
+  recordCombatState(state: CombatState): void {
+    this.lastCombatState = state
   }
 
   /**
@@ -133,6 +142,46 @@ export class GameEngineNavigation {
       if (val < required) {
         conditionOk = false
         raison = `${cond.stat} insuffisant (${val}/${required})`
+      }
+    } else if (cond.type === 'combat_degats_monstre') {
+      // Vérifier les dégâts infligés au monstre du combat précédent
+      const lastCombatState = this.lastCombatState
+      if (!lastCombatState) {
+        conditionOk = false
+        raison = 'Aucun combat précédent'
+      } else {
+        let degats = 0
+        if (cond.id) {
+          // Chercher les dégâts pour un monstre persistant spécifique
+          degats = lastCombatState.totalDegatsMonsterById?.[cond.id] ?? 0
+        } else {
+          // Utiliser les dégâts totaux du dernier monstre combattu
+          degats = lastCombatState.totalDegatsMonster ?? 0
+        }
+        
+        const min = cond.degats_min ?? 0
+        const max = cond.degats_max ?? Infinity
+        
+        if (degats < min || degats > max) {
+          conditionOk = false
+          raison = `Dégâts au monstre insuffisants (${degats})`
+        }
+      }
+    } else if (cond.type === 'combat_degats_heros') {
+      // Vérifier les dégâts reçus par le héros du combat précédent
+      const lastCombatState = this.lastCombatState
+      if (!lastCombatState) {
+        conditionOk = false
+        raison = 'Aucun combat précédent'
+      } else {
+        const degats = lastCombatState.totalDegatsHeros ?? 0
+        const min = cond.degats_min ?? 0
+        const max = cond.degats_max ?? Infinity
+        
+        if (degats < min || degats > max) {
+          conditionOk = false
+          raison = `Dégâts au héros insuffisants (${degats})`
+        }
       }
     }
 
