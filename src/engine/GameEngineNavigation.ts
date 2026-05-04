@@ -70,7 +70,8 @@ export class GameEngineNavigation {
    */
   checkChoiceCondition(
     choice: Choice,
-    hero: Hero | null
+    hero: Hero | null,
+    currentSection?: number
   ): { ok: boolean; raison?: string } {
     if (!choice.condition || !hero) return { ok: true }
     const cond = choice.condition
@@ -98,14 +99,19 @@ export class GameEngineNavigation {
         }
       }
     } else if (cond.type === 'retour') {
-      const returnOrigin = this.navHistory[this.navHistory.length - this.NAV_HISTORY_SIZE]
-      let isReturn = returnOrigin !== undefined && returnOrigin === this.navHistory[this.navHistory.length - 1]
+      // Vérifie si on revient à une section précédente
+      // - Si pas de section définie : section courante doit = sn2 (navHistory[0])
+      // - Si section définie : section définie doit = sn1 (navHistory[1])
+      let isReturn = false
       
-      if (isReturn && cond.section !== undefined) {
-        const via = this.navHistory[this.navHistory.length - 1]
-        if (via !== cond.section) {
-          isReturn = false
-        }
+      if (cond.section !== undefined) {
+        // Cas avec section définie : vérifier que sn1 = cond.section
+        const via = this.navHistory[this.navHistory.length - 1] // sn1
+        isReturn = via !== undefined && via === cond.section
+      } else {
+        // Cas sans section définie : vérifier que section courante = sn2
+        const returnOrigin = this.navHistory[0] // sn2
+        isReturn = returnOrigin !== undefined && returnOrigin === currentSection
       }
       
       if (!isReturn) {
@@ -135,13 +141,6 @@ export class GameEngineNavigation {
           const label = item && typeof item !== 'string' ? item.label : cond.item_id
           raison = `${label} insuffisant (${qty}/${required})`
         }
-      }
-    } else if (cond.type === 'stat_min' && cond.stat) {
-      const val = hero.statistiques[cond.stat] ?? 0
-      const required = cond.valeur ?? 1
-      if (val < required) {
-        conditionOk = false
-        raison = `${cond.stat} insuffisant (${val}/${required})`
       }
     } else if (cond.type === 'combat_degats_monstre') {
       // Vérifier les dégâts infligés au monstre du combat précédent

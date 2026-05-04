@@ -40,6 +40,9 @@ export class GameEngine {
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
 
+  // Conditions de debug
+  private debugIgnoreStatLimit: boolean = false
+
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -104,7 +107,7 @@ export class GameEngine {
    * À appeler après que la section initiale soit chargée.
    */
   applyDebugNavHistory(): void {
-    const debugHistory = initDebugNavHistory(this.navigation.getNavHistory().length)
+    const debugHistory = initDebugNavHistory(2) // NAV_HISTORY_SIZE = 2
     if (debugHistory.length > 0) {
       this.navigation.init(debugHistory)
     }
@@ -202,11 +205,18 @@ export class GameEngine {
         }
       }
     }
-    
-    if (debugConds.stat_min && this.hero) {
-      const { stat, valeur } = debugConds.stat_min
-      this.hero.statistiques[stat] = valeur
+
+    if (debugConds.ignore_stat_limit) {
+      this.debugIgnoreStatLimit = true
     }
+  }
+
+  /**
+   * Vérifie si le mode debug ignore_stat_limit est activé
+   */
+  private isDebugIgnoreStatLimit(): boolean {
+    const debugConds = initDebugConditions()
+    return debugConds.ignore_stat_limit ?? false
   }
 
   /**
@@ -317,13 +327,15 @@ export class GameEngine {
     if (section.effets && this.hero) {
       for (const effet of section.effets) {
         if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-          if (effet.ignore_max) {
-            if (this.hero.statistiques[effet.stat] !== undefined) {
-              this.hero.statistiques[effet.stat] += effet.delta
-              this.hero.historique.push({ timestamp: Date.now(), stat: effet.stat, delta: effet.delta, raison: effet.raison ?? `section ${sectionNumber}` })
+          // Normalise le nom de la stat
+          const normalizedStat = GameEngineHero.normalizeStat(effet.stat, this.hero)
+          if (effet.ignore_max || this.isDebugIgnoreStatLimit()) {
+            if (this.hero.statistiques[normalizedStat] !== undefined) {
+              this.hero.statistiques[normalizedStat] += effet.delta
+              this.hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta: effet.delta, raison: effet.raison ?? `section ${sectionNumber}` })
             }
           } else {
-            this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? `section ${sectionNumber}`)
+            this.applyStatDelta(normalizedStat, effet.delta, effet.raison ?? `section ${sectionNumber}`)
           }
         } else if (effet.type === 'item' && effet.item) {
           this.hero.inventaire.push(effet.item)
@@ -438,7 +450,7 @@ export class GameEngine {
   }
 
   checkChoiceCondition(choice: Choice): { ok: boolean; raison?: string } {
-    return this.navigation.checkChoiceCondition(choice, this.hero)
+    return this.navigation.checkChoiceCondition(choice, this.hero, this.currentSection)
   }
 
   /**
@@ -754,6 +766,12 @@ export class GameEngine {
    */
   startCombatAction(action: string): void {
     if (!this.combatState) throw new Error('Pas de combat en cours.')
+    // Vérifier si une action a déjà été lancée dans ce round
+    if (this.combatState.actionLancee) {
+      console.warn(`Action ${this.combatState.actionLancee} déjà lancée dans ce round`)
+      return
+    }
+    this.combatState.actionLancee = action
     this.combatState = this.combatResolver.startAction(this.combatState, action)
   }
 

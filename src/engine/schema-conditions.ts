@@ -7,10 +7,11 @@ import { GameEngineNavigation } from './GameEngineNavigation'
 export function checkCondition(
   condition: ChoiceCondition | undefined,
   hero: Hero | null,
-  navigation: GameEngineNavigation
+  navigation: GameEngineNavigation,
+  currentSection?: number
 ): { ok: boolean; raison?: string } {
   if (!condition || !hero) return { ok: true }
-  return navigation.checkChoiceCondition({ condition } as any, hero)
+  return navigation.checkChoiceCondition({ condition } as any, hero, currentSection)
 }
 
 /**
@@ -19,12 +20,13 @@ export function checkCondition(
 export function checkConditions(
   conditions: ChoiceCondition[] | undefined,
   hero: Hero | null,
-  navigation: GameEngineNavigation
+  navigation: GameEngineNavigation,
+  currentSection?: number
 ): { ok: boolean; raison?: string } {
   if (!conditions || conditions.length === 0) return { ok: true }
   
   for (const cond of conditions) {
-    const result = checkCondition(cond, hero, navigation)
+    const result = checkCondition(cond, hero, navigation, currentSection)
     if (!result.ok) return result
   }
   

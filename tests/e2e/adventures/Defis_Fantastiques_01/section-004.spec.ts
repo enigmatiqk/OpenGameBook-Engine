@@ -1,0 +1,43 @@
+import { test, expect } from '@playwright/test'
+import { testSectionAndText, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+
+const ADVENTURE_ID = 1
+const SECTION_NUMBER = 4
+const SECTION_TEXT = 'Vous vous trouvez dans un couloir nord-sud'
+const SECTION_CHOICES = {
+  46: 'Aller au nord',
+  332: 'Aller au sud'
+}
+
+test.describe('Section 004', () => {
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      const screenshotPath = `test-results/${testInfo.title.replace(/\s+/g, '-')}-failed.png`
+      await page.screenshot({ path: screenshotPath })
+    }
+  })
+
+  test.beforeEach(async ({ page }) => {
+    // Lancer le jeu en mode debug
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}`)
+    // Attendre que la section soit chargée
+    await page.waitForSelector('.section-text')
+  })
+
+  test('Section et texte', async ({ page }) => {
+    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+  })
+
+  test('Boutons de choix', async ({ page }) => {
+    await testChoiceButtons(page, SECTION_CHOICES)
+  })
+
+  test('Navigation vers section 46 (nord)', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 0)
+  })
+
+  test('Navigation vers section 332 (sud)', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 1)
+  })
+})

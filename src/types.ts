@@ -175,11 +175,9 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'stat_min' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros'
+  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros'
   item_id?: string    // pour item_quantite
-  stat?: string       // pour stat_min
   quantite?: number   // pour item_quantite
-  valeur?: number     // pour stat_min
   section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
   not?: boolean       // pour retour : inverse la condition (true = "pas un retour")
   action?: string     // pour action_resolved : nom de l'action
@@ -428,6 +426,8 @@ export interface CombatState {
   totalDegatsHeros?: number       // dégâts totaux infligés au héros
   totalDegatsMonster?: number     // dégâts totaux infligés au monstre
   totalDegatsMonsterById?: Record<string, number>  // dégâts totaux par monstre persistant
+  // Tracking des actions lancées dans le round courant
+  actionLancee?: string           // action lancée dans ce round (attaque_chance, defense_chance, etc.)
 }
 
 // ─── Machine à états création héros ──────────────────────────────────────────

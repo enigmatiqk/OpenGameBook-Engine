@@ -192,6 +192,7 @@ export class CombatView {
       }
 
       // Bouton de fuite pendant le combat si disponible
+      // IMPORTANT: Ne pas afficher les boutons de fuite si le héros est mort
       const adventure = this.engine.getAdventure()
       const section = adventure?.sections.find(s => s.numero === this.engine.getCurrentSection())
       const sectionFuite = section?.combat?.fuite
@@ -206,7 +207,8 @@ export class CombatView {
       // Les boutons de fuite ne s'affichent que si :
       // 1. combat.fuite est défini, OU
       // 2. Une action "fuite" a été déclenchée AU ROUND COURANT
-      const showFuiteButtons = sectionFuite?.section || state.actionDeclenche?.action === 'fuite'
+      // ET le héros n'est pas mort
+      const showFuiteButtons = (sectionFuite?.section || state.actionDeclenche?.action === 'fuite') && state.heroVie > 0
       
       if (showFuiteButtons && sectionFuiteDestination) {
         // Bouton pour fuir directement

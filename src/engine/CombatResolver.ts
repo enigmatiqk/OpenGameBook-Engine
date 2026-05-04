@@ -24,8 +24,18 @@ export function parseDiceFormula(formula: string): { count: number; sides: numbe
 
 /**
  * Lance N dés à D faces. Retourne les résultats individuels.
+ * En mode debug avec le paramètre ?lance_de=X, tous les dés feront X.
  */
 export function rollDice(count: number, sides: number): number[] {
+  // Vérifier si on est en mode debug avec le paramètre lance_de
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+  const debugValue = params.get('lance_de')
+  
+  if (debugValue) {
+    const fixedValue = Math.min(parseInt(debugValue, 10), sides)
+    return Array.from({ length: count }, () => fixedValue)
+  }
+  
   return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
 }
 
@@ -274,6 +284,7 @@ export class CombatResolver {
       roundNumber: state.roundNumber + 1,
       actionDeclenche: undefined,
       actionsDeclenchees: undefined,
+      actionLancee: undefined,
       phase: { type: 'pending_ennemi' },
     }
   }

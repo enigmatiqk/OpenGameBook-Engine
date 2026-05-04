@@ -146,7 +146,7 @@ export class GameView {
       const label = adventure.personnage.statistiques[key]?.label ?? key
       const stat = document.createElement('div')
       stat.className = 'hero-stat'
-      stat.innerHTML = `<span class="stat-label">${this._escHtml(label)}</span><span class="stat-value">${value}</span>`
+      stat.innerHTML = `<span class="stat-label">${this._escHtml(label)}</span><span class="stat-value" id="stat-${key}">${value}</span>`
       statsEl.appendChild(stat)
     }
     panel.appendChild(statsEl)

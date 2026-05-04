@@ -1,0 +1,226 @@
+{
+  "sections": [
+    {
+      "numero": 1000,
+      "texte": "Vous trouvez une épée brillante sur le sol de la caverne. Elle scintille d'une lumière mystérieuse.",
+      "choix": [
+        {
+          "texte": "Prendre l'épée magique",
+          "section": 1001,
+          "items": [
+            {
+              "id": "epee_magique",
+              "label": "Épée magique",
+              "type": "arme_1main",
+              "poids": 2,
+              "quantite": 1,
+              "remplace": true,
+              "description": "Une épée brillante avec des runes magiques",
+              "bonus": {
+                "habilete": 2
+              }
+            }
+          ]
+        },
+        {
+          "texte": "Laisser l'épée",
+          "section": 1001
+        }
+      ]
+    },
+    {
+      "numero": 1001,
+      "texte": "Vous continuez votre chemin dans la caverne.",
+      "choix": [
+        {
+          "texte": "Avancer",
+          "section": 1002
+        }
+      ]
+    },
+    {
+      "numero": 1002,
+      "texte": "Vous trouvez un coffre fermé. Vous pouvez essayer de le crocheter.",
+      "choix": [
+        {
+          "texte": "Tenter de crocheter le coffre",
+          "section": 0,
+          "action": "tenter_chance",
+          "si_reussi": {
+            "items": [
+              {
+                "id": "piece_or",
+                "label": "Pièces d'or",
+                "quantite": 50
+              },
+              {
+                "id": "gemme_rouge",
+                "label": "Gemme rouge",
+                "description": "Une gemme précieuse qui brille d'une lumière rouge"
+              }
+            ],
+            "choix": {
+              "texte": "Continuer",
+              "section": 1003
+            }
+          },
+          "si_echoue": {
+            "choix": {
+              "texte": "Continuer",
+              "section": 1003
+            }
+          }
+        },
+        {
+          "texte": "Laisser le coffre",
+          "section": 1003
+        }
+      ]
+    },
+    {
+      "numero": 1003,
+      "texte": "Vous arrivez dans une salle avec un armure ancienne sur un piédestal.",
+      "choix": [
+        {
+          "texte": "Prendre l'armure",
+          "section": 1004,
+          "items": [
+            {
+              "id": "armure_ancienne",
+              "label": "Armure ancienne",
+              "type": "armure",
+              "poids": 3,
+              "remplace": true,
+              "description": "Une armure ancienne qui semble encore en bon état",
+              "bonus": {
+                "endurance": 2
+              }
+            }
+          ]
+        },
+        {
+          "texte": "Laisser l'armure",
+          "section": 1004
+        }
+      ]
+    },
+    {
+      "numero": 1004,
+      "texte": "Vous trouvez plusieurs items : une clé en argent, un casque et des pièces d'or.",
+      "choix": [
+        {
+          "texte": "Prendre tous les items",
+          "section": 1005,
+          "items": [
+            {
+              "id": "cle_argent",
+              "label": "Clé en argent",
+              "description": "Une clé finement travaillée"
+            },
+            {
+              "id": "casque_acier",
+              "label": "Casque en acier",
+              "type": "casque",
+              "poids": 1,
+              "remplace": false,
+              "description": "Un casque robuste en acier"
+            },
+            {
+              "id": "piece_or",
+              "label": "Pièces d'or",
+              "quantite": 25
+            }
+          ]
+        },
+        {
+          "texte": "Ne prendre que la clé",
+          "section": 1005,
+          "items": [
+            {
+              "id": "cle_argent",
+              "label": "Clé en argent",
+              "description": "Une clé finement travaillée"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 1005,
+      "texte": "Vous arrivez à une porte fermée. La clé en argent pourrait l'ouvrir.",
+      "choix": [
+        {
+          "texte": "Utiliser la clé",
+          "section": 1006,
+          "condition": {
+            "type": "item_quantite",
+            "item_id": "cle_argent",
+            "quantite": 1
+          },
+          "cout": [
+            {
+              "type": "item_quantite",
+              "item_id": "cle_argent",
+              "delta": -1,
+              "raison": "Utilisation de la clé"
+            }
+          ]
+        },
+        {
+          "texte": "Forcer la porte",
+          "section": 1006
+        }
+      ]
+    },
+    {
+      "numero": 1006,
+      "texte": "Vous avez vaincu le dragon et trouvé son trésor !",
+      "choix": [
+        {
+          "texte": "Prendre le trésor",
+          "section": 1007,
+          "items": [
+            {
+              "id": "piece_or",
+              "label": "Pièces d'or",
+              "quantite": 100
+            },
+            {
+              "id": "armure_dragon",
+              "label": "Armure de dragon",
+              "type": "armure",
+              "poids": 4,
+              "remplace": true,
+              "description": "Une armure faite de écailles de dragon",
+              "bonus": {
+                "endurance": 5
+              }
+            },
+            {
+              "id": "epee_dragon",
+              "label": "Épée du dragon",
+              "type": "arme_1main",
+              "poids": 3,
+              "remplace": true,
+              "description": "L'épée légendaire du dragon",
+              "bonus": {
+                "habilete": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "numero": 1007,
+      "texte": "Fin de l'aventure !",
+      "choix": [
+        {
+          "texte": "Fin",
+          "section": 1007,
+          "end": "victoire"
+        }
+      ]
+    }
+  ]
+}

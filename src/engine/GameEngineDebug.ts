@@ -43,11 +43,12 @@ export function initDebugNavHistory(navHistorySize: number): number[] {
     }
   }
   
+  
   // Inverse l'ordre : sn1 (N-1) doit être en dernier, sn2 (N-2) avant, etc.
   if (tempHistory.length > 0) {
     debugHistory.push(...tempHistory.reverse())
   }
-  
+
   return debugHistory
 }
 
@@ -58,12 +59,12 @@ export interface DebugConditions {
   combat_victoire?: boolean
   action_resolved?: string
   item_quantite?: { item_id: string; quantite: number }
-  stat_min?: { stat: string; valeur: number }
+  ignore_stat_limit?: boolean
 }
 
 /**
  * Initialise les conditions de debug via query params.
- * Format: ?combat_victoire=1&action_resolved=tenter_chance&item_quantite=pieces_or:5&stat_min=habilete:10
+ * Format: ?combat_victoire=1&action_resolved=tenter_chance&item_quantite=pieces_or:5&ignore_stat_limit=1
  * Ne fonctionne qu'en mode développement.
  * 
  * @returns Objet avec les conditions de debug
@@ -95,15 +96,9 @@ export function initDebugConditions(): DebugConditions {
     }
   }
   
-  // stat_min=habilete:10
-  if (params.has('stat_min')) {
-    const val = params.get('stat_min')
-    if (val) {
-      const [stat, valeur] = val.split(':')
-      if (stat && valeur) {
-        conditions.stat_min = { stat, valeur: parseInt(valeur, 10) }
-      }
-    }
+  // ignore_stat_limit=1
+  if (params.has('ignore_stat_limit')) {
+    conditions.ignore_stat_limit = params.get('ignore_stat_limit') === '1'
   }
   
   return conditions
