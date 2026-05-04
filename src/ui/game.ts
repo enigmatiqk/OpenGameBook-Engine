@@ -1,6 +1,8 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { Adventure, Hero, Section } from '../types'
 import { CombatView } from './combat'
+import { InventaireView } from './inventaire'
+import { EquipementView } from './equipement'
 import { parseDiceFormula, rollDice } from '../engine/CombatResolver'
 import { resolveImage, resolveImages } from '../utils/imageUtils'
 
@@ -152,71 +154,8 @@ export class GameView {
     panel.appendChild(statsEl)
 
     // Affiche l'inventaire (sans les items équipés)
-    const inventoryItems = hero.inventaire.filter(item => {
-      if (typeof item === 'string') return true
-      return !item.equipe
-    })
-
-    if (inventoryItems.length > 0) {
-      const inv = document.createElement('div')
-      inv.className = 'hero-inventory'
-      
-      const label = document.createElement('span')
-      label.className = 'inv-label'
-      label.textContent = 'Inventaire :'
-      inv.appendChild(label)
-
-      const itemsContainer = document.createElement('span')
-      itemsContainer.className = 'inv-items'
-
-      for (let i = 0; i < inventoryItems.length; i++) {
-        const item = inventoryItems[i]
-        
-        if (i > 0) {
-          const separator = document.createElement('span')
-          separator.textContent = ', '
-          itemsContainer.appendChild(separator)
-        }
-
-        if (typeof item === 'string') {
-          const span = document.createElement('span')
-          span.textContent = this._escHtml(item)
-          itemsContainer.appendChild(span)
-        } else {
-          // Item avec usage = consommable
-          if (item.usage) {
-            const btn = document.createElement('button')
-            btn.className = 'inv-item-btn'
-            btn.type = 'button'
-            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-            btn.textContent = this._escHtml(item.label) + qty
-            btn.title = item.description || 'Cliquez pour consommer'
-            btn.addEventListener('click', () => {
-              const result = this.engine.consumeItem(item.id)
-              if (result.success) {
-                // Rerender le panel
-                this._render()
-              } else {
-                alert(result.message)
-              }
-            })
-            itemsContainer.appendChild(btn)
-          } else {
-            // Item sans usage = non consommable
-            const span = document.createElement('span')
-            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-            span.textContent = this._escHtml(item.label) + qty
-            if (item.description) {
-              span.title = item.description
-            }
-            itemsContainer.appendChild(span)
-          }
-        }
-      }
-
-      inv.appendChild(itemsContainer)
-      panel.appendChild(inv)
-    }
+    const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s))
+    panel.appendChild(inventoryPanel)
 
     return panel
   }
@@ -515,120 +454,10 @@ export class GameView {
     content += '<div class="hero-layout">'
 
     // Section Inventaire (gauche)
-    content += '<div class="hero-inventory-section">'
-    content += '<h3>Inventaire</h3>'
-    const inventoryItems = hero.inventaire.filter(item => {
-      if (typeof item === 'string') return true
-      return !item.equipe
-    })
-    
-    if (inventoryItems.length > 0) {
-      content += '<ul class="inventory-list">'
-      for (const item of inventoryItems) {
-        if (typeof item === 'string') {
-          content += `<li>${this._escHtml(item)}</li>`
-        } else {
-          const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
-          const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${this._escAttr(item.id)}">⚔️</button>` : ''
-          content += `<li>${this._escHtml(item.label)}${qty} ${equipBtn}</li>`
-        }
-      }
-      content += '</ul>'
-    } else {
-      content += '<p><em>Inventaire vide</em></p>'
-    }
-    content += '</div>' // ferme hero-inventory-section
+    content += InventaireView.buildInventorySection(hero, (s) => this._escHtml(s), (s) => this._escAttr(s), this.engine)
 
     // Section Équipement (droite)
-    const emplacements = adventure.personnage.emplacements_equipement || {}
-    if (Object.keys(emplacements).length > 0) {
-      content += '<div class="hero-equipment-section">'
-      content += '<h3>Équipement</h3>'
-      content += '<div class="equipment-display">'
-      
-      // Créer une grille RPG avec le personnage au centre
-      content += '<div class="equipment-grid-rpg">'
-      
-      // Slot Tête (top)
-      if (emplacements['tete']) {
-        const item = hero.equipement['tete']
-        content += `<div class="equipment-slot-rpg slot-tete">
-          <div class="slot-label">${this._escHtml(emplacements['tete'].label)}</div>
-          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-          ${item ? `<button class="btn-unequip-modal" data-slot="tete">✕</button>` : ''}
-        </div>`
-      }
-
-      // Slot Main (left) - peut avoir plusieurs sous-slots
-      if (emplacements['main']) {
-        const capacite = emplacements['main'].capacite
-        for (let i = 1; i <= capacite; i++) {
-          const slotName = capacite > 1 ? `main_${i}` : 'main'
-          const item = hero.equipement[slotName]
-          const slotLabel = capacite > 1 ? `Main ${i}` : 'Main'
-          content += `<div class="equipment-slot-rpg slot-main-left">
-            <div class="slot-label">${this._escHtml(slotLabel)}</div>
-            <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-            ${item ? `<button class="btn-unequip-modal" data-slot="${slotName}">✕</button>` : ''}
-          </div>`
-        }
-      }
-
-      // Personnage au centre
-      content += '<div class="equipment-heros">'
-      const heroImage = adventure.personnage.image || adventure.personnage.image_ia
-      if (heroImage) {
-        const imagePath = adventure.repertoire_images.replace(/\/?$/, '/') + heroImage
-        content += `<img src="${this._escAttr(imagePath)}" alt="Personnage" class="hero-image">`
-      } else {
-        content += '👤'
-      }
-      content += '</div>'
-
-      // Slot Armure (right)
-      if (emplacements['armure']) {
-        const item = hero.equipement['armure']
-        content += `<div class="equipment-slot-rpg slot-armure">
-          <div class="slot-label">${this._escHtml(emplacements['armure'].label)}</div>
-          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-          ${item ? `<button class="btn-unequip-modal" data-slot="armure">✕</button>` : ''}
-        </div>`
-      }
-
-      // Slot Ceinture (bottom-left)
-      if (emplacements['ceinture']) {
-        const item = hero.equipement['ceinture']
-        content += `<div class="equipment-slot-rpg slot-ceinture">
-          <div class="slot-label">${this._escHtml(emplacements['ceinture'].label)}</div>
-          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-          ${item ? `<button class="btn-unequip-modal" data-slot="ceinture">✕</button>` : ''}
-        </div>`
-      }
-
-      // Slot Pantalon (bottom-center)
-      if (emplacements['pantalon']) {
-        const item = hero.equipement['pantalon']
-        content += `<div class="equipment-slot-rpg slot-pantalon">
-          <div class="slot-label">${this._escHtml(emplacements['pantalon'].label)}</div>
-          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-          ${item ? `<button class="btn-unequip-modal" data-slot="pantalon">✕</button>` : ''}
-        </div>`
-      }
-
-      // Slot Pieds (bottom-right)
-      if (emplacements['pieds']) {
-        const item = hero.equipement['pieds']
-        content += `<div class="equipment-slot-rpg slot-pieds">
-          <div class="slot-label">${this._escHtml(emplacements['pieds'].label)}</div>
-          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
-          ${item ? `<button class="btn-unequip-modal" data-slot="pieds">✕</button>` : ''}
-        </div>`
-      }
-
-      content += '</div>' // ferme equipment-grid-rpg
-      content += '</div>' // ferme equipment-display
-      content += '</div>' // ferme hero-equipment-section
-    }
+    content += EquipementView.buildEquipmentSection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s))
 
     content += '</div>' // ferme hero-layout
 
@@ -667,40 +496,16 @@ export class GameView {
     })
     
     // Ajouter les event listeners pour les boutons d'équipement/déséquipement
-    overlay.querySelectorAll<HTMLButtonElement>('.btn-equip-modal').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const itemId = btn.dataset.itemId
-        if (itemId) {
-          const result = this.engine.equipItem(itemId)
-          if (result.success) {
-            close()
-            this._showHeroModal() // Rouvrir la modal rafraîchie
-            this._render() // Rafraîchir la page principale
-          } else {
-            alert(result.message)
-          }
-        }
-      })
+    InventaireView.attachEquipmentListeners(overlay, this.engine, () => {
+      close()
+      this._showHeroModal() // Rouvrir la modal rafraîchie
+      this._render() // Rafraîchir la page principale
     })
     
-    overlay.querySelectorAll<HTMLButtonElement>('.btn-unequip-modal').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const slot = btn.dataset.slot
-        if (slot) {
-          const result = this.engine.unequipItem(slot)
-          if (result.success) {
-            close()
-            this._showHeroModal() // Rouvrir la modal rafraîchie
-            this._render() // Rafraîchir la page principale
-          } else {
-            alert(result.message)
-          }
-        }
-      })
+    EquipementView.attachUnequipmentListeners(overlay, this.engine, () => {
+      close()
+      this._showHeroModal() // Rouvrir la modal rafraîchie
+      this._render() // Rafraîchir la page principale
     })
     
     document.body.appendChild(overlay)
