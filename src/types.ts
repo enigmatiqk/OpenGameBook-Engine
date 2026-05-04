@@ -17,6 +17,7 @@ export interface InventaireItem {
   poids?: number             // slots occupés dans l'emplacement (défaut: 1)
   bonus?: Record<string, number>  // bonus de stats apportés quand équipé
   effets?: Effet[]           // effets appliqués quand l'item est porté
+  equipe?: boolean           // true si l'item est actuellement équipé
 }
 
 export type InventaireEntree = string | InventaireItem
@@ -53,6 +54,9 @@ export interface PersonnageTemplate {
   emplacements_equipement?: Record<string, EmplacementDefinition>
   inventaire: InventaireEntree[]
   choix_initial?: ChoixInitial[]
+  image?: string        // image du personnage pour l'équipement
+  image_ia?: string     // image IA du personnage pour l'équipement
+  equipement?: InventaireItem[]  // items équipés au démarrage (tableau)
 }
 
 export interface CombatRules {
@@ -295,6 +299,7 @@ export interface Hero {
   statistiques: Record<string, number>
   statistiques_initiales: Record<string, number>
   inventaire: InventaireEntree[]
+  equipement: Record<string, InventaireItem>  // items équipés par slot (clé: nom du slot)
   historique: StatChange[]
   monstres_stats?: Record<string, { habilete: number; endurance: number }>
 }

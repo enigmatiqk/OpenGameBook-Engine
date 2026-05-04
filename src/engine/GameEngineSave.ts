@@ -33,6 +33,7 @@ export class GameEngineSave {
         statistiques: { ...hero.statistiques },
         statistiques_initiales: { ...hero.statistiques_initiales },
         inventaire: [...hero.inventaire],
+        equipement: { ...hero.equipement },
         historique: [...hero.historique],
       },
       tempsJeuMs: this.timer.getElapsedMs(),
@@ -51,6 +52,7 @@ export class GameEngineSave {
       statistiques: { ...save.hero.statistiques },
       statistiques_initiales: { ...save.hero.statistiques_initiales },
       inventaire: [...save.hero.inventaire],
+      equipement: { ...save.hero.equipement },
       historique: [...save.hero.historique],
     }
     

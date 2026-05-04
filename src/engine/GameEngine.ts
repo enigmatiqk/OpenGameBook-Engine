@@ -40,9 +40,6 @@ export class GameEngine {
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
 
-  // Conditions de debug
-  private debugIgnoreStatLimit: boolean = false
-
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -207,7 +204,7 @@ export class GameEngine {
     }
 
     if (debugConds.ignore_stat_limit) {
-      this.debugIgnoreStatLimit = true
+      // Debug mode: ignore stat limit
     }
   }
 
@@ -901,6 +898,16 @@ export class GameEngine {
       itemId,
       (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
     )
+  }
+
+  equipItem(itemId: string): { success: boolean; message: string } {
+    if (!this.hero || !this.adventure) return { success: false, message: 'Pas de héros actif' }
+    return GameEngineHero.equipItem(this.hero, this.adventure, itemId)
+  }
+
+  unequipItem(slotName: string): { success: boolean; message: string } {
+    if (!this.hero) return { success: false, message: 'Pas de héros actif' }
+    return GameEngineHero.unequipItem(this.hero, slotName)
   }
 
   // ─── Sauvegarde ───────────────────────────────────────────────────────────

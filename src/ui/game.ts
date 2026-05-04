@@ -151,7 +151,13 @@ export class GameView {
     }
     panel.appendChild(statsEl)
 
-    if (hero.inventaire.length > 0) {
+    // Affiche l'inventaire (sans les items équipés)
+    const inventoryItems = hero.inventaire.filter(item => {
+      if (typeof item === 'string') return true
+      return !item.equipe
+    })
+
+    if (inventoryItems.length > 0) {
       const inv = document.createElement('div')
       inv.className = 'hero-inventory'
       
@@ -163,8 +169,8 @@ export class GameView {
       const itemsContainer = document.createElement('span')
       itemsContainer.className = 'inv-items'
 
-      for (let i = 0; i < hero.inventaire.length; i++) {
-        const item = hero.inventaire[i]
+      for (let i = 0; i < inventoryItems.length; i++) {
+        const item = inventoryItems[i]
         
         if (i > 0) {
           const separator = document.createElement('span')
@@ -494,21 +500,139 @@ export class GameView {
     const { adventure, hero } = this.engine.getGameState()
     if (!adventure || !hero) return
 
-    let content = '<div class="modal-hero"><h3>Statistiques</h3><table class="hero-stats-table"><tbody>'
+    let content = '<div class="modal-hero">'
+    
+    // Section Statistiques (en haut)
+    content += '<h3>Statistiques</h3><table class="hero-stats-table"><tbody>'
     for (const [key, value] of Object.entries(hero.statistiques)) {
       const label = adventure.personnage.statistiques[key]?.label ?? key
       const total = hero.statistiques_initiales[key] ?? value
       content += `<tr><td>${this._escHtml(label)}</td><td><strong>${value} / ${total}</strong></td></tr>`
     }
-    content += '</tbody></table><h3>Inventaire</h3>'
-    content += hero.inventaire.length > 0
-      ? '<ul>' + hero.inventaire.map(i => {
-          if (typeof i === 'string') return `<li>${this._escHtml(i)}</li>`
-          const qty = i.quantite !== undefined ? ` <em>(${i.quantite}${i.quantite_label ? ' ' + i.quantite_label : ''})</em>` : ''
-          return `<li>${this._escHtml(i.label)}${qty}</li>`
-        }).join('') + '</ul>'
-      : '<p><em>Inventaire vide</em></p>'
+    content += '</tbody></table>'
 
+    // Conteneur pour inventaire et équipement côte à côte
+    content += '<div class="hero-layout">'
+
+    // Section Inventaire (gauche)
+    content += '<div class="hero-inventory-section">'
+    content += '<h3>Inventaire</h3>'
+    const inventoryItems = hero.inventaire.filter(item => {
+      if (typeof item === 'string') return true
+      return !item.equipe
+    })
+    
+    if (inventoryItems.length > 0) {
+      content += '<ul class="inventory-list">'
+      for (const item of inventoryItems) {
+        if (typeof item === 'string') {
+          content += `<li>${this._escHtml(item)}</li>`
+        } else {
+          const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
+          const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${this._escAttr(item.id)}">⚔️</button>` : ''
+          content += `<li>${this._escHtml(item.label)}${qty} ${equipBtn}</li>`
+        }
+      }
+      content += '</ul>'
+    } else {
+      content += '<p><em>Inventaire vide</em></p>'
+    }
+    content += '</div>' // ferme hero-inventory-section
+
+    // Section Équipement (droite)
+    const emplacements = adventure.personnage.emplacements_equipement || {}
+    if (Object.keys(emplacements).length > 0) {
+      content += '<div class="hero-equipment-section">'
+      content += '<h3>Équipement</h3>'
+      content += '<div class="equipment-display">'
+      
+      // Créer une grille RPG avec le personnage au centre
+      content += '<div class="equipment-grid-rpg">'
+      
+      // Slot Tête (top)
+      if (emplacements['tete']) {
+        const item = hero.equipement['tete']
+        content += `<div class="equipment-slot-rpg slot-tete">
+          <div class="slot-label">${this._escHtml(emplacements['tete'].label)}</div>
+          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+          ${item ? `<button class="btn-unequip-modal" data-slot="tete">✕</button>` : ''}
+        </div>`
+      }
+
+      // Slot Main (left) - peut avoir plusieurs sous-slots
+      if (emplacements['main']) {
+        const capacite = emplacements['main'].capacite
+        for (let i = 1; i <= capacite; i++) {
+          const slotName = capacite > 1 ? `main_${i}` : 'main'
+          const item = hero.equipement[slotName]
+          const slotLabel = capacite > 1 ? `Main ${i}` : 'Main'
+          content += `<div class="equipment-slot-rpg slot-main-left">
+            <div class="slot-label">${this._escHtml(slotLabel)}</div>
+            <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+            ${item ? `<button class="btn-unequip-modal" data-slot="${slotName}">✕</button>` : ''}
+          </div>`
+        }
+      }
+
+      // Personnage au centre
+      content += '<div class="equipment-heros">'
+      const heroImage = adventure.personnage.image || adventure.personnage.image_ia
+      if (heroImage) {
+        const imagePath = adventure.repertoire_images.replace(/\/?$/, '/') + heroImage
+        content += `<img src="${this._escAttr(imagePath)}" alt="Personnage" class="hero-image">`
+      } else {
+        content += '👤'
+      }
+      content += '</div>'
+
+      // Slot Armure (right)
+      if (emplacements['armure']) {
+        const item = hero.equipement['armure']
+        content += `<div class="equipment-slot-rpg slot-armure">
+          <div class="slot-label">${this._escHtml(emplacements['armure'].label)}</div>
+          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+          ${item ? `<button class="btn-unequip-modal" data-slot="armure">✕</button>` : ''}
+        </div>`
+      }
+
+      // Slot Ceinture (bottom-left)
+      if (emplacements['ceinture']) {
+        const item = hero.equipement['ceinture']
+        content += `<div class="equipment-slot-rpg slot-ceinture">
+          <div class="slot-label">${this._escHtml(emplacements['ceinture'].label)}</div>
+          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+          ${item ? `<button class="btn-unequip-modal" data-slot="ceinture">✕</button>` : ''}
+        </div>`
+      }
+
+      // Slot Pantalon (bottom-center)
+      if (emplacements['pantalon']) {
+        const item = hero.equipement['pantalon']
+        content += `<div class="equipment-slot-rpg slot-pantalon">
+          <div class="slot-label">${this._escHtml(emplacements['pantalon'].label)}</div>
+          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+          ${item ? `<button class="btn-unequip-modal" data-slot="pantalon">✕</button>` : ''}
+        </div>`
+      }
+
+      // Slot Pieds (bottom-right)
+      if (emplacements['pieds']) {
+        const item = hero.equipement['pieds']
+        content += `<div class="equipment-slot-rpg slot-pieds">
+          <div class="slot-label">${this._escHtml(emplacements['pieds'].label)}</div>
+          <div class="slot-item">${item ? this._escHtml(item.label) : '(vide)'}</div>
+          ${item ? `<button class="btn-unequip-modal" data-slot="pieds">✕</button>` : ''}
+        </div>`
+      }
+
+      content += '</div>' // ferme equipment-grid-rpg
+      content += '</div>' // ferme equipment-display
+      content += '</div>' // ferme hero-equipment-section
+    }
+
+    content += '</div>' // ferme hero-layout
+
+    // Section Historique (en bas)
     if (hero.historique.length > 0) {
       content += '<h3>Historique</h3><ul class="hero-history">'
       for (const e of hero.historique) {
@@ -517,8 +641,69 @@ export class GameView {
       }
       content += '</ul>'
     }
+    
     content += '</div>'
-    this._showModal('Fiche héros', content)
+    
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', 'Fiche héros')
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 class="modal-title">Fiche héros</h2>
+          <button class="modal-close" aria-label="Fermer">✕</button>
+        </div>
+        <div class="modal-body">${content}</div>
+      </div>
+    `
+    
+    const close = () => overlay.remove()
+    overlay.querySelector<HTMLButtonElement>('.modal-close')!.addEventListener('click', close)
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+    document.addEventListener('keydown', function onKey(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
+    })
+    
+    // Ajouter les event listeners pour les boutons d'équipement/déséquipement
+    overlay.querySelectorAll<HTMLButtonElement>('.btn-equip-modal').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const itemId = btn.dataset.itemId
+        if (itemId) {
+          const result = this.engine.equipItem(itemId)
+          if (result.success) {
+            close()
+            this._showHeroModal() // Rouvrir la modal rafraîchie
+            this._render() // Rafraîchir la page principale
+          } else {
+            alert(result.message)
+          }
+        }
+      })
+    })
+    
+    overlay.querySelectorAll<HTMLButtonElement>('.btn-unequip-modal').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const slot = btn.dataset.slot
+        if (slot) {
+          const result = this.engine.unequipItem(slot)
+          if (result.success) {
+            close()
+            this._showHeroModal() // Rouvrir la modal rafraîchie
+            this._render() // Rafraîchir la page principale
+          } else {
+            alert(result.message)
+          }
+        }
+      })
+    })
+    
+    document.body.appendChild(overlay)
   }
 
   private _showImagesModal(adventure: Adventure): void {
