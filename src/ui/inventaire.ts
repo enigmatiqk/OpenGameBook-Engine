@@ -8,7 +8,7 @@ export class InventaireView {
   /**
    * Construit le panneau d'inventaire pour la vue principale
    */
-  static buildHeroInventoryPanel(adventure: Adventure, hero: Hero, engine: GameEngine, escHtml: (s: string) => string): HTMLElement {
+  static buildHeroInventoryPanel(_adventure: Adventure, hero: Hero, engine: GameEngine, escHtml: (s: string) => string): HTMLElement {
     const panel = document.createElement('div')
     panel.className = 'hero-inventory'
     
@@ -78,7 +78,7 @@ export class InventaireView {
   /**
    * Construit la section inventaire pour la modal héros
    */
-  static buildInventorySection(hero: Hero, escHtml: (s: string) => string, escAttr: (s: string) => string, engine: GameEngine): string {
+  static buildInventorySection(hero: Hero, escHtml: (s: string) => string, escAttr: (s: string) => string, _engine: GameEngine): string {
     let content = '<div class="hero-inventory-section">'
     content += '<h3>Inventaire</h3>'
     
