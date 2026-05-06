@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 """
-Script 2 : dépile la queue générée par ia_build_queue.py,
-appelle le provider IA configuré, sauvegarde les images et met à jour le JSON.
+Script de génération d'images IA pour les aventures
+Lit directement sections.json et génère les images manquantes
 
 Usage:
-    # Une image à la fois (interactif)
-    python scripts/ia_generate_images.py queue.json
+    # Générer toutes les images manquantes
+    python scripts/ia_generate_images.py adventures/Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu
 
-    # Lot de N images sans confirmation
-    python scripts/ia_generate_images.py queue.json --batch 10
+    # Générer une section spécifique
+    python scripts/ia_generate_images.py adventures/Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu -s 18
 
-    # Tout générer d'un coup
-    python scripts/ia_generate_images.py queue.json --batch 0
+    # Régénérer une image existante
+    python scripts/ia_generate_images.py adventures/Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu -s 18 -f
 
-    # Avec prompt supplémentaire (style, ambiance…)
-    python scripts/ia_generate_images.py queue.json --extra-prompt "dark fantasy, oil painting, highly detailed"
-
-    # Changer de provider à la volée
-    python scripts/ia_generate_images.py queue.json --provider openai_dalle
+    # Avec prompt supplémentaire
+    python scripts/ia_generate_images.py adventures/Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu --extra-prompt "dark fantasy, oil painting"
 """
 
 import argparse
@@ -178,61 +175,36 @@ def download_image(prompt: str, provider: configparser.SectionProxy, timeout: in
     return backend(prompt, provider, timeout)
 
 
-# ── Mise à jour du JSON ───────────────────────────────────────────────────────
+# ── Génération d'images ───────────────────────────────────────────────────────
 
-def update_adventure_json(adventure_path: str, task: dict) -> None:
-    with open(adventure_path, encoding="utf-8") as f:
-        adventure = json.load(f)
-
-    kind     = task["type"]
-    filename = task["filename"]
-
-    if kind == "section":
-        for section in adventure.get("sections", []):
-            if section.get("numero") == task["numero"]:
-                section["image"] = filename
-                break
-    elif kind == "victoire":
-        imgs: list = adventure.setdefault("images_victoire", [])
-        if filename not in imgs:
-            imgs.append(filename)
-    elif kind == "defaite":
-        imgs = adventure.setdefault("images_defaite", [])
-        if filename not in imgs:
-            imgs.append(filename)
-    # "finish" : juste déposé dans le dossier, pas de champ JSON dédié
-
-    with open(adventure_path, "w", encoding="utf-8") as f:
-        json.dump(adventure, f, ensure_ascii=False, indent=4)
-    print(f"  ✓ JSON mis à jour")
-
-
-# ── Traitement d'une tâche ────────────────────────────────────────────────────
-
-def process_task(task: dict, adventure_path: str, images_dir: str,
-                 provider: configparser.SectionProxy, extra_prompt: str, timeout: int) -> bool:
-    filename = task["filename"]
+def generate_section_image(section: dict, adventure_dir: str, images_dir: str,
+                          provider: configparser.SectionProxy, extra_prompt: str, timeout: int) -> bool:
+    """Génère l'image pour une section"""
+    numero = section.get("numero")
+    texte = section.get("texte", "")
+    
+    # Construire le nom du fichier
+    filename = f"ia_section_{numero:03d}.jpeg"
     dest_path = os.path.join(images_dir, filename)
-
-    if os.path.isfile(dest_path):
-        print(f"  ⏭  Déjà présent, ignoré : {filename}")
-        return True
-
-    prompt = task["prompt"]
+    
+    # Construire le prompt
+    prompt = f"Illustration for gamebook. Scene: {texte[:200]}"
     if extra_prompt:
         prompt = f"{prompt}. {extra_prompt}"
-
-    label = f"section {task['numero']}" if task["type"] == "section" else task["type"]
+    
+    label = f"section {numero}"
     print(f"\n[{label}] {filename}")
     print(f"  Prompt : {prompt[:140]}…")
-
+    
     try:
         data = download_image(prompt, provider, timeout)
         os.makedirs(images_dir, exist_ok=True)
         with open(dest_path, "wb") as f:
             f.write(data)
         print(f"  ✓ Sauvegardé ({len(data)//1024} Ko)")
-        update_adventure_json(adventure_path, task)
+        
+        # Mettre à jour sections.json
+        section["image"] = filename
         return True
     except Exception as e:
         print(f"  ✗ Erreur : {e}", file=sys.stderr)
@@ -246,15 +218,19 @@ def main() -> None:
     config_path = os.path.join(script_dir, "ia_config.ini")
 
     parser = argparse.ArgumentParser(
-        description="Génère les images IA depuis la queue produite par ia_build_queue.py."
+        description="Génère les images IA pour une aventure en lisant sections.json"
     )
     parser.add_argument(
-        "queue",
-        help="Chemin vers le fichier images_ia_queue.json"
+        "adventure_dir",
+        help="Chemin vers le répertoire de l'aventure"
     )
     parser.add_argument(
-        "--batch", type=int, default=1, metavar="N",
-        help="Nombre d'images par lot (0=tout, 1=une par une avec confirmation, N=lot de N). Défaut: 1"
+        "-s", "--section", type=int, default=None, metavar="NUM",
+        help="Générer uniquement la section NUM"
+    )
+    parser.add_argument(
+        "-f", "--force", action="store_true",
+        help="Régénérer les images même si elles existent déjà"
     )
     parser.add_argument(
         "--provider", default=None, metavar="NOM",
@@ -266,92 +242,91 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Vérifier que le répertoire existe
+    if not os.path.isdir(args.adventure_dir):
+        print(f"[ERREUR] Répertoire introuvable : {args.adventure_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    # Charger couverture.json pour obtenir repertoire_images
+    couverture_path = os.path.join(args.adventure_dir, "couverture.json")
+    if not os.path.isfile(couverture_path):
+        print(f"[ERREUR] couverture.json introuvable : {couverture_path}", file=sys.stderr)
+        sys.exit(1)
+
+    with open(couverture_path, encoding="utf-8") as f:
+        couverture = json.load(f)
+
+    # Charger sections.json
+    sections_path = os.path.join(args.adventure_dir, "sections.json")
+    if not os.path.isfile(sections_path):
+        print(f"[ERREUR] sections.json introuvable : {sections_path}", file=sys.stderr)
+        sys.exit(1)
+
+    with open(sections_path, encoding="utf-8") as f:
+        sections_data = json.load(f)
+
+    # Déterminer le répertoire des images
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_images = couverture.get("repertoire_images", "").rstrip("/")
+    if repo_images.startswith("adventures/"):
+        images_dir = os.path.join(base_dir, repo_images)
+    else:
+        images_dir = os.path.join(base_dir, "adventures", repo_images)
+
+    # Charger la config
     cfg = load_config(config_path)
     provider_name, provider = get_provider(cfg, args.provider)
     delay   = cfg.getfloat("default", "delay_between_requests", fallback=2.0)
     timeout = cfg.getint("default", "timeout", fallback=60)
 
     print(f"[Provider] {provider_name} ({provider.get('type')})")
+    print(f"[Aventure] {args.adventure_dir}")
+    print(f"[Images] {images_dir}")
     if args.extra_prompt:
         print(f"[Extra prompt] {args.extra_prompt}")
 
-    if not os.path.isfile(args.queue):
-        print(f"[ERREUR] Queue introuvable : {args.queue}", file=sys.stderr)
-        sys.exit(1)
+    # Filtrer les sections à générer
+    sections = sections_data.get("sections", [])
+    if args.section:
+        sections = [s for s in sections if s.get("numero") == args.section]
+        if not sections:
+            print(f"[ERREUR] Section {args.section} introuvable", file=sys.stderr)
+            sys.exit(1)
 
-    with open(args.queue, encoding="utf-8") as f:
-        data = json.load(f)
+    # Filtrer les sections qui ont besoin d'une image
+    to_generate = []
+    for section in sections:
+        numero = section.get("numero")
+        filename = f"ia_section_{numero:03d}.jpeg"
+        dest_path = os.path.join(images_dir, filename)
+        
+        if args.force or not os.path.isfile(dest_path):
+            to_generate.append(section)
 
-    adventure_path: str = data["adventure_path"]
-    tasks: list[dict]   = data["tasks"]
-
-    if not os.path.isfile(adventure_path):
-        print(f"[ERREUR] Aventure introuvable : {adventure_path}", file=sys.stderr)
-        sys.exit(1)
-
-    with open(adventure_path, encoding="utf-8") as f:
-        adventure = json.load(f)
-
-    base_dir   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    images_dir = os.path.join(base_dir, adventure.get("repertoire_images", "").rstrip("/"))
-
-    pending = [t for t in tasks if not os.path.isfile(os.path.join(images_dir, t["filename"]))]
-
-    if not pending:
+    if not to_generate:
         print("[OK] Toutes les images sont déjà générées.")
         return
 
-    batch_size = len(pending) if args.batch == 0 else args.batch
-    print(f"{len(pending)} image(s) à générer — lot de {batch_size}\n")
+    print(f"\n{len(to_generate)} image(s) à générer\n")
 
     done = 0
     errors = 0
-    i = 0
 
-    while i < len(pending):
-        chunk = pending[i:i + batch_size]
-
-        if args.batch == 1:
-            t = chunk[0]
-            label = f"section {t['numero']}" if t["type"] == "section" else t["type"]
-            print(f"Prochaine : [{label}] {t['filename']}")
-            print(f"  Prompt : {t['prompt'][:120]}…")
-            rep = input("  Générer ? [O/n/q] ").strip().lower()
-            if rep == "q":
-                print("Arrêt demandé.")
-                break
-            if rep == "n":
-                i += 1
-                continue
-
-        for j, task in enumerate(chunk):
-            ok = process_task(task, adventure_path, images_dir, provider, args.extra_prompt, timeout)
-            if ok:
-                done += 1
-            else:
-                errors += 1
-            if j < len(chunk) - 1:
-                time.sleep(delay)
-
-        i += batch_size
-
-        if args.batch > 1 and i < len(pending):
-            remaining = len(pending) - i
-            rep = input(f"\n{done} générée(s), {remaining} restante(s). Continuer ? [O/n/q] ").strip().lower()
-            if rep in ("n", "q"):
-                print("Arrêt demandé.")
-                break
+    for i, section in enumerate(to_generate):
+        ok = generate_section_image(section, args.adventure_dir, images_dir, provider, args.extra_prompt, timeout)
+        if ok:
+            done += 1
+        else:
+            errors += 1
+        
+        if i < len(to_generate) - 1:
             time.sleep(delay)
 
-    print(f"\n[Terminé] {done} image(s) générée(s), {errors} erreur(s).")
+    # Sauvegarder sections.json mis à jour
+    with open(sections_path, "w", encoding="utf-8") as f:
+        json.dump(sections_data, f, ensure_ascii=False, indent=2)
 
-    # Réécrire la queue en retirant les tâches terminées
-    remaining_tasks = [t for t in tasks if not os.path.isfile(os.path.join(images_dir, t["filename"]))]
-    data["tasks"] = remaining_tasks
-    data["total"] = len(remaining_tasks)
-    with open(args.queue, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"[Queue] {len(remaining_tasks)} tâche(s) restante(s) dans {args.queue}")
+    print(f"\n[Terminé] {done} image(s) générée(s), {errors} erreur(s).")
 
 
 if __name__ == "__main__":
