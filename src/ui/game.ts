@@ -16,6 +16,7 @@ export class GameView {
   private engine: GameEngine
   private callbacks: GameViewCallbacks
   private container: HTMLElement | null = null
+  private _onImagePrefsChanged: (() => void) | null = null
 
   constructor(engine: GameEngine, callbacks: GameViewCallbacks) {
     this.engine = engine
@@ -27,6 +28,43 @@ export class GameView {
     // Applique l'historique de debug après la navigation initiale
     this.engine.applyDebugNavHistory()
     this._render()
+
+    // Recharge l'image de la section courante quand les préférences changent
+    this._onImagePrefsChanged = () => this._refreshSectionImage()
+    window.addEventListener('imagePrefsChanged', this._onImagePrefsChanged)
+  }
+
+  private _refreshSectionImage(): void {
+    const container = this.container
+    if (!container) return
+
+    const state = this.engine.getGameState()
+    const { adventure } = state
+    if (!adventure) return
+
+    const sectionNum = this.engine.getCurrentSection()
+    const section = adventure.sections.find(s => s.numero === sectionNum)
+    if (!section) return
+
+    // Remplace uniquement l'image de la section courante sans re-render complet
+    const existing = container.querySelector<HTMLImageElement>('.section-image')
+    const newSrc = resolveImage(section.image, section.image_ia)
+    const base = adventure.repertoire_images.replace(/\/?$/, '/')
+
+    if (newSrc) {
+      if (existing) {
+        existing.src = base + newSrc
+      } else {
+        // L'image n'existait pas (mode original sans image), re-render complet
+        this._render()
+      }
+    } else {
+      if (existing) {
+        // Plus d'image dans ce mode, re-render complet
+        this._render()
+      }
+      // Sinon rien à faire
+    }
   }
 
   private _render(): void {

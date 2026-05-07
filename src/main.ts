@@ -7,6 +7,7 @@ import { LibraryManager } from './engine/LibraryManager'
 import { SaveStore } from './engine/SaveStore'
 import { showHeroCreationScreen, showChoixInitiaux } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
+import { initImagePrefsButton } from './ui/imagePreferences'
 import type { AdventureMetadata } from './types'
 import { resolveImage } from './utils/imageUtils'
 
@@ -310,4 +311,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('btn-a11y')?.addEventListener('click', showA11yPanel)
+  initImagePrefsButton()
 })

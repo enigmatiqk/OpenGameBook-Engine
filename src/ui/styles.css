@@ -218,8 +218,9 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .dice-total { font-size: 2rem; font-weight: bold; color: var(--accent); line-height: 1; }
 .dice-confirm { padding: 0.75rem 2rem; font-size: 1rem; }
 
-/* ── Bouton accessibilité global ── */
-.btn-a11y-global { position: fixed; bottom: 1rem; right: 1rem; z-index: 900; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.35rem 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer; box-shadow: var(--shadow); letter-spacing: 0.03em; }
+/* ── Boutons globaux (accessibilité + images) ── */
+.global-btns-group { position: fixed; bottom: 1rem; right: 1rem; z-index: 900; display: flex; gap: 0.4rem; }
+.btn-a11y-global { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.35rem 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer; box-shadow: var(--shadow); letter-spacing: 0.03em; }
 .btn-a11y-global:hover { background: var(--bg-card-hover); }
 
 /* ── Combat stats ── */
