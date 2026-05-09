@@ -25,6 +25,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from io import BytesIO
 
 
 # ── Chargement de la config ───────────────────────────────────────────────────
@@ -53,6 +54,12 @@ def _http_get_image(url: str, timeout: int) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "adventure-book-ia/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
+
+
+def _http_get_json(url: str, timeout: int) -> dict:
+    req = urllib.request.Request(url, headers={"User-Agent": "adventure-book-ia/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read())
 
 
 def _http_post_json(url: str, payload: dict, headers: dict, timeout: int) -> dict:
@@ -129,25 +136,52 @@ def download_automatic1111(prompt: str, provider: configparser.SectionProxy, tim
     return base64.b64decode(b64)
 
 
-def download_comfyui(prompt: str, provider: configparser.SectionProxy, timeout: int) -> bytes:
+def load_comfyui_workflow(workflow_path: str) -> dict:
+    """Charge le workflow ComfyUI depuis un fichier JSON"""
+    if not os.path.isfile(workflow_path):
+        raise FileNotFoundError(f"Workflow ComfyUI introuvable : {workflow_path}")
+    with open(workflow_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def build_prompt(section_text: str, extra_prompt: str, workflow_config: dict) -> str:
+    """Construit le prompt en utilisant la template du workflow"""
+    template = workflow_config.get("prompt_template", "Illustration for gamebook. Scene: {scene}")
+    
+    # Utiliser le texte complet de la scène
+    scene = section_text
+    
+    # Remplacer {scene} dans la template
+    prompt = template.format(scene=scene)
+    
+    # Ajouter le prompt supplémentaire si fourni
+    if extra_prompt:
+        prompt = f"{prompt}. {extra_prompt}"
+    
+    return prompt
+
+
+def download_comfyui(prompt: str, provider: configparser.SectionProxy, timeout: int, workflow_config: dict | None = None) -> bytes:
     import base64, uuid
-    base_url = provider.get("base_url", "http://127.0.0.1:8188").rstrip("/")
+    
+    if workflow_config is None:
+        raise ValueError("workflow_config requis pour ComfyUI")
+    
+    base_url = workflow_config.get("base_url", "http://127.0.0.1:8188").rstrip("/")
     client_id = str(uuid.uuid4())
-    workflow = {
-        "3": {"class_type": "KSampler",       "inputs": {"seed": 0, "steps": provider.getint("steps", 20), "cfg": 7, "sampler_name": "euler", "scheduler": "normal", "denoise": 1, "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]}},
-        "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": provider.get("model", "v1-5-pruned-emaonly.safetensors")}},
-        "5": {"class_type": "EmptyLatentImage", "inputs": {"width": provider.getint("width", 512), "height": provider.getint("height", 512), "batch_size": 1}},
-        "6": {"class_type": "CLIPTextEncode", "inputs": {"text": prompt, "clip": ["4", 1]}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"text": "", "clip": ["4", 1]}},
-        "8": {"class_type": "VAEDecode",      "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
-        "9": {"class_type": "SaveImage",      "inputs": {"filename_prefix": "ia_gen", "images": ["8", 0]}},
-    }
+    
+    # Deep copy du workflow depuis la config
+    workflow = json.loads(json.dumps(workflow_config["workflow"]))
+    
+    # Injecter le prompt dans le nœud CLIPTextEncode positif (node 6)
+    workflow["6"]["inputs"]["text"] = prompt
+    
     print(f"  → ComfyUI ({base_url})…")
     resp = _http_post_json(f"{base_url}/prompt", {"prompt": workflow, "client_id": client_id}, {}, timeout)
     prompt_id = resp["prompt_id"]
     for _ in range(60):
         time.sleep(2)
-        hist = _http_post_json(f"{base_url}/history/{prompt_id}", {}, {}, timeout)  # type: ignore
+        hist = _http_get_json(f"{base_url}/history/{prompt_id}", timeout)
         if prompt_id in hist:
             outputs = hist[prompt_id]["outputs"]
             for node_out in outputs.values():
@@ -167,18 +201,50 @@ BACKENDS = {
 }
 
 
-def download_image(prompt: str, provider: configparser.SectionProxy, timeout: int) -> bytes:
+def download_image(prompt: str, provider: configparser.SectionProxy, timeout: int, workflow_config: dict | None = None) -> bytes:
     ptype = provider.get("type", "url_template")
     backend = BACKENDS.get(ptype)
     if not backend:
         raise ValueError(f"Type de provider inconnu : '{ptype}'")
-    return backend(prompt, provider, timeout)
+    
+    # ComfyUI a besoin du workflow_config
+    if ptype == "comfyui":
+        return backend(prompt, provider, timeout, workflow_config)
+    else:
+        return backend(prompt, provider, timeout)
+
+
+def compress_image(image_data: bytes, output_format: str, quality: int) -> bytes:
+    """Recompresse l'image selon le format et la qualité spécifiés"""
+    try:
+        from PIL import Image
+    except ImportError:
+        print("[AVERTISSEMENT] Pillow non installé, compression ignorée", file=sys.stderr)
+        return image_data
+    
+    try:
+        img = Image.open(BytesIO(image_data))
+        
+        # Convertir en RGB si nécessaire (pour JPEG)
+        if img.mode in ("RGBA", "LA", "P"):
+            rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+            rgb_img.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+            img = rgb_img
+        
+        # Recompresser
+        output = BytesIO()
+        img.save(output, format=output_format.upper(), quality=quality, optimize=True)
+        return output.getvalue()
+    except Exception as e:
+        print(f"[AVERTISSEMENT] Erreur lors de la compression : {e}", file=sys.stderr)
+        return image_data
 
 
 # ── Génération d'images ───────────────────────────────────────────────────────
 
 def generate_section_image(section: dict, adventure_dir: str, images_dir: str,
-                          provider: configparser.SectionProxy, extra_prompt: str, timeout: int) -> bool:
+                          provider: configparser.SectionProxy, extra_prompt: str, timeout: int, 
+                          workflow_config: dict | None = None, output_format: str = "jpeg", quality: int = 80) -> bool:
     """Génère l'image pour une section"""
     numero = section.get("numero")
     texte = section.get("texte", "")
@@ -188,16 +254,24 @@ def generate_section_image(section: dict, adventure_dir: str, images_dir: str,
     dest_path = os.path.join(images_dir, filename)
     
     # Construire le prompt
-    prompt = f"Illustration for gamebook. Scene: {texte[:200]}"
-    if extra_prompt:
-        prompt = f"{prompt}. {extra_prompt}"
+    if workflow_config:
+        prompt = build_prompt(texte, extra_prompt, workflow_config)
+    else:
+        # Fallback si pas de workflow_config (pour les autres providers)
+        prompt = f"Illustration for gamebook. Scene: {texte[:200]}"
+        if extra_prompt:
+            prompt = f"{prompt}. {extra_prompt}"
     
     label = f"section {numero}"
     print(f"\n[{label}] {filename}")
     print(f"  Prompt : {prompt[:140]}…")
     
     try:
-        data = download_image(prompt, provider, timeout)
+        data = download_image(prompt, provider, timeout, workflow_config)
+        
+        # Post-traitement : compression
+        data = compress_image(data, output_format, quality)
+        
         os.makedirs(images_dir, exist_ok=True)
         with open(dest_path, "wb") as f:
             f.write(data)
@@ -216,6 +290,7 @@ def generate_section_image(section: dict, adventure_dir: str, images_dir: str,
 def main() -> None:
     script_dir  = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "ia_config.ini")
+    workflow_path = os.path.join(script_dir, "comfyui_workflow.json")
 
     parser = argparse.ArgumentParser(
         description="Génère les images IA pour une aventure en lisant sections.json"
@@ -278,10 +353,24 @@ def main() -> None:
     provider_name, provider = get_provider(cfg, args.provider)
     delay   = cfg.getfloat("default", "delay_between_requests", fallback=2.0)
     timeout = cfg.getint("default", "timeout", fallback=60)
+    output_format = cfg.get("default", "output_format", fallback="jpeg")
+    jpeg_quality = cfg.getint("default", "jpeg_quality", fallback=80)
+
+    # Charger le workflow ComfyUI si nécessaire
+    workflow_config = None
+    if provider_name == "comfyui":
+        workflow_filename = provider.get("workflow_file", "comfyui_workflow.json")
+        workflow_path = os.path.join(script_dir, workflow_filename)
+        try:
+            workflow_config = load_comfyui_workflow(workflow_path)
+        except FileNotFoundError as e:
+            print(f"[ERREUR] {e}", file=sys.stderr)
+            sys.exit(1)
 
     print(f"[Provider] {provider_name} ({provider.get('type')})")
     print(f"[Aventure] {args.adventure_dir}")
     print(f"[Images] {images_dir}")
+    print(f"[Compression] {output_format} @ {jpeg_quality}%")
     if args.extra_prompt:
         print(f"[Extra prompt] {args.extra_prompt}")
 
@@ -313,7 +402,7 @@ def main() -> None:
     errors = 0
 
     for i, section in enumerate(to_generate):
-        ok = generate_section_image(section, args.adventure_dir, images_dir, provider, args.extra_prompt, timeout)
+        ok = generate_section_image(section, args.adventure_dir, images_dir, provider, args.extra_prompt, timeout, workflow_config, output_format, jpeg_quality)
         if ok:
             done += 1
         else:
@@ -326,7 +415,7 @@ def main() -> None:
     with open(sections_path, "w", encoding="utf-8") as f:
         json.dump(sections_data, f, ensure_ascii=False, indent=2)
 
-    print(f"\n[Terminé] {done} image(s) générée(s), {errors} erreur(s).")
+    print(f"\n[Terminé] {done} image(s) générée(s) dans {images_dir}, {errors} erreur(s).")
 
 
 if __name__ == "__main__":
