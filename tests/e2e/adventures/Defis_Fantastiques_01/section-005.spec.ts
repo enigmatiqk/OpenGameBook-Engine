@@ -9,7 +9,7 @@ const SECTION_CHOICES = {
   292: 'Continuer vers le nord'
 }
 
-test.describe('Section 005 - La Porte de Bois', () => {
+test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== 'passed') {

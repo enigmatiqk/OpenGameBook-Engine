@@ -9,7 +9,7 @@ const SECTION_CHOICES = {
   332: 'Aller au sud'
 }
 
-test.describe('Section 004', () => {
+test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== 'passed') {

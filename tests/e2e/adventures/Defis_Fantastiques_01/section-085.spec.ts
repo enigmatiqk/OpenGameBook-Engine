@@ -1,0 +1,53 @@
+import { test, expect } from '@playwright/test'
+import { testSection, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+
+const ADVENTURE_ID = 1
+const SECTION_NUMBER = 85
+const SECTION_TEXT = 'Vous êtes à une croisée des chemins'
+const SECTION_CHOICES = {
+  106: "Aller au nord",
+  373: "Aller au sud",
+  318: "Aller à l'est",
+  59: "Aller à l'ouest"
+}
+
+test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      const screenshotPath = `test-results/${testInfo.title.replace(/\s+/g, '-')}-failed.png`
+      await page.screenshot({ path: screenshotPath })
+    }
+  })
+
+  test.beforeEach(async ({ page }) => {
+    // Lancer le jeu en mode debug
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}`)
+    // Attendre que la section soit chargée
+    await page.waitForSelector('.section-text')
+  })
+
+  test('Section et texte', async ({ page }) => {
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
+  })
+
+  test('Boutons de choix', async ({ page }) => {
+    await testChoiceButtons(page, SECTION_CHOICES)
+  })
+
+  test('Navigation vers section 106', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 0)
+  })
+
+  test('Navigation vers section 373', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 1)
+  })
+
+  test('Navigation vers section 318', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 2)
+  })
+
+  test('Navigation vers section 59', async ({ page }) => {
+    await testNavigation(page, SECTION_CHOICES, 3)
+  })
+})

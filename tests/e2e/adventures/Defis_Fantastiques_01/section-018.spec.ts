@@ -67,4 +67,55 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     let enduranceValue = await page.locator('#stat-endurance').textContent()
     expect(enduranceValue).toBe('9')
   })
+
+  test('Réussite : la chance diminue de 1', async ({ page }) => {
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&chance=10&lance_de=1`)
+    await page.waitForSelector('.section-text')
+
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
+    await page.waitForSelector('.action-roll-btn', { timeout: 5000 })
+    await page.click(`.action-roll-btn`)
+
+    // On attend la navigation vers 261
+    await page.waitForSelector('[data-section="261"]', { timeout: 10000 })
+
+    // La chance doit avoir diminué de 1 (10 → 9)
+    const chanceValue = await page.locator('#stat-chance').textContent()
+    expect(chanceValue).toBe('9')
+  })
+
+  test('Échec : la chance diminue de 1', async ({ page }) => {
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&chance=10&lance_de=6`)
+    await page.waitForSelector('.section-text')
+
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
+    await page.waitForSelector('.action-roll-btn', { timeout: 5000 })
+    await page.click(`.action-roll-btn`)
+
+    // On attend la navigation vers 348
+    await page.waitForSelector('[data-section="348"]', { timeout: 10000 })
+
+    // La chance doit avoir diminué de 1 (10 → 9)
+    const chanceValue = await page.locator('#stat-chance').textContent()
+    expect(chanceValue).toBe('9')
+
+    // Et l'endurance aussi doit avoir diminué de 1 (10 → 9)
+    const enduranceValue = await page.locator('#stat-endurance').textContent()
+    expect(enduranceValue).toBe('9')
+  })
+
+  test('Réussite sans endurance perdue', async ({ page }) => {
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&chance=50&endurance=10`)
+    await page.waitForSelector('.section-text')
+
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
+    await page.waitForSelector('.action-roll-btn', { timeout: 5000 })
+    await page.click(`.action-roll-btn`)
+
+    await page.waitForSelector('[data-section="261"]', { timeout: 10000 })
+
+    // Pas de perte d'endurance en cas de réussite
+    const enduranceValue = await page.locator('#stat-endurance').textContent()
+    expect(enduranceValue).toBe('10')
+  })
 })

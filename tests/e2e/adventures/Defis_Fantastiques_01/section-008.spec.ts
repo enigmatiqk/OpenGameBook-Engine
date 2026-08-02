@@ -7,6 +7,7 @@ const SECTION_TEXT = 'BARBARE'
 const SECTION_CHOICES = {
   0: 'Combattre'
 }
+ const delay = (ms: number | undefined) => new Promise(resolve => setTimeout(resolve, ms))
 
 test.describe('Section 008 - Combat contre le Barbare', () => {
 
@@ -122,5 +123,110 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await page.waitForSelector('[data-section="189"]', { timeout: 5000 })
     const sectionContent = page.locator('[data-section="189"]')
     await expect(sectionContent).toBeVisible()
+  })
+
+  test('tester attaque_chance chanceux', async ({ page }) => {
+    // Charger la page
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=50&lance_de=1`)
+    await page.waitForSelector('.section-text')
+
+    // Lancer le combat
+    await testCombatStart(page)
+    // round 1
+    await testCombatRound(page)
+
+    //attente du bouton attaque_chance
+    await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
+    await page.click('button.combat-action-btn')
+
+    await page.waitForSelector('.combat-roll-prompt .combat-roll-btn', { timeout: 5000 })
+    await page.click('button.combat-roll-btn')
+
+    await delay(3000)
+    let EnemyEnduranceValue = await page.locator('.combat-stat-enemy .combat-stat-value').textContent()
+    await expect(EnemyEnduranceValue).toBe('2 ❤️')
+
+    await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
+    // const sectionText = page.locator('.section-text')
+    // await expect(sectionText).toContainText(expectedText)
+
+  })
+
+  test('tester attaque_chance malchanceux', async ({ page }) => {
+    // Charger la page
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=50&lance_de=6`)
+    await page.waitForSelector('.section-text')
+
+    // Lancer le combat
+    await testCombatStart(page)
+    // round 1
+    await testCombatRound(page)
+
+    //attente du bouton attaque_chance
+    await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
+    await page.click('button.combat-action-btn')
+
+    await page.waitForSelector('.combat-roll-prompt .combat-roll-btn', { timeout: 5000 })
+    await page.click('button.combat-roll-btn')
+
+    await delay(3000)
+    let EnemyEnduranceValue = await page.locator('.combat-stat-enemy .combat-stat-value').textContent()
+    await expect(EnemyEnduranceValue).toBe('5 ❤️')
+
+    await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
+    // const sectionText = page.locator('.section-text')
+    // await expect(sectionText).toContainText(expectedText)
+  })
+
+  test('tester defense_chance chanceux', async ({ page }) => {
+    // Charger la page
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=1`)
+    await page.waitForSelector('.section-text')
+
+    // Lancer le combat
+    await testCombatStart(page)
+    // round 1
+    await testCombatRound(page)
+
+    //attente du bouton attaque_chance
+    await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
+    await page.click('button.combat-action-btn')
+
+    await page.waitForSelector('.combat-roll-prompt .combat-roll-btn', { timeout: 5000 })
+    await page.click('button.combat-roll-btn')
+
+    await delay(3000)
+    let EnemyEnduranceValue = await page.locator('.combat-stat-heros .combat-stat-value').textContent()
+    await expect(EnemyEnduranceValue).toBe('9 ❤️')
+
+    await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
+    // const sectionText = page.locator('.section-text')
+    // await expect(sectionText).toContainText(expectedText)
+  })
+
+  test('tester defense_chance malchanceux', async ({ page }) => {
+    // Charger la page
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=6`)
+    await page.waitForSelector('.section-text')
+
+    // Lancer le combat
+    await testCombatStart(page)
+    // round 1
+    await testCombatRound(page)
+
+    //attente du bouton attaque_chance
+    await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
+    await page.click('button.combat-action-btn')
+
+    await page.waitForSelector('.combat-roll-prompt .combat-roll-btn', { timeout: 5000 })
+    await page.click('button.combat-roll-btn')
+
+    await delay(3000)
+    let EnemyEnduranceValue = await page.locator('.combat-stat-heros .combat-stat-value').textContent()
+    await expect(EnemyEnduranceValue).toBe('7 ❤️')
+
+    await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
+    // const sectionText = page.locator('.section-text')
+    // await expect(sectionText).toContainText(expectedText)
   })
 })

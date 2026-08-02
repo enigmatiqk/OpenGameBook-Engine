@@ -8,7 +8,7 @@ const SECTION_CHOICES = {
   0: 'Combattre'
 }
 
-test.describe('Section 016 - Combat contre le Ogre', () => {
+test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== 'passed') {

@@ -1,14 +1,24 @@
 import { expect, Page } from '@playwright/test'
 
 /**
+ * Teste que la bonne section est affichée
+ */
+export async function testSection(page: Page, sectionNumber: number, expectedText?: string) {
+  // await page.waitForSelector(`[data-section="${sectionNumber}"]`, { timeout: 5000 })
+  const sectionContent = page.locator(`[data-section="${sectionNumber}"]`)
+  await expect(sectionContent).toBeVisible()
+
+  if (expectedText) {
+    const sectionText = page.locator('.section-text')
+    await expect(sectionText).toContainText(expectedText)
+  }
+}
+
+/**
  * Teste que la bonne section est affichée et que le texte est correct
  */
 export async function testSectionAndText(page: Page, sectionNumber: number, expectedText: string) {
-  const sectionContent = page.locator(`[data-section="${sectionNumber}"]`)
-  await expect(sectionContent).toBeVisible()
-  
-  const sectionText = page.locator('.section-text')
-  await expect(sectionText).toContainText(expectedText)
+  await testSection(page, sectionNumber, expectedText)
 }
 
 /**
@@ -43,23 +53,44 @@ export async function testNavigation(page: Page, sectionChoices: Record<number, 
     const currentUrl = page.url()
     const separator = currentUrl.includes('?') ? '&' : '?'
     await page.goto(`${currentUrl}${separator}${urlParams}`)
-    await page.waitForSelector('.section-text',{ timeout: 5000 })
+    await page.waitForSelector('.section-text', { timeout: 5000 })
   }
   
   await page.click(`.choices-list button:has-text("${buttonLabel}")`)
   // Attendre le chargement de la nouvelle section
-  await page.waitForSelector('.section-text',{ timeout: 5000 })
+  await page.waitForSelector('.section-text', { timeout: 5000 })
   // Vérifier qu'on est à la bonne section
   const sectionContent = page.locator(`[data-section="${targetSection}"]`)
   await expect(sectionContent).toBeVisible()
 }
 
 /**
- * Lance un round de combat (dé monstre + dé héros)
+ * Génère des tests de navigation pour chaque choix d'une section.
+ */
+export function navigationTests(test: (name: string, fn: (args: { page: Page }) => Promise<void>) => void, sectionChoices: Record<number, string>) {
+  Object.entries(sectionChoices).forEach(([targetSection], index) => {
+    test(`Navigation vers section ${targetSection}`, async ({ page }) => {
+      await testNavigation(page, sectionChoices, index)
+    })
+  })
+}
+
+/**
+ * Passe au round suivant du combat
+ * @param page - La page Playwright
+ * @param stat - la statistique (ex: habilete)
+ * @param value - la valeur de la statistique attendue
+ */
+export async function testStat(page: Page, stat: String, value: Number) {
+    const statValue = Number(await page.locator(`#stat-${stat}`).textContent())
+    expect(statValue).toBe(value)
+}
+
+/**
+ * Lance le combat (clic sur le bouton de combat)
  * @param page - La page Playwright
  */
 export async function testCombatStart(page: Page) {
-  // Lancer le combat
   await page.click('button.choice-btn--combat')
   await page.waitForSelector('.combat-view', { timeout: 10000 })
 }
@@ -81,7 +112,6 @@ export async function testCombatRound(page: Page) {
  * @param page - La page Playwright
  */
 export async function testRoundSuivant(page: Page) {
-  //prochain round
   await page.click('button.combat-next-btn')
   await page.waitForSelector('.combat-log', { timeout: 5000 })
 }

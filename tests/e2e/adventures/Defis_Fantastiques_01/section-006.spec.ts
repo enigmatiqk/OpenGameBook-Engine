@@ -8,7 +8,7 @@ const SECTION_CHOICES = {
   89: 'Abandonner'
 }
 
-test.describe('Section 006 - La Porte Blindée', () => {
+test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== 'passed') {
