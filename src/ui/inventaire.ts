@@ -2,6 +2,19 @@ import type { GameEngine } from '../engine/GameEngine'
 import type { Adventure, Hero } from '../types'
 
 /**
+ * Convertit un texte en slug utilisable comme id DOM
+ * Supprime les accents, remplace les espaces par des tirets, passe en minuscules
+ */
+function slugify(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
  * Gère l'affichage et l'interaction avec l'inventaire du héros
  */
 export class InventaireView {
@@ -37,6 +50,7 @@ export class InventaireView {
 
       if (typeof item === 'string') {
         const span = document.createElement('span')
+        span.id = slugify(item)
         span.textContent = escHtml(item)
         itemsContainer.appendChild(span)
       } else {
@@ -45,6 +59,8 @@ export class InventaireView {
           const btn = document.createElement('button')
           btn.className = 'inv-item-btn'
           btn.type = 'button'
+          btn.id = slugify(item.id)
+          if (item.quantite !== undefined) btn.dataset.count = String(item.quantite)
           const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
           btn.textContent = escHtml(item.label) + qty
           btn.title = item.description || 'Cliquez pour consommer'
@@ -61,6 +77,8 @@ export class InventaireView {
         } else {
           // Item sans usage = non consommable
           const span = document.createElement('span')
+          span.id = slugify(item.id)
+          if (item.quantite !== undefined) span.dataset.count = String(item.quantite)
           const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
           span.textContent = escHtml(item.label) + qty
           if (item.description) {

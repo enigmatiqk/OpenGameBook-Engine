@@ -192,32 +192,32 @@ export class GameEngineInventaire {
   ): void {
     if (!item.effets) return
     for (const effet of item.effets) {
-      if (effet.stat && effet.delta !== undefined) {
-        const normalizedStat = normalizeStat(effet.stat, hero)
+      if (effet.stat) {
+        const normalizedStat = normalizeStat(effet.stat.name, hero)
         
         if (effet.type === 'stat') {
           // Modifie seulement la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
-          hero.statistiques[normalizedStat] = current + effet.delta
+          hero.statistiques[normalizedStat] = current + effet.stat.delta
           hero.historique.push({ 
             timestamp: Date.now(), 
             stat: normalizedStat, 
-            delta: effet.delta, 
+            delta: effet.stat.delta, 
             raison: `équipement: ${item.label}` 
           })
         } else if (effet.type === 'stat_total') {
           // Modifie la stat initiale (et donc le total)
           const currentStart = hero.statistiques_initiales[normalizedStat] ?? 0
-          hero.statistiques_initiales[normalizedStat] = currentStart + effet.delta
+          hero.statistiques_initiales[normalizedStat] = currentStart + effet.stat.delta
           
           // Applique aussi à la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
-          hero.statistiques[normalizedStat] = current + effet.delta
+          hero.statistiques[normalizedStat] = current + effet.stat.delta
           
           hero.historique.push({ 
             timestamp: Date.now(), 
             stat: normalizedStat, 
-            delta: effet.delta, 
+            delta: effet.stat.delta, 
             raison: `équipement (total): ${item.label}` 
           })
         }
@@ -237,35 +237,35 @@ export class GameEngineInventaire {
   ): void {
     if (!item.effets) return
     for (const effet of item.effets) {
-      if (effet.stat && effet.delta !== undefined) {
-        const normalizedStat = normalizeStat(effet.stat, hero)
+      if (effet.stat) {
+        const normalizedStat = normalizeStat(effet.stat.name, hero)
         
         if (effet.type === 'stat') {
           // Retire de la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
-          const newValue = Math.max(0, current - effet.delta)
+          const newValue = Math.max(0, current - effet.stat.delta)
           hero.statistiques[normalizedStat] = newValue
           hero.historique.push({ 
             timestamp: Date.now(), 
             stat: normalizedStat, 
-            delta: -effet.delta, 
+            delta: -effet.stat.delta, 
             raison: `retrait équipement: ${item.label}` 
           })
         } else if (effet.type === 'stat_total') {
           // Retire de la stat initiale (et donc du total)
           const currentStart = hero.statistiques_initiales[normalizedStat] ?? 0
-          const newStart = Math.max(0, currentStart - effet.delta)
+          const newStart = Math.max(0, currentStart - effet.stat.delta)
           hero.statistiques_initiales[normalizedStat] = newStart
           
           // Retire aussi de la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
-          const newValue = Math.max(0, current - effet.delta)
+          const newValue = Math.max(0, current - effet.stat.delta)
           hero.statistiques[normalizedStat] = newValue
           
           hero.historique.push({ 
             timestamp: Date.now(), 
             stat: normalizedStat, 
-            delta: -effet.delta, 
+            delta: -effet.stat.delta, 
             raison: `retrait équipement (total): ${item.label}` 
           })
         }

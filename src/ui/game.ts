@@ -5,6 +5,7 @@ import { InventaireView } from './inventaire'
 import { EquipementView } from './equipement'
 import { parseDiceFormula, rollDice } from '../engine/CombatResolver'
 import { resolveImage, resolveImages } from '../utils/imageUtils'
+import { updateSectionNotes } from './sectionNotes'
 
 export interface GameViewCallbacks {
   onVictory: () => void
@@ -91,6 +92,7 @@ export class GameView {
       if (section) {
         container.appendChild(this._buildSectionContent(adventure, section))
       }
+      updateSectionNotes(null)
       
       // Ajoute un bouton pour continuer vers les images de fin
       const btnVictory = document.createElement('button')
@@ -100,7 +102,7 @@ export class GameView {
       btnVictory.addEventListener('click', () => {
         const images = resolveImages(adventure.images_victoire, adventure.images_victoire_ia)
         if (images && images.length > 0) {
-          this._showVictoryImages(adventure, images, () => this.callbacks.onVictory())
+          this._showVictoryImages(adventure, images, () => this.callbacks.onVictory(), 'victory')
         } else {
           this.callbacks.onVictory()
         }
@@ -120,16 +122,17 @@ export class GameView {
       if (section) {
         container.appendChild(this._buildSectionContent(adventure, section))
       }
+      updateSectionNotes(null)
       
       // Ajoute un bouton pour continuer vers les images de défaite
       const btnDefeat = document.createElement('button')
-      btnDefeat.className = 'btn btn-primary victory-next-btn'
+      btnDefeat.className = 'btn btn-primary defeat-next-btn'
       const hasDefeatImages = adventure.images_defaite && adventure.images_defaite.length > 0
       btnDefeat.textContent = hasDefeatImages ? 'Continuer' : '💀 Défaite'
       btnDefeat.addEventListener('click', () => {
         const images = resolveImages(adventure.images_defaite, adventure.images_defaite_ia)
         if (images && images.length > 0) {
-          this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat())
+          this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat(), 'defeat')
         } else {
           this.callbacks.onDefeat()
         }
@@ -149,6 +152,7 @@ export class GameView {
     container.appendChild(this._buildToolbar(adventure))
     container.appendChild(this._buildHeroPanel(adventure, hero))
     container.appendChild(this._buildSectionContent(adventure, section))
+    updateSectionNotes(section)
   }
 
   private _buildToolbar(adventure: Adventure): HTMLElement {
@@ -338,7 +342,7 @@ export class GameView {
         ul.appendChild(li1)
         
         // Bouton pour tenter sa chance si la règle existe
-        const fuiteAction = adventure.regles.combat.actions?.fuite
+        const fuiteAction = adventure.regles.combat.events?.fuite
         if (fuiteAction) {
           const canUse = this.engine.canUseAction(fuiteAction)
           
@@ -418,6 +422,7 @@ export class GameView {
       }
     }
 
+    // Remet la phase en round_result pour que l'UI puisse afficher le bouton "Round suivant"
     return wrap
   }
 
@@ -680,7 +685,7 @@ export class GameView {
     document.body.appendChild(overlay)
   }
 
-  private _showVictoryImages(adventure: Adventure, images: string[], onDone: () => void): void {
+  private _showVictoryImages(adventure: Adventure, images: string[], onDone: () => void, type: 'victory' | 'defeat' = 'victory'): void {
     const container = this.container
     if (!container) { onDone(); return }
 
@@ -699,10 +704,10 @@ export class GameView {
       wrap.appendChild(img)
 
       const btn = document.createElement('button')
-      btn.className = 'btn btn-primary victory-next-btn'
+      btn.className = `btn btn-primary ${type}-next-btn`
       btn.type = 'button'
       current++
-      btn.textContent = current < images.length ? 'Suivant →' : '🏆 Victoire !'
+      btn.textContent = current < images.length ? 'Suivant →' : (type === 'victory' ? '🏆 Victoire !' : '💀 Défaite')
       btn.addEventListener('click', () => {
         if (current < images.length) { show() } else { onDone() }
       })

@@ -58,12 +58,12 @@ export class CombatView {
     const statName = rules ? parseAttackFormula(rules.stat_attaque).statName : 'habilete'
     const heroAttaque = this.engine.getHero()?.statistiques[statName] ?? '?'
     el.innerHTML = `
-      <div class="combat-stat">
+      <div class="combat-stat combat-stat-heros">
         <span class="combat-stat-label">Héros</span>
         <span class="combat-stat-value">${state.heroVie} ❤️</span>
         <span class="combat-stat-sub">${_esc(statName)} ${heroAttaque}</span>
       </div>
-      <div class="combat-stat">
+      <div class="combat-stat combat-stat-enemy">
         <span class="combat-stat-label">${_esc(state.enemy.nom)}</span>
         <span class="combat-stat-value">${state.enemyVie} ❤️</span>
         <span class="combat-stat-sub">habileté ${state.enemy.habilete}</span>
@@ -196,19 +196,19 @@ export class CombatView {
       const adventure = this.engine.getAdventure()
       const section = adventure?.sections.find(s => s.numero === this.engine.getCurrentSection())
       const sectionFuite = section?.combat?.fuite
-      const fuiteAction = adventure?.regles.combat.actions?.fuite
+      const fuiteAction = adventure?.regles.combat.events?.fuite
       
       // Déterminer la section de fuite : soit depuis combat.fuite, soit depuis l'action déclenchée AU ROUND COURANT
       let sectionFuiteDestination = sectionFuite?.section
-      if (!sectionFuiteDestination && state.actionDeclenche?.action === 'fuite') {
-        sectionFuiteDestination = state.actionDeclenche.section
+      if (!sectionFuiteDestination && state.eventDeclenche?.action === 'btn_fuite') {
+        sectionFuiteDestination = state.eventDeclenche.section
       }
       
       // Les boutons de fuite ne s'affichent que si :
       // 1. combat.fuite est défini, OU
-      // 2. Une action "fuite" a été déclenchée AU ROUND COURANT
+      // 2. Une action "btn_fuite" a été déclenchée AU ROUND COURANT
       // ET le héros n'est pas mort
-      const showFuiteButtons = (sectionFuite?.section || state.actionDeclenche?.action === 'fuite') && state.heroVie > 0
+      const showFuiteButtons = (sectionFuite?.section || state.eventDeclenche?.action === 'btn_fuite') && state.heroVie > 0
       
       if (showFuiteButtons && sectionFuiteDestination) {
         // Bouton pour fuir directement
@@ -268,27 +268,27 @@ export class CombatView {
       // - Si l'action a une propriété "texte", afficher un bouton avec ce texte
       // - Si l'action a une propriété "action", afficher un bouton selon l'action
       // - Sinon, ne pas afficher de bouton (l'action se fait via "Round suivant")
-      if (state.actionDeclenche && state.actionDeclenche.action !== 'fuite' && state.actionDeclenche.action !== 'fuite_chance') {
-        const action = state.actionDeclenche
+      if (state.eventDeclenche && state.eventDeclenche.action !== 'btn_fuite' && state.eventDeclenche.action !== 'fuite_chance') {
+        const event = state.eventDeclenche
         
-        // Afficher un bouton seulement si l'action a une propriété "texte" ou "action"
-        if (action.texte || action.action) {
-          const actionBtn = document.createElement('button')
-          actionBtn.className = 'btn btn-secondary combat-triggered-action-btn'
-          actionBtn.type = 'button'
+        // Afficher un bouton seulement si l'event a une propriété "texte" ou "action"
+        if (event.texte || event.action) {
+          const eventBtn = document.createElement('button')
+          eventBtn.className = 'btn btn-secondary combat-triggered-action-btn'
+          eventBtn.type = 'button'
           
           // Utiliser le texte personnalisé si disponible, sinon utiliser un libellé par défaut
-          if (action.texte) {
-            actionBtn.textContent = action.texte
-          } else if (action.action) {
-            actionBtn.textContent = `${action.action}`
+          if (event.texte) {
+            eventBtn.textContent = event.texte
+          } else if (event.action) {
+            eventBtn.textContent = `${event.action}`
           }
           
-          actionBtn.addEventListener('click', () => {
-            this.engine.navigateTo(action.section)
+          eventBtn.addEventListener('click', () => {
+            this.engine.navigateTo(event.section)
             this.onCombatEnd()
           })
-          actionsEl.appendChild(actionBtn)
+          actionsEl.appendChild(eventBtn)
         }
       }
 

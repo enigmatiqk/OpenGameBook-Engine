@@ -67,7 +67,7 @@ export class CombatResolver {
       compteurDegatsHeros: 0,
       compteurDegatsMonster: 0,
       compteurDegats: 0,
-      actionsDeclenches: [],
+      eventsDeclenches: [],
     }
   }
 
@@ -187,19 +187,19 @@ export class CombatResolver {
     }
 
     // Vérifier et déclencher les actions de combat
-    const { actionTriggered, newState: stateAfterAction } = this.checkCombatActions(newState, degatsHeros, degatsMonster)
-    newState = stateAfterAction
+    const { eventTriggered, newState: stateAfterEvent } = this.checkCombatEvents(newState, degatsHeros, degatsMonster)
+    newState = stateAfterEvent
 
-    // Si une action est déclenchée, la stocker dans l'état
-    if (actionTriggered) {
-      newState.actionDeclenche = actionTriggered
+    // Si un event est déclenché, le stocker dans l'état
+    if (eventTriggered) {
+      newState.eventDeclenche = eventTriggered
     }
 
     // Actions disponibles selon le résultat du round (pas en cas d'égalité)
     const availableActions: string[] = []
-    if (rules.actions && degats > 0) {
-      if (cible === 'ennemi' && rules.actions.attaque) availableActions.push(rules.actions.attaque)
-      if (cible === 'hero' && rules.actions.defense) availableActions.push(rules.actions.defense)
+    if (rules.events && degats > 0) {
+      if (cible === 'ennemi' && rules.events.attaque) availableActions.push(rules.events.attaque)
+      if (cible === 'hero' && rules.events.defense) availableActions.push(rules.events.defense)
     }
 
     // Si défense avec lancer_de, passe à la phase pending_defense
@@ -224,12 +224,12 @@ export class CombatResolver {
   nextRound(state: CombatState): CombatState {
     if (state.phase.type !== 'round_result') throw new Error('Phase invalide')
 
-    // Si une action est déclenchée sans texte ou action, l'appliquer maintenant
-    if (state.actionDeclenche && !state.actionDeclenche.texte && !state.actionDeclenche.action) {
-      // Retourner un état spécial pour indiquer qu'on doit naviguer vers la section de l'action
+    // Si un event est déclenché sans texte ou action, l'appliquer maintenant
+    if (state.eventDeclenche && !state.eventDeclenche.texte && !state.eventDeclenche.action) {
+      // Retourner un état spécial pour indiquer qu'on doit naviguer vers la section de l'event
       return {
         ...state,
-        phase: { type: 'pending_navigation', section: state.actionDeclenche.section },
+        phase: { type: 'pending_navigation', section: state.eventDeclenche.section },
       }
     }
 
@@ -282,8 +282,8 @@ export class CombatResolver {
       currentRollEnnemi: undefined,
       currentRollHero: undefined,
       roundNumber: state.roundNumber + 1,
-      actionDeclenche: undefined,
-      actionsDeclenchees: undefined,
+      eventDeclenche: undefined,
+      eventsDeclenchesCourant: undefined,
       actionLancee: undefined,
       phase: { type: 'pending_ennemi' },
     }
@@ -299,12 +299,12 @@ export class CombatResolver {
   }
 
   /**
-   * Vérifie et déclenche les actions de combat basées sur les dégâts ou les rounds
-   * Retourne { actionTriggered: ActionCombat[] | null, newState: CombatState }
+   * Vérifie et déclenche les events de combat basés sur les dégâts ou les rounds
+   * Retourne { eventTriggered: CombatEvent | null, newState: CombatState }
    */
-  checkCombatActions(state: CombatState, degatsHeros: number, degatsMonster: number): { actionTriggered: any | null; newState: CombatState } {
-    if (!state.combatData?.actions || state.combatData.actions.length === 0) {
-      return { actionTriggered: null, newState: state }
+  checkCombatEvents(state: CombatState, degatsHeros: number, degatsMonster: number): { eventTriggered: any | null; newState: CombatState } {
+    if (!state.combatData?.events || state.combatData.events.length === 0) {
+      return { eventTriggered: null, newState: state }
     }
 
     let newState = { ...state }
@@ -319,59 +319,59 @@ export class CombatResolver {
       newState.compteurDegats = (newState.compteurDegats ?? 0) + 1
     }
 
-    // Chercher TOUTES les actions qui se déclenchent
-    const triggeredActions: any[] = []
+    // Chercher TOUS les events qui se déclenchent
+    const triggeredEvents: any[] = []
     
-    for (let i = 0; i < state.combatData.actions.length; i++) {
-      const action = state.combatData.actions[i]
+    for (let i = 0; i < state.combatData.events.length; i++) {
+      const event = state.combatData.events[i]
       
-      // Vérifier si l'action a déjà été déclenchée
-      if (newState.actionsDeclenches?.includes(i)) {
+      // Vérifier si l'event a déjà été déclenché
+      if (newState.eventsDeclenches?.includes(i)) {
         continue
       }
 
       let shouldTrigger = false
 
-      if (action.declencheur === 'degats_heros' && degatsHeros > 0) {
-        if (newState.compteurDegatsHeros === action.round) {
+      if (event.declencheur === 'degats_heros' && degatsHeros > 0) {
+        if (newState.compteurDegatsHeros === event.round) {
           shouldTrigger = true
         }
-      } else if (action.declencheur === 'degats_monstre' && degatsMonster > 0) {
-        if (newState.compteurDegatsMonster === action.round) {
+      } else if (event.declencheur === 'degats_monstre' && degatsMonster > 0) {
+        if (newState.compteurDegatsMonster === event.round) {
           shouldTrigger = true
         }
-      } else if (action.declencheur === 'degats' && (degatsHeros > 0 || degatsMonster > 0)) {
-        if (newState.compteurDegats === action.round) {
+      } else if (event.declencheur === 'degats' && (degatsHeros > 0 || degatsMonster > 0)) {
+        if (newState.compteurDegats === event.round) {
           shouldTrigger = true
         }
-      } else if (action.declencheur === 'round') {
+      } else if (event.declencheur === 'round') {
         // Déclenche au round spécifié, indépendamment des dégâts
-        if (state.roundNumber === action.round) {
+        if (state.roundNumber === event.round) {
           shouldTrigger = true
         }
       }
 
       if (shouldTrigger) {
-        // Marquer l'action comme déclenchée
-        newState.actionsDeclenches = [...(newState.actionsDeclenches ?? []), i]
+        // Marquer l'event comme déclenché
+        newState.eventsDeclenches = [...(newState.eventsDeclenches ?? []), i]
 
         // Si ignorerDegats est true, annuler les dégâts du coup
-        if (action.ignorerDegats) {
+        if (event.ignorerDegats) {
           newState.heroVie += degatsHeros
           newState.enemyVie += degatsMonster
         }
 
-        triggeredActions.push(action)
+        triggeredEvents.push(event)
       }
     }
 
-    // Retourner la première action (ou null si aucune)
-    // Les autres actions seront stockées dans actionsDeclenchees
-    if (triggeredActions.length > 0) {
-      return { actionTriggered: triggeredActions[0], newState: { ...newState, actionsDeclenchees: triggeredActions } }
+    // Retourner le premier event (ou null si aucun)
+    // Les autres events seront stockés dans eventsDeclenchesCourant
+    if (triggeredEvents.length > 0) {
+      return { eventTriggered: triggeredEvents[0], newState: { ...newState, eventsDeclenchesCourant: triggeredEvents } }
     }
 
-    return { actionTriggered: null, newState }
+    return { eventTriggered: null, newState }
   }
 
   /**
@@ -417,8 +417,8 @@ export class CombatResolver {
 
     // Actions disponibles selon le résultat du round
     const availableActions: string[] = []
-    if (rules.actions && newDegats > 0) {
-      if (rules.actions.defense) availableActions.push(rules.actions.defense)
+    if (rules.events && newDegats > 0) {
+      if (rules.events.defense) availableActions.push(rules.events.defense)
     }
 
     return {

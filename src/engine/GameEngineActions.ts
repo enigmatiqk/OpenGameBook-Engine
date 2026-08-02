@@ -238,7 +238,7 @@ export class GameEngineActions {
   ): string[] {
     if (!adventure) return []
     
-    const fuiteAction = adventure.regles.combat.actions?.fuite
+    const fuiteAction = adventure.regles.combat.events?.fuite
     if (!fuiteAction) return []
     
     const regle = GameEngineActions.getRegle(adventure, fuiteAction)

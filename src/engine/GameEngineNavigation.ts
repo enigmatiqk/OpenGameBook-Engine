@@ -1,4 +1,5 @@
 import type { Section, Choice, Hero, CombatState } from '../types'
+import { GameEngineHero } from './GameEngineHero'
 
 /**
  * Gère la navigation entre sections et les conditions
@@ -225,35 +226,37 @@ export class GameEngineNavigation {
       // Vérifie la condition de l'effet
       if (!this.checkEffectCondition(effet, hero)) continue
 
-      if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-        if (effet.ignore_max) {
-          if (hero.statistiques[effet.stat] !== undefined) {
-            hero.statistiques[effet.stat] += effet.delta
+      if (effet.type === 'stat' && effet.stat) {
+        const statName = GameEngineHero.normalizeStat(effet.stat.name, hero)
+        if (effet.stat.ignore_max) {
+          if (hero.statistiques[statName] !== undefined) {
+            hero.statistiques[statName] += effet.stat.delta
             hero.historique.push({
               timestamp: Date.now(),
-              stat: effet.stat,
-              delta: effet.delta,
-              raison: effet.raison ?? `section ${section.numero}`,
+              stat: statName,
+              delta: effet.stat.delta,
+              raison: effet.stat.raison ?? `section ${section.numero}`,
             })
           }
         } else {
-          applyStatDelta(effet.stat, effet.delta, effet.raison ?? `section ${section.numero}`)
+          applyStatDelta(statName, effet.stat.delta, effet.stat.raison ?? `section ${section.numero}`)
         }
       } else if (effet.type === 'item' && effet.item) {
         // Cherche si l'item existe déjà
+        const itemName = effet.item.name
         const existingItem = hero.inventaire.find(i => 
-          typeof i !== 'string' && i.id === effet.item
+          typeof i !== 'string' && i.id === itemName
         )
         
         if (existingItem && typeof existingItem !== 'string') {
           // Augmente la quantité
-          existingItem.quantite = (existingItem.quantite ?? 1) + (effet.delta ?? 1)
+          existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
         } else {
           // Crée un nouvel item avec quantité
           hero.inventaire.push({
-            id: effet.item,
-            label: effet.item,
-            quantite: effet.delta ?? 1
+            id: itemName,
+            label: itemName,
+            quantite: effet.item.delta ?? 1
           })
         }
       }

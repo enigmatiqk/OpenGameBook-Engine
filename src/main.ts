@@ -8,6 +8,8 @@ import { SaveStore } from './engine/SaveStore'
 import { showHeroCreationScreen, showChoixInitiaux } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
 import { initImagePrefsButton } from './ui/imagePreferences'
+import { initDebugButton } from './ui/debugPanel'
+import { initSectionNotesButton } from './ui/sectionNotes'
 import type { AdventureMetadata } from './types'
 import { resolveImage } from './utils/imageUtils'
 
@@ -261,14 +263,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (adventureParam !== null) {
         const idx = parseInt(adventureParam, 10)
         if (!isNaN(idx)) {
-          const entry = adventureEntries[idx] ?? adventureEntries[0]
-          adventurePath = `adventures/${entry.path}/full.json`
+          const entry = adventureEntries[idx - 1] ?? adventureEntries[0]
+          adventurePath = `adventures/${entry.path}/`
         } else {
           const match = adventureEntries.find(e => e.path.toLowerCase().includes(adventureParam.toLowerCase()))
-          adventurePath = match ? `adventures/${match.path}/full.json` : `adventures/${adventureEntries[0].path}/full.json`
+          adventurePath = match ? `adventures/${match.path}/` : `adventures/${adventureEntries[0].path}/`
         }
       } else {
-        adventurePath = `adventures/${adventureEntries[0].path}/full.json`
+        adventurePath = `adventures/${adventureEntries[0].path}/`
       }
       const adventure = await libraryManager.loadAdventure(adventurePath)
       const engine = new GameEngine()
@@ -278,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (const k of Object.keys(adventure.personnage.statistiques)) {
         stats[k] = parseInt(params.get(k) ?? '10', 10)
       }
-      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: { ...stats }, inventaire: [], historique: [] }
+      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: { ...stats }, inventaire: [], historique: [], equipement: {} }
 
       // Injection d'items via ?item_id=pieces_or&item_count=5
       // Supporte plusieurs items : ?item_id=pieces_or&item_count=5&item_id2=cle_or&item_count2=1
@@ -302,8 +304,22 @@ document.addEventListener('DOMContentLoaded', () => {
       // Surcharge les stats du monstre si précisées
       const combatState = engine.getCombatState()
       if (combatState) {
-        if (params.has('monstre_endurance')) combatState.enemyVie = parseInt(params.get('monstre_endurance')!, 10)
-        if (params.has('monstre_habilete'))  combatState.enemy.habilete = parseInt(params.get('monstre_habilete')!, 10)
+        if (params.has('monstre_endurance')) {
+          const endurance = parseInt(params.get('monstre_endurance')!, 10)
+          combatState.enemyVie = endurance
+          // Applique aussi à tous les monstres restants (combat séquentiel)
+          if (combatState.monstresRestants) {
+            combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, endurance }))
+          }
+        }
+        if (params.has('monstre_habilete')) {
+          const habilete = parseInt(params.get('monstre_habilete')!, 10)
+          combatState.enemy.habilete = habilete
+          // Applique aussi à tous les monstres restants (combat séquentiel)
+          if (combatState.monstresRestants) {
+            combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, habilete }))
+          }
+        }
       }
 
       launchGameView(engine)
@@ -312,4 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-a11y')?.addEventListener('click', showA11yPanel)
   initImagePrefsButton()
+  initDebugButton()
+  initSectionNotesButton()
 })

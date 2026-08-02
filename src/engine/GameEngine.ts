@@ -320,24 +320,23 @@ export class GameEngine {
       }
     }
 
-    // Applique les effets de la section
+    // Applique les effets de la section (en vérifiant les conditions)
     if (section.effets && this.hero) {
-      for (const effet of section.effets) {
-        if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-          // Normalise le nom de la stat
-          const normalizedStat = GameEngineHero.normalizeStat(effet.stat, this.hero)
-          if (effet.ignore_max || this.isDebugIgnoreStatLimit()) {
-            if (this.hero.statistiques[normalizedStat] !== undefined) {
-              this.hero.statistiques[normalizedStat] += effet.delta
-              this.hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta: effet.delta, raison: effet.raison ?? `section ${sectionNumber}` })
+      this.navigation.applySectionEffects(
+        section,
+        this.hero,
+        (stat, delta, raison) => {
+          const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero!)
+          if (this.isDebugIgnoreStatLimit()) {
+            if (this.hero!.statistiques[normalizedStat] !== undefined) {
+              this.hero!.statistiques[normalizedStat] += delta
+              this.hero!.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
             }
           } else {
-            this.applyStatDelta(normalizedStat, effet.delta, effet.raison ?? `section ${sectionNumber}`)
+            this.applyStatDelta(normalizedStat, delta, raison)
           }
-        } else if (effet.type === 'item' && effet.item) {
-          this.hero.inventaire.push(effet.item)
         }
-      }
+      )
     }
 
     if (section.end) {
@@ -376,23 +375,20 @@ export class GameEngine {
         // Vérifie la condition de l'effet
         if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
         
-        if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-          this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? choice.texte)
+        if (effet.type === 'stat' && effet.stat) {
+          this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
         } else if (effet.type === 'item' && effet.item) {
-          // Cherche si l'item existe déjà
+          const itemName = effet.item.name
           const existingItem = this.hero.inventaire.find(i => 
-            typeof i !== 'string' && i.id === effet.item
+            typeof i !== 'string' && i.id === itemName
           )
-          
           if (existingItem && typeof existingItem !== 'string') {
-            // Augmente la quantité
-            existingItem.quantite = (existingItem.quantite ?? 1) + (effet.delta ?? 1)
+            existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
           } else {
-            // Crée un nouvel item avec quantité
             this.hero.inventaire.push({
-              id: effet.item,
-              label: effet.item,
-              quantite: effet.delta ?? 1
+              id: itemName,
+              label: itemName,
+              quantite: effet.item.delta ?? 1
             })
           }
         }
@@ -472,22 +468,26 @@ export class GameEngine {
   getActionPendingRoll(choice: Choice): PendingRoll | null {
     if (!choice.action || !this.adventure) return null
     
+    const actionName = typeof choice.action === 'string' ? choice.action : choice.action?.name
+    
     // Support pour lancer_de avec formule directe
-    if (choice.action === 'lancer_de' && (choice as any).choix) {
+    if (actionName === 'lancer_de') {
+      const formule = typeof choice.action === 'object' ? choice.action.formule : undefined
+      if (!formule) throw new Error(`lancer_de action manque la propriété 'formule'`)
       return {
         id: newRollId(),
         label: choice.texte,
-        formula: (choice as any).choix,
+        formula: formule,
         context: `action:lancer_de`,
       }
     }
     
-    const formula = GameEngineActions.getActionFormula(this.adventure, choice.action)
+    const formula = GameEngineActions.getActionFormula(this.adventure, actionName)
     return {
       id: newRollId(),
       label: choice.texte,
       formula,
-      context: `action:${choice.action}`,
+      context: `action:${actionName}`,
     }
   }
 
@@ -495,10 +495,13 @@ export class GameEngine {
     if (!this.adventure || !this.hero) throw new Error('No active game.')
     if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
 
+    const actionName = typeof choice.action === 'string' ? choice.action : choice.action?.name
+    if (!actionName) throw new Error('Action name not found')
+
     // Gère l'action lancer_de
-    if (choice.action === 'lancer_de') {
-      const resultats = (choice as any).resultats
-      if (!resultats) throw new Error('Pas de resultats pour lancer_de')
+    if (actionName === 'lancer_de') {
+      const resultats = typeof choice.action === 'object' ? choice.action.resultats : undefined
+      if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats'`)
       
       const total = rolls.reduce((a, b) => a + b, 0)
       let targetSection: number | undefined
@@ -528,73 +531,64 @@ export class GameEngine {
       return this.navigateTo(targetSection)
     }
 
-    const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, choice.action, rolls,
+    const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, actionName, rolls,
       (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
     )
 
     // Track le résultat de l'action pour cette section
-    this.navigation.recordActionResult(choice.action, resultat)
+    this.navigation.recordActionResult(actionName, resultat)
+
+    // Extrait les outcomes (ancien format vs nouveau)
+    const actionObj = typeof choice.action === 'object' ? choice.action : null
+    const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
+    const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
 
     // Applique les effets du résultat
-    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, choice.action)) {
+    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
       // Succès
-      if (choice.si_reussi?.effets) {
-        for (const effet of choice.si_reussi.effets) {
-          // Vérifie la condition de l'effet
+      if (si_reussi?.effets) {
+        for (const effet of si_reussi.effets) {
           if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-          
-          if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-            this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? choice.texte)
+          if (effet.type === 'stat' && effet.stat) {
+            this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
           } else if (effet.type === 'item' && effet.item) {
-            const existingItem = this.hero.inventaire.find(i => 
-              typeof i !== 'string' && i.id === effet.item
-            )
+            const itemName = effet.item.name
+            const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
             if (existingItem && typeof existingItem !== 'string') {
-              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.delta ?? 1)
+              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
             } else {
-              this.hero.inventaire.push({
-                id: effet.item,
-                label: effet.item,
-                quantite: effet.delta ?? 1
-              })
+              this.hero.inventaire.push({ id: itemName, label: itemName, quantite: effet.item.delta ?? 1 })
             }
           }
         }
       }
       // Applique les items gagnés en cas de succès
-      if ((choice.si_reussi as any)?.items && this.hero) {
-        for (const itemGain of (choice.si_reussi as any).items) {
+      if (si_reussi?.items && this.hero) {
+        for (const itemGain of si_reussi.items) {
           GameEngineHero.addItemGain(this.hero, itemGain)
         }
       }
     } else {
       // Échec
-      if ((choice.si_echoue as any)?.effets) {
-        for (const effet of (choice.si_echoue as any).effets) {
-          // Vérifie la condition de l'effet
+      if (si_echoue?.effets) {
+        for (const effet of si_echoue.effets) {
           if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-          
-          if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-            this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? choice.texte)
+          if (effet.type === 'stat' && effet.stat) {
+            this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
           } else if (effet.type === 'item' && effet.item) {
-            const existingItem = this.hero.inventaire.find(i => 
-              typeof i !== 'string' && i.id === effet.item
-            )
+            const itemName = effet.item.name
+            const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
             if (existingItem && typeof existingItem !== 'string') {
-              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.delta ?? 1)
+              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
             } else {
-              this.hero.inventaire.push({
-                id: effet.item,
-                label: effet.item,
-                quantite: effet.delta ?? 1
-              })
+              this.hero.inventaire.push({ id: itemName, label: itemName, quantite: effet.item.delta ?? 1 })
             }
           }
         }
       }
       // Applique les items gagnés en cas d'échec
-      if ((choice.si_echoue as any)?.items && this.hero) {
-        for (const itemGain of (choice.si_echoue as any).items) {
+      if (si_echoue?.items && this.hero) {
+        for (const itemGain of si_echoue.items) {
           GameEngineHero.addItemGain(this.hero, itemGain)
         }
       }
@@ -602,18 +596,17 @@ export class GameEngine {
 
     // Navigue selon le résultat
     let targetSection: number | undefined
-    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, choice.action)) {
-      targetSection = choice.si_reussi?.choix?.section
+    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
+      targetSection = si_reussi?.choix?.section
     } else {
-      targetSection = (choice.si_echoue as any)?.choix?.section
+      targetSection = si_echoue?.choix?.section
     }
 
     // Gère si_echoue avec end
     if (targetSection === undefined) {
-      const siEchoue = choice.si_echoue as any
-      if (siEchoue?.end) {
+      if (si_echoue?.end) {
         this.gameOver = true
-        this.victory = siEchoue.end === 'victoire'
+        this.victory = si_echoue.end === 'victoire'
         this.finalTimeMs = this.timer.getElapsedMs()
         return this.adventure.sections.find(s => s.numero === this.currentSection)!
       }
@@ -794,6 +787,15 @@ export class GameEngine {
       )
     }
 
+    // Remet la phase en round_result pour que l'UI puisse afficher le bouton "Round suivant"
+    const lastRound = this.combatState.rounds[this.combatState.rounds.length - 1]
+    if (lastRound) {
+      this.combatState = {
+        ...this.combatState,
+        phase: { type: 'round_result', round: lastRound, availableActions: [] },
+      }
+    }
+
     return { resultat, effets }
   }
 
@@ -821,8 +823,8 @@ export class GameEngine {
         // Applique les effets de victoire
         if (sectionVictoire?.effets && this.hero) {
           for (const effet of sectionVictoire.effets) {
-            if (effet.type === 'stat' && effet.stat && effet.delta !== undefined) {
-              this.applyStatDelta(effet.stat, effet.delta, effet.raison ?? 'Victoire au combat')
+            if (effet.type === 'stat' && effet.stat) {
+              this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? 'Victoire au combat')
             }
           }
         }

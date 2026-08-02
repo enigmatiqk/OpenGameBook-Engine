@@ -68,9 +68,13 @@ export function resolveChoice(
   if (choice.section !== undefined) {
     section = choice.section
   }
-  // Format action avec si_reussi/si_echoue
-  else if ((choice as any).si_reussi?.section) {
-    section = (choice as any).si_reussi.section
+  // Format action avec si_reussi/si_echoue (ancien format)
+  else if ((choice as any).si_reussi?.choix?.section) {
+    section = (choice as any).si_reussi.choix.section
+  }
+  // Format nouveau action object avec si_reussi
+  else if (typeof choice.action === 'object' && choice.action?.si_reussi?.choix?.section) {
+    section = choice.action.si_reussi.choix.section
   }
 
   return { success: true, section }

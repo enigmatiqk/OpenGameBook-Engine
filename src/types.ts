@@ -69,7 +69,7 @@ export interface CombatRules {
     possible: "non" | "livre" | "section"
     cout: string           // ex: "-2 endurance"
   }
-  actions?: {
+  events?: {
     attaque?: string       // nom de la règle ex: "attaque_chance"
     defense?: string
     fuite?: string
@@ -123,11 +123,11 @@ export interface MonstreData {
   persistant?: boolean       // true si le monstre persiste entre les sections
 }
 
-export interface ActionCombat {
+export interface CombatEvent {
   declencheur: "degats_heros" | "degats_monstre" | "degats" | "round"
   round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
   section: number            // section vers laquelle aller
-  action?: string            // type d'action ('fuite', 'fuite_chance', 'attaque', 'defense', etc.)
+  action?: string            // type d'action ('btn_fuite', 'fuite_chance', 'attaque', 'defense', etc.)
   choix?: string             // libellé personnalisé du bouton
   texte?: string             // libellé personnalisé du bouton (alias de choix)
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
@@ -148,7 +148,7 @@ export interface CombatData {
   attaque_heros?: string      // ex: "+1", "-1"
   attaque_monstre?: string    // ex: "+2", "-1"
   degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
-  actions?: ActionCombat[]   // actions déclenchées pendant le combat
+  events?: CombatEvent[]     // événements déclenchés pendant le combat
   modifier?: CombatModifier[] // modifications à appliquer avant le combat
   victoire?: { 
     section: number
@@ -166,13 +166,23 @@ export interface CombatData {
   condition?: ChoiceCondition // condition pour afficher le bouton de combat
 }
 
+export interface EffetStat {
+  name: string        // nom de la stat (ex: "endurance", "habilete", "chance")
+  delta: number       // modification à appliquer (positif ou négatif)
+  raison?: string     // raison de la modification (pour l'historique)
+  ignore_max?: boolean // si true, peut dépasser le max initial de la stat
+}
+
+export interface EffetItem {
+  name: string        // id de l'item
+  delta?: number      // quantité à ajouter (défaut: 1)
+  raison?: string     // raison pour l'historique
+}
+
 export interface Effet {
   type: string
-  stat?: string
-  delta?: number
-  item?: string
-  raison?: string
-  ignore_max?: boolean
+  stat?: EffetStat    // pour type "stat" et "stat_total"
+  item?: EffetItem    // pour type "item"
   condition?: ChoiceCondition
 }
 
@@ -212,6 +222,23 @@ export interface ItemGain {
   effets?: Effet[]  // effets appliqués quand l'item est porté
 }
 
+export interface ActionOutcome {
+  effets?: Effet[]
+  items?: ItemGain[]
+  choix?: Choice
+  end?: "victoire" | "defaite"
+}
+
+export interface Action {
+  name: string
+  // Pour lancer_de
+  formule?: string
+  resultats?: Record<string, { section?: number; effets?: Effet[] }>
+  // Pour tenter_chance, test_stat, etc.
+  si_reussi?: ActionOutcome
+  si_echoue?: ActionOutcome
+}
+
 export interface Choice {
   texte: string
   section?: number
@@ -223,18 +250,7 @@ export interface Choice {
   items?: ItemGain[]  // items gagnés en prenant ce choix
   libre?: boolean
   end?: "victoire" | "defaite"
-  action?: string
-  si_reussi?: {
-    effets?: Effet[]
-    items?: ItemGain[]
-    choix?: Choice
-  }
-  si_echoue?: {
-    effets?: Effet[]
-    items?: ItemGain[]
-    choix?: Choice
-    end?: "victoire" | "defaite"
-  }
+  action?: Action | string  // Action object ou string pour backward compatibility
   stat_monstre?: string  // ex: "-3 endurance"
 }
 
@@ -247,6 +263,10 @@ export interface Section {
   effets?: Effet[]
   choix: Choice[]
   end?: "victoire" | "defaite"
+  /** Questions en suspens sur cette section (conversion/traduction du livre) */
+  questions?: string[]
+  /** Notes diverses sur cette section */
+  notes?: string[]
 }
 
 export interface Intro {
@@ -420,13 +440,13 @@ export interface CombatState {
   monstreIndex?: number
   // Données de combat (bonus d'attaque, dégâts, défense)
   combatData?: any
-  // Tracking des actions de combat
+  // Tracking des events de combat
   compteurDegatsHeros?: number    // nombre de fois que le héros a subi des dégâts
   compteurDegatsMonster?: number  // nombre de fois que le monstre a subi des dégâts
   compteurDegats?: number         // nombre total de fois que quelqu'un a subi des dégâts
-  actionsDeclenches?: number[]    // indices des actions déjà déclenchées
-  actionDeclenche?: any           // action déclenchée au dernier round
-  actionsDeclenchees?: any[]      // toutes les actions déclenchées au dernier round
+  eventsDeclenches?: number[]     // indices des events déjà déclenchés
+  eventDeclenche?: any            // event déclenché au dernier round
+  eventsDeclenchesCourant?: any[] // tous les events déclenchés au dernier round
   // Tracking des dégâts du combat pour les conditions
   totalDegatsHeros?: number       // dégâts totaux infligés au héros
   totalDegatsMonster?: number     // dégâts totaux infligés au monstre
