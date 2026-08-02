@@ -26,9 +26,11 @@ Les items peuvent avoir des **effets liés** : quand le héros porte l'item, les
   "effets": [
     {
       "type": "stat",
-      "stat": "habilete",
-      "delta": 2,
-      "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+      "stat": {
+        "name": "habilete",
+        "delta": 2,
+        "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+      }
     }
   ]
 }
@@ -102,9 +104,11 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 ```json
 {
   "type": "stat",
-  "stat": "habilete",
-  "delta": 2,
-  "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+  "stat": {
+    "name": "habilete",
+    "delta": 2,
+    "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+  }
 }
 ```
 
@@ -114,9 +118,11 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 ```json
 {
   "type": "stat",
-  "stat": "habilete",
-  "delta": 2,
-  "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+  "stat": {
+    "name": "habilete",
+    "delta": 2,
+    "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+  }
 }
 ```
 - Héros commence à 10 habileté
@@ -127,9 +133,11 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 ```json
 {
   "type": "stat_total",
-  "stat": "habilete",
-  "delta": 2,
-  "raison": "2 points d'HABILETÉ permanents pour porter l'épée magique"
+  "stat": {
+    "name": "habilete",
+    "delta": 2,
+    "raison": "2 points d'HABILETÉ permanents pour porter l'épée magique"
+  }
 }
 ```
 - Héros commence à 10 habileté
@@ -149,15 +157,19 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
   "effets": [
     {
       "type": "stat",
-      "stat": "habilete",
-      "delta": 2,
-      "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+      "stat": {
+        "name": "habilete",
+        "delta": 2,
+        "raison": "2 points d'HABILETÉ pour porter l'épée magique"
+      }
     },
     {
       "type": "stat_total",
-      "stat": "endurance",
-      "delta": 1,
-      "raison": "1 point d'ENDURANCE permanent pour porter l'épée magique"
+      "stat": {
+        "name": "endurance",
+        "delta": 1,
+        "raison": "1 point d'ENDURANCE permanent pour porter l'épée magique"
+      }
     }
   ]
 }
@@ -172,153 +184,10 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 
 ## Utilisation dans les sections
 
-### Gain d'item via un choix
+Pour utiliser les items dans les sections :
 
-```json
-{
-  "numero": 42,
-  "texte": "Vous trouvez une épée brillante sur le sol...",
-  "choix": [
-    {
-      "texte": "Prendre l'épée magique",
-      "section": 100,
-      "items": [
-        {
-          "id": "epee_magique",
-          "label": "Épée magique",
-          "type": "arme_1main",
-          "poids": 1,
-          "remplace": true,
-          "description": "Une épée brillante avec des runes magiques",
-          "effets": [
-            {
-              "type": "stat",
-              "stat": "habilete",
-              "delta": 2,
-              "raison": "2 points d'HABILETÉ pour porter l'épée magique"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "texte": "Laisser l'épée",
-      "section": 100
-    }
-  ]
-}
-```
-
-### Gain d'items multiples
-
-```json
-{
-  "texte": "Vous vainquez le dragon et trouvez son trésor",
-  "section": 200,
-  "items": [
-    {
-      "id": "piece_or",
-      "label": "Pièces d'or",
-      "quantite": 50
-    },
-    {
-      "id": "armure_dragon",
-      "label": "Armure de dragon",
-      "type": "armure",
-      "remplace": true,
-      "effets": [
-        {
-          "type": "stat",
-          "stat": "endurance",
-          "delta": 3,
-          "raison": "3 points d'ENDURANCE pour porter l'armure de dragon"
-        }
-      ]
-    },
-    {
-      "id": "gemme_rouge",
-      "label": "Gemme rouge",
-      "description": "Une gemme précieuse"
-    }
-  ]
-}
-```
-
-### Gain d'items avec conditions
-
-```json
-{
-  "texte": "Vous trouvez un coffre",
-  "section": 150,
-  "condition": {
-    "type": "item_quantite",
-    "item_id": "cle_or",
-    "quantite": 1
-  },
-  "items": [
-    {
-      "id": "tresor",
-      "label": "Trésor ancien",
-      "quantite": 100
-    }
-  ]
-}
-```
-
-### Gain d'items suite à une action réussie
-
-```json
-{
-  "numero": 50,
-  "texte": "Vous tentez de crocheter la serrure...",
-  "choix": [
-    {
-      "texte": "Tenter votre chance",
-      "section": 0,
-      "action": "tenter_chance",
-      "si_reussi": {
-        "items": [
-          {
-            "id": "cle_argent",
-            "label": "Clé en argent",
-            "description": "Une clé finement travaillée"
-          }
-        ],
-        "choix": {
-          "texte": "Continuer",
-          "section": 200
-        }
-      },
-      "si_echoue": {
-        "choix": {
-          "texte": "Continuer",
-          "section": 201
-        }
-      }
-    }
-  ]
-}
-```
-
-## Gain d'items à l'arrivée dans une section
-
-Les items peuvent aussi être gagnés automatiquement à l'arrivée dans une section via les `effets` :
-
-```json
-{
-  "numero": 60,
-  "texte": "Vous entrez dans une salle remplie de trésors...",
-  "effets": [
-    {
-      "type": "item",
-      "item": "piece_or",
-      "quantite": 10,
-      "raison": "Trésor trouvé"
-    }
-  ],
-  "choix": [...]
-}
-```
+- **Gain via un choix** : utiliser `choix.items` → voir [section/choix.md](section/choix.md)
+- **Gain à l'arrivée** : utiliser `section.effets` avec `type: "item"` → voir [section/effets.md](section/effets.md)
 
 ## Intégration avec le moteur
 

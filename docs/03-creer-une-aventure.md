@@ -2,6 +2,10 @@
 
 Ce guide explique comment construire un fichier JSON d'aventure compatible avec le moteur, que ce soit manuellement ou via une IA.
 
+> Si vous utilisez une IA, cette documentation sert de schéma de sortie : l'IA doit produire un JSON strictement valide avec ces champs et formats, sans commentaires ni balises Markdown.
+>
+> Voir aussi : [10 - Schéma JSON pour IA](10-json-schema-ia.md)
+
 ---
 
 ## Structure générale
@@ -13,8 +17,13 @@ Ce guide explique comment construire un fichier JSON d'aventure compatible avec 
   "tags":             [...],
   "repertoire_images":"...",
   "image_de_garde":   "...",
+  "image_de_garde_ia": "...",
   "images_victoire":  [...],
+  "images_victoire_ia": [...],
   "images_defaite":   [...],
+  "images_defaite_ia": [...],
+  "images_annexes":   [...],
+  "images_annexes_ia": [...],
   "mode_emploi":      "...",
   "intro":            { ... },
   "personnage":       { ... },
@@ -62,6 +71,13 @@ Nom du fichier de couverture dans `repertoire_images`.
 "image_de_garde": "cover.jpeg"
 ```
 
+### `image_de_garde_ia` — optionnel
+Si l'aventure est générée ou enrichie par une IA, ce champ peut contenir une description ou un prompt d'image pour la couverture.
+
+```json
+"image_de_garde_ia": "Illustration d'un sorcier ancien dominant une montagne de lave"
+```
+
 ### `images_victoire` — optionnel
 Liste de noms de fichiers affichés sur l'écran de victoire.
 
@@ -74,6 +90,13 @@ Liste de noms de fichiers affichés sur l'écran de défaite.
 
 ```json
 "images_defaite": ["defaite.jpeg"]
+```
+
+### `images_defaite_ia` — optionnel
+Descriptions de style IA pour les écrans de défaite.
+
+```json
+"images_defaite_ia": ["Gouffre obscur et héros vaincu sous un ciel rouge"]
 ```
 
 ### `images_annexes` — optionnel
@@ -207,7 +230,7 @@ Permet au joueur de choisir des objets de départ parmi des options.
     "possible": "section",
     "cout":     "-2 endurance"
   },
-  "actions": {
+  "events": {
     "attaque": "attaque_chance",
     "defense": "defense_chance",
     "fuite":   "fuite_chance"
@@ -224,7 +247,7 @@ Permet au joueur de choisir des objets de départ parmi des options.
 | `degats_defaite` | Dégâts reçus par le héros si l'ennemi gagne le round |
 | `fuite.possible` | `"non"`, `"livre"` (toujours), `"section"` (si la section le permet) |
 | `fuite.cout` | Coût de la fuite (ex : `"-2 endurance"`) |
-| `actions` | Règles spéciales disponibles pendant le combat |
+| `events` | Événements déclenchables pendant le combat (attaque chance, défense chance, fuite…) |
 
 ### `victoire` ★ obligatoire
 
@@ -308,204 +331,12 @@ Enchaîne plusieurs règles.
 
 Tableau de toutes les sections du livre. L'ordre n'a pas d'importance, le moteur cherche par `numero`.
 
-### Structure d'une section
+Pour la documentation complète des sections et de leurs sous-éléments :
 
-```json
-{
-  "numero": 42,
-  "texte":  "Vous entrez dans la pièce sombre...",
-  "image":  "section_042.jpeg",
-  "effets": [...],
-  "combat": { ... },
-  "choix":  [...],
-  "end":    "victoire"
-}
-```
-
-| Champ | Obligatoire | Description |
-|-------|-------------|-------------|
-| `numero` | ★ | Numéro unique de la section |
-| `texte` | ★ | Texte narratif de la section |
-| `image` | — | Nom du fichier image dans `repertoire_images` |
-| `effets` | — | Effets appliqués à l'entrée dans la section |
-| `combat` | — | Données de combat |
-| `choix` | ★ | Liste des choix (peut être vide si `end` est défini) |
-| `end` | — | `"victoire"` ou `"defaite"` — termine la partie |
-
-> Une section doit avoir soit des `choix`, soit un `end`, soit un `combat`.
-
-### Effets de section
-
-```json
-"effets": [
-  { "type": "stat",  "stat": "chance",   "delta": 1,   "raison": "Vous trouvez un talisman" },
-  { "type": "stat",  "stat": "endurance","delta": -2,  "raison": "Vous êtes blessé" },
-  { "type": "item",  "item": "Clé d'or",               "raison": "Vous ramassez une clé" }
-]
-```
-
-| Type | Champs supplémentaires | Description |
-|------|------------------------|-------------|
-| `stat` | `stat`, `delta`, `raison`, `ignore_max` | Modifie une statistique |
-| `item` | `item`, `raison` | Ajoute un objet à l'inventaire |
-
-#### Effet de stat
-
-```json
-{
-  "type": "stat",
-  "stat": "endurance",
-  "delta": 2,
-  "raison": "Détente",
-  "ignore_max": false
-}
-```
-
-| Champ | Obligatoire | Description |
-|-------|-------------|-------------|
-| `type` | ★ | Doit être `"stat"` |
-| `stat` | ★ | Nom de la stat (ex: `"endurance"`, `"habilete"`) |
-| `delta` | ★ | Modification (positif ou négatif) |
-| `raison` | — | Raison de la modification (pour l'historique) |
-| `ignore_max` | — | Si `true`, l'augmentation peut dépasser le max initial (défaut: `false`) |
-
-**Note :** Par défaut, les stats sont limitées à leur valeur initiale. Avec `ignore_max: true`, une augmentation peut dépasser cette limite.
-
-#### Effet d'item
-
-```json
-{
-  "type": "item",
-  "item": "cle_or"
-}
-```
-
-| Champ | Obligatoire | Description |
-|-------|-------------|-------------|
-| `type` | ★ | Doit être `"item"` |
-| `item` | ★ | ID de l'item à ajouter |
-
-**Exemple complet :**
-
-```json
-{
-  "numero": 11,
-  "texte": "Vous trouvez des outils magiques qui vous restaurent...",
-  "effets": [
-    {
-      "type": "stat",
-      "stat": "endurance",
-      "delta": 2,
-      "raison": "Détente"
-    },
-    {
-      "type": "stat",
-      "stat": "habilete",
-      "delta": 1,
-      "raison": "Détente"
-    }
-  ],
-  "choix": [
-    { "texte": "Continuer au nord", "section": 366 },
-    { "texte": "Continuer au sud",  "section": 250 }
-  ]
-}
-```
-
-Pour plus de détails, voir [08 - Effets de section](08-effets-section.md).
-
-### Choix
-
-```json
-"choix": [
-  {
-    "texte":   "Ouvrir la porte de gauche",
-    "section": 17
-  },
-  {
-    "texte":   "Payer 3 Pièces d'Or",
-    "section": 272,
-    "condition": { "type": "item_quantite", "item_id": "pieces_or", "quantite": 3 },
-    "cout": [
-      { "type": "item_quantite", "item_id": "pieces_or", "delta": -3, "raison": "Paiement du passeur" }
-    ]
-  },
-  {
-    "texte":   "Tenter votre chance",
-    "section": 0,
-    "action":  "tenter_chance",
-    "si_reussi": {
-      "choix": { "texte": "Vous réussissez", "section": 88 }
-    },
-    "si_echoue": {
-      "end": "defaite"
-    }
-  }
-]
-```
-
-| Champ | Obligatoire | Description |
-|-------|-------------|-------------|
-| `texte` | ★ | Texte du choix affiché au joueur |
-| `section` | ★ | Numéro de la section cible (`0` = action, pas de navigation directe) |
-| `condition` | — | Condition requise pour pouvoir choisir (sinon bouton grisé) |
-| `cout` | — | Effets appliqués au moment du choix (avant navigation) |
-| `action` | — | Nom d'une règle à déclencher (jet de dés) |
-| `si_reussi` | — | Choix ou effets si l'action réussit |
-| `si_echoue` | — | Fin de partie si l'action échoue |
-| `libre` | — | `true` = choix libre, pas de validation |
-| `end` | — | `"victoire"` ou `"defaite"` directement sur le choix |
-
-#### `condition`
-
-Grise le bouton si la condition n'est pas remplie. Un tooltip indique la raison.
-
-```json
-// Quantité d'item requise
-{ "type": "item_quantite", "item_id": "pieces_or", "quantite": 3 }
-```
-
-> `item_id` peut pointer sur un item d'inventaire **ou** sur une statistique — le moteur détecte automatiquement.
-
-#### `cout`
-
-Liste d'effets appliqués au moment où le joueur clique, avant la navigation.
-
-```json
-"cout": [
-  { "type": "item_quantite", "item_id": "pieces_or", "delta": -3, "raison": "Paiement du passeur" },
-  { "type": "stat",          "stat": "endurance",    "delta": -1, "raison": "Effort fourni" }
-]
-```
-
-| `type` | Champs | Description |
-|--------|--------|-------------|
-| `item_quantite` | `item_id`, `delta` | Modifie la quantité d'un item (ou d'une stat si `item_id` est une stat) |
-| `stat` | `stat`, `delta` | Modifie directement une statistique |
-
-### Combat dans une section
-
-```json
-"combat": {
-  "monstres": [
-    { "nom": "GOBELIN", "habilete": 5, "endurance": 4 }
-  ],
-  "mode":            "sequentiel",
-  "attaque_hero":    "+1",
-  "attaque_monstre": "-1",
-  "victoire": { "section": 55 },
-  "fuite":    { "section": 12 }
-}
-```
-
-| Champ | Description |
-|-------|-------------|
-| `monstres` | Liste des ennemis (un ou plusieurs) |
-| `mode` | `"sequentiel"` (un par un) ou `"fusion"` (stats combinées) |
-| `attaque_hero` | Modificateur de force d'attaque du héros pour ce combat |
-| `attaque_monstre` | Modificateur de force d'attaque de l'ennemi |
-| `victoire.section` | Section vers laquelle aller après victoire |
-| `fuite.section` | Section vers laquelle aller en cas de fuite |
+- [section/section.md](section/section.md) — structure générale d'une section
+- [section/choix.md](section/choix.md) — choix, conditions, coûts, actions avec dés
+- [section/effets.md](section/effets.md) — effets de stat et d'item
+- [section/combat.md](section/combat.md) — combats, monstres, events, fuite
 
 ---
 

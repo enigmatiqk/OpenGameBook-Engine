@@ -17,6 +17,7 @@ gamebook-engine/
 ├── adventures/          # Aventures JSON + images
 │   └── manifest.json    # Liste des aventures disponibles
 ├── docs/                # Documentation
+│   └── 10-json-schema-ia.md  # Guide de structure JSON pour génération IA
 ├── scanner/             # Scanner PDF (Python)
 ├── scripts/             # Scripts IA (Python)
 ├── src/                 # Code source TypeScript
