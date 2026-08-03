@@ -179,10 +179,18 @@ export interface EffetItem {
   raison?: string     // raison pour l'historique
 }
 
+export interface EffetMonstreStat {
+  monstre_id: string  // id du monstre ciblé (correspond à MonstreData.id), "" = premier monstre du prochain combat
+  name: string        // stat à modifier : "endurance" ou "habilete"
+  delta: number       // modification (négatif = affaiblissement)
+  raison?: string     // affiché au joueur dans l'UI du combat
+}
+
 export interface Effet {
   type: string
-  stat?: EffetStat    // pour type "stat" et "stat_total"
-  item?: EffetItem    // pour type "item"
+  stat?: EffetStat          // pour type "stat" et "stat_total"
+  item?: EffetItem          // pour type "item"
+  monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
   condition?: ChoiceCondition
 }
 
@@ -333,6 +341,7 @@ export interface SaveState {
   tempsJeuMs: number
   timestamp: number
   choixUtilisations?: Record<string, number>  // Track des utilisations par choix (clé: "section_numero-choix_index")
+  pendingMonsterStatMods?: Record<string, EffetMonstreStat[]>  // Mods en attente pour les monstres (clé: monstre_id ou "__any__")
 }
 
 export interface LeaderboardEntry {
@@ -383,7 +392,8 @@ export interface Enemy {
   nom: string
   habilete: number
   endurance: number
-  id?: string  // id du monstre persistant
+  id?: string          // id du monstre persistant
+  statMods?: Array<{ name: string; delta: number; raison?: string }>  // mods appliqués avant le combat
 }
 
 export interface CombatRound {

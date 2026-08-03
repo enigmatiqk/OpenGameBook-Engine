@@ -1,7 +1,7 @@
 import type {
   Adventure, Hero, SaveState, Choice, Section,
   DiceRollResult, PendingRoll, RollResult,
-  HeroInitState, CombatState, RegleComposite
+  HeroInitState, CombatState, RegleComposite, EffetMonstreStat
 } from '../types'
 import { PlayTimer } from './PlayTimer'
 import { CombatResolver, parseDiceFormula, parseAttackFormula } from './CombatResolver'
@@ -34,8 +34,9 @@ export class GameEngine {
   // État combat en cours
   private combatState: CombatState | null = null
 
-  // Modifications de stats du monstre pour le prochain combat
-  private nextCombatMonsterStatMods: string = ''
+  // Modifications de stats des monstres en attente (appliquées lors du prochain combat)
+  // clé : monstre_id (ou "__any__" pour s'appliquer au premier monstre sans id ciblé)
+  private pendingMonsterStatMods: Record<string, EffetMonstreStat[]> = {}
 
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
@@ -70,7 +71,7 @@ export class GameEngine {
     this.saveState = null
     this.heroInitState = null
     this.combatState = null
-    this.nextCombatMonsterStatMods = ''
+    this.pendingMonsterStatMods = {}
     this.timer.reset()
     this.navigation.init()
   }
@@ -243,6 +244,10 @@ export class GameEngine {
     if (save.choixUtilisations) {
       this.choixUtilisations = { ...save.choixUtilisations }
     }
+    // Charger les mods de monstres en attente
+    if (save.pendingMonsterStatMods) {
+      this.pendingMonsterStatMods = { ...save.pendingMonsterStatMods }
+    }
   }
 
   navigateTo(sectionNumber: number): Section {
@@ -290,11 +295,14 @@ export class GameEngine {
         
         let monstre = monstres[0]
         
-        // Applique les modifications de stats du monstre si présentes
+        // Applique les modifications de stats du monstre (ancien format string — rétrocompat)
         if (this.nextCombatMonsterStatMods) {
           monstre = this.combatModule.applyMonsterStatMods(monstre, this.nextCombatMonsterStatMods)
           this.nextCombatMonsterStatMods = ''
         }
+
+        // Applique les mods structurés (type "monstre_stat") en cherchant par id puis par __any__
+        monstre = this._applyPendingMonsterStatMods(monstre)
         
         // Charge les stats sauvegardées du monstre persistant s'il existe
         if (monstre.id && monstre.persistant && this.hero.monstres_stats?.[monstre.id]) {
@@ -308,7 +316,13 @@ export class GameEngine {
           }
         }
         
-        const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
+        const enemy = { 
+          nom: monstre.nom, 
+          habilete: monstre.habilete ?? 0, 
+          endurance: monstre.endurance ?? 0,
+          id: monstre.id,
+          statMods: (monstre as any)._statMods as Array<{ name: string; delta: number; raison?: string }> | undefined
+        }
         this.combatState = this.combatResolver.initCombat(
           this.hero, 
           enemy, 
@@ -364,35 +378,14 @@ export class GameEngine {
     
     if (choice.section === 0) throw new Error(`Ce choix nécessite une action : "${choice.texte}"`)
 
-    // Track les modifications de stats du monstre pour le prochain combat
+    // Track les modifications de stats du monstre pour le prochain combat (ancien format string)
     if (choice.stat_monstre) {
       this.nextCombatMonsterStatMods = choice.stat_monstre
     }
 
     // Applique les effets du choix
     if ((choice as any).effets && this.hero) {
-      for (const effet of (choice as any).effets) {
-        // Vérifie la condition de l'effet
-        if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-        
-        if (effet.type === 'stat' && effet.stat) {
-          this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
-        } else if (effet.type === 'item' && effet.item) {
-          const itemName = effet.item.name
-          const existingItem = this.hero.inventaire.find(i => 
-            typeof i !== 'string' && i.id === itemName
-          )
-          if (existingItem && typeof existingItem !== 'string') {
-            existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
-          } else {
-            this.hero.inventaire.push({
-              id: itemName,
-              label: itemName,
-              quantite: effet.item.delta ?? 1
-            })
-          }
-        }
-      }
+      this._applyEffets((choice as any).effets, choice.texte)
     }
 
     // Applique les items gagnés du choix
@@ -547,20 +540,7 @@ export class GameEngine {
     if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
       // Succès
       if (si_reussi?.effets) {
-        for (const effet of si_reussi.effets) {
-          if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-          if (effet.type === 'stat' && effet.stat) {
-            this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
-          } else if (effet.type === 'item' && effet.item) {
-            const itemName = effet.item.name
-            const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
-            if (existingItem && typeof existingItem !== 'string') {
-              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
-            } else {
-              this.hero.inventaire.push({ id: itemName, label: itemName, quantite: effet.item.delta ?? 1 })
-            }
-          }
-        }
+        this._applyEffets(si_reussi.effets, choice.texte)
       }
       // Applique les items gagnés en cas de succès
       if (si_reussi?.items && this.hero) {
@@ -571,20 +551,7 @@ export class GameEngine {
     } else {
       // Échec
       if (si_echoue?.effets) {
-        for (const effet of si_echoue.effets) {
-          if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-          if (effet.type === 'stat' && effet.stat) {
-            this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? choice.texte)
-          } else if (effet.type === 'item' && effet.item) {
-            const itemName = effet.item.name
-            const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
-            if (existingItem && typeof existingItem !== 'string') {
-              existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
-            } else {
-              this.hero.inventaire.push({ id: itemName, label: itemName, quantite: effet.item.delta ?? 1 })
-            }
-          }
-        }
+        this._applyEffets(si_echoue.effets, choice.texte)
       }
       // Applique les items gagnés en cas d'échec
       if (si_echoue?.items && this.hero) {
@@ -845,6 +812,91 @@ export class GameEngine {
   }
 
   /**
+   * Applique une liste d'effets au héros (stat, item, monstre_stat).
+   * Point d'entrée unique pour tous les contextes : choix, si_reussi, si_echoue, section.
+   */
+  private _applyEffets(effets: import('../types').Effet[], labelSource: string): void {
+    if (!this.hero) return
+    for (const effet of effets) {
+      if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
+
+      if (effet.type === 'stat' && effet.stat) {
+        this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? labelSource)
+      } else if (effet.type === 'item' && effet.item) {
+        const itemName = effet.item.name
+        const existingItem = this.hero.inventaire.find(i =>
+          typeof i !== 'string' && i.id === itemName
+        )
+        if (existingItem && typeof existingItem !== 'string') {
+          existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
+        } else {
+          this.hero.inventaire.push({
+            id: itemName,
+            label: itemName,
+            quantite: effet.item.delta ?? 1
+          })
+        }
+      } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
+        const ms = effet.monstre_stat
+        const key = ms.monstre_id || '__any__'
+        if (!this.pendingMonsterStatMods[key]) this.pendingMonsterStatMods[key] = []
+        this.pendingMonsterStatMods[key].push(ms)
+      }
+    }
+  }
+
+  /**
+   * Applique les mods structurés (type "monstre_stat") au monstre donné.
+   * Cherche d'abord par monstre_id, puis consomme les mods "__any__" si pas de match ciblé.
+   * Les mods consommés sont supprimés de pendingMonsterStatMods.
+   */
+  private _applyPendingMonsterStatMods(monstre: import('../types').MonstreData): import('../types').MonstreData {
+    if (Object.keys(this.pendingMonsterStatMods).length === 0) return monstre
+
+    // Cherche par id exact
+    const id = monstre.id
+    const modsToApply: import('../types').EffetMonstreStat[] = []
+
+    if (id && this.pendingMonsterStatMods[id]) {
+      modsToApply.push(...this.pendingMonsterStatMods[id])
+      delete this.pendingMonsterStatMods[id]
+    }
+
+    // Consomme aussi les mods sans id ciblé (__any__)
+    if (this.pendingMonsterStatMods['__any__']) {
+      modsToApply.push(...this.pendingMonsterStatMods['__any__'])
+      delete this.pendingMonsterStatMods['__any__']
+    }
+
+    if (modsToApply.length === 0) return monstre
+
+    let m = { ...monstre }
+    for (const mod of modsToApply) {
+      if (mod.name === 'endurance') {
+        m = { ...m, endurance: Math.max(1, (m.endurance ?? 0) + mod.delta) }
+      } else if (mod.name === 'habilete') {
+        m = { ...m, habilete: Math.max(1, (m.habilete ?? 0) + mod.delta) }
+      }
+    }
+
+    // Attache les mods complets au monstre pour affichage dans l'UI combat
+    ;(m as any)._statMods = modsToApply.map(mod => ({
+      name: mod.name,
+      delta: mod.delta,
+      raison: mod.raison
+    }))
+
+    return m
+  }
+
+  /**
+   * Retourne les mods de monstres en attente (pour affichage UI préventif si besoin)
+   */
+  getPendingMonsterStatMods(): Record<string, import('../types').EffetMonstreStat[]> {
+    return { ...this.pendingMonsterStatMods }
+  }
+
+  /**
    * Cherche les stats initiales d'un monstre par son id dans toutes les sections
    */
   private _findMonsterInitialStats(monsterId: string): { habilete: number; endurance: number } | null {
@@ -919,6 +971,10 @@ export class GameEngine {
     if (state) {
       // Ajouter les utilisations des choix locaux
       state.choixUtilisations = { ...this.choixUtilisations }
+      // Ajouter les mods de monstres en attente
+      if (Object.keys(this.pendingMonsterStatMods).length > 0) {
+        state.pendingMonsterStatMods = { ...this.pendingMonsterStatMods }
+      }
       this.saveState = state
     }
   }

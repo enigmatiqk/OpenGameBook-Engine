@@ -34,6 +34,21 @@ export class CombatView {
     title.textContent = `⚔️ Combat : ${state.enemy.nom}`
     wrap.appendChild(title)
 
+    // Affiche les malus/bonus appliqués avant le combat (raisons des mods de stats)
+    if (state.enemy.statMods && state.enemy.statMods.length > 0) {
+      const modNotice = document.createElement('div')
+      modNotice.className = 'combat-stat-mods'
+      for (const mod of state.enemy.statMods) {
+        const span = document.createElement('p')
+        span.className = 'combat-stat-mod-raison'
+        const sign = mod.delta > 0 ? '+' : ''
+        const label = mod.raison ? `${mod.raison} (${sign}${mod.delta} ${mod.name})` : `${sign}${mod.delta} ${mod.name}`
+        span.textContent = `⚠️ ${label}`
+        modNotice.appendChild(span)
+      }
+      wrap.appendChild(modNotice)
+    }
+
     // Stats vie (toujours à jour depuis le state)
     wrap.appendChild(this._buildStats(state))
 
