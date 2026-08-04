@@ -267,12 +267,12 @@ export class GameView {
         }
 
         if (choice.action) {
-          // Choix action : déclenche un jet de dés ou exécute immédiatement si pas de dé requis
+          // Choix action : déclenche un jet de dés ou exécute directement selon la règle
           btn.addEventListener('click', () => {
             const pending = this.engine.getActionPendingRoll(choice)
             if (!pending) {
-              // Action sans dé (ex: restaurer_stat) → exécution immédiate
-              this.engine.executeRestaurerStatAction(choice, choixIndex)
+              // Règle sans dé → exécution immédiate
+              this.engine.executeActionNoDice(choice, choixIndex)
               this._render()
               return
             }

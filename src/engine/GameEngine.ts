@@ -558,9 +558,9 @@ export class GameEngine {
     
     const actionName = typeof action === 'string' ? action : (action as any).name
     
-    // Si c'est un restaurer_stat, pas besoin de dé, retourne null
+    // Une règle qui n'utilise pas de dés retourne null — l'UI appellera executeActionNoDice
     const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (regle?.type === 'restaurer_stat') {
+    if (regle && !GameEngineActions.requiresDice(regle)) {
       return null
     }
     
@@ -679,10 +679,10 @@ export class GameEngine {
   }
 
   /**
-   * Exécute une action restaurer_stat (sans dé)
-   * Retourne le message de résultat et navigue si nécessaire
+   * Exécute une action qui ne nécessite pas de dé (ex: restaurer_stat).
+   * Point d'entrée générique : l'UI ne connaît pas le type de la règle.
    */
-  executeRestaurerStatAction(choice: Choice, choixIndex?: number): { success: boolean; message: string } {
+  executeActionNoDice(choice: Choice, choixIndex?: number): { success: boolean; message: string } {
     if (!this.adventure || !this.hero) throw new Error('No active game.')
     if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
 
@@ -690,9 +690,7 @@ export class GameEngine {
     if (!actionName) throw new Error('Action name not found')
 
     const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (!regle || regle.type !== 'restaurer_stat') {
-      throw new Error('Cette action n\'est pas un restaurer_stat')
-    }
+    if (!regle) throw new Error(`Règle inconnue : "${actionName}"`)
 
     // Vérifie les limites d'utilisation par contexte (max_utilisations)
     const availability = this.isRegleAvailable(actionName)
@@ -700,60 +698,64 @@ export class GameEngine {
       return { success: false, message: availability.raison ?? 'Limite d\'utilisation atteinte' }
     }
 
-    const rule = regle as any
-    const stat = rule.stat
-    const current = this.hero.statistiques[stat] ?? 0
+    // Délègue l'exécution selon le type de règle
+    if (regle.type === 'restaurer_stat') {
+      const rule = regle as any
+      const stat = rule.stat
+      const current = this.hero.statistiques[stat] ?? 0
 
-    // Vérifie la condition item si définie
-    if (rule.condition?.item_id) {
-      const condItemId = rule.condition.item_id
-      const condQty = rule.condition.quantite ?? 1
-      const condItem = this.hero.inventaire.find((i: any) => typeof i !== 'string' && i.id === condItemId)
-      const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
-      if (availableQty < condQty) {
-        return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
+      // Vérifie la condition item si définie
+      if (rule.condition?.item_id) {
+        const condItemId = rule.condition.item_id
+        const condQty = rule.condition.quantite ?? 1
+        const condItem = this.hero.inventaire.find((i: any) => typeof i !== 'string' && i.id === condItemId)
+        const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
+        if (availableQty < condQty) {
+          return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
+        }
       }
-    }
 
-    // Calcule la target value
-    let targetValue: number
-    if (rule.valeur === 'start') {
-      targetValue = this.hero.statistiques_initiales[stat] ?? 0
-    } else if (rule.valeur === 'start+1') {
-      targetValue = (this.hero.statistiques_initiales[stat] ?? 0) + 1
-    } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
-      const n = parseInt(rule.valeur.slice('current+'.length), 10)
-      targetValue = current + (isNaN(n) ? 0 : n)
-    } else {
-      targetValue = rule.valeur
-    }
-
-    const delta = targetValue - current
-
-    if (delta !== 0) {
-      if (rule.ignore_max) {
-        this.hero.statistiques[stat] = targetValue
-        this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
+      // Calcule la target value
+      let targetValue: number
+      if (rule.valeur === 'start') {
+        targetValue = this.hero.statistiques_initiales[stat] ?? 0
+      } else if (rule.valeur === 'start+1') {
+        targetValue = (this.hero.statistiques_initiales[stat] ?? 0) + 1
+      } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
+        const n = parseInt(rule.valeur.slice('current+'.length), 10)
+        targetValue = current + (isNaN(n) ? 0 : n)
       } else {
-        this.applyStatDelta(stat, delta, `action ${actionName}`)
+        targetValue = rule.valeur
       }
-    }
 
-    // Consomme le cout_item si défini
-    if (rule.cout_item?.item_id) {
-      const coutId = rule.cout_item.item_id
-      const coutQty = rule.cout_item.quantite ?? 1
-      const coutIdx = this.hero.inventaire.findIndex((i: any) => typeof i !== 'string' && i.id === coutId)
-      if (coutIdx !== -1) {
-        const coutItem = this.hero.inventaire[coutIdx]
-        if (typeof coutItem !== 'string') {
-          if (coutItem.quantite && coutItem.quantite > coutQty) {
-            coutItem.quantite -= coutQty
-          } else {
-            this.hero.inventaire.splice(coutIdx, 1)
+      const delta = targetValue - current
+      if (delta !== 0) {
+        if (rule.ignore_max) {
+          this.hero.statistiques[stat] = targetValue
+          this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
+        } else {
+          this.applyStatDelta(stat, delta, `action ${actionName}`)
+        }
+      }
+
+      // Consomme le cout_item si défini
+      if (rule.cout_item?.item_id) {
+        const coutId = rule.cout_item.item_id
+        const coutQty = rule.cout_item.quantite ?? 1
+        const coutIdx = this.hero.inventaire.findIndex((i: any) => typeof i !== 'string' && i.id === coutId)
+        if (coutIdx !== -1) {
+          const coutItem = this.hero.inventaire[coutIdx]
+          if (typeof coutItem !== 'string') {
+            if (coutItem.quantite && coutItem.quantite > coutQty) {
+              coutItem.quantite -= coutQty
+            } else {
+              this.hero.inventaire.splice(coutIdx, 1)
+            }
           }
         }
       }
+    } else {
+      throw new Error(`Type de règle "${regle.type}" ne supporte pas l'exécution sans dé`)
     }
 
     // Track l'action comme résolue avec succès

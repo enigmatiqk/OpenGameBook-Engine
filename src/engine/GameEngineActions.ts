@@ -15,6 +15,17 @@ export class GameEngineActions {
   }
 
   /**
+   * Indique si une règle nécessite un jet de dés pour être résolue.
+   * Les règles sans dés (ex: restaurer_stat) sont exécutées directement.
+   */
+  static requiresDice(regle: Regle): boolean {
+    if (regle.type === 'test_stat') return true
+    if (regle.type === 'composite') return true  // composite délègue à test_stat
+    if (regle.type === 'restaurer_stat') return false
+    return true  // comportement sûr par défaut
+  }
+
+  /**
    * Récupère la formule de dés pour une action
    */
   static getActionFormula(adventure: Adventure | null, action: string): string {
