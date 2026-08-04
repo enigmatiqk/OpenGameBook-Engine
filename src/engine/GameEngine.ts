@@ -12,6 +12,7 @@ import { GameEngineCombat } from './GameEngineCombat'
 import { GameEngineNavigation } from './GameEngineNavigation'
 import { GameEngineActions } from './GameEngineActions'
 import { GameEngineSave } from './GameEngineSave'
+import { resolveStatValeurDelta } from './schema-effects'
 
 let rollIdCounter = 0
 function newRollId(): string { return `roll_${++rollIdCounter}` }
@@ -1083,7 +1084,15 @@ export class GameEngine {
       if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
 
       if (effet.type === 'stat' && effet.stat) {
-        this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? labelSource)
+        const valeurDelta = resolveStatValeurDelta(effet.stat, this.hero)
+        if (valeurDelta !== null) {
+          const effectiveDelta = valeurDelta > 0 ? valeurDelta : (effet.stat.ignore_max ? valeurDelta : 0)
+          if (effectiveDelta !== 0) {
+            this.applyStatDelta(effet.stat.name, effectiveDelta, effet.stat.raison ?? labelSource)
+          }
+        } else {
+          this.applyStatDelta(effet.stat.name, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
+        }
       } else if (effet.type === 'item' && effet.item) {
         const itemName = effet.item.name
         let delta: number

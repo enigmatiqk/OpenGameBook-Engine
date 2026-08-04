@@ -1,6 +1,7 @@
 import type { Section, Choice, Hero, CombatState } from '../types'
 import { GameEngineHero } from './GameEngineHero'
 import { parseDiceFormula, rollDice } from './CombatResolver'
+import { resolveStatValeurDelta } from './schema-effects'
 
 /**
  * Gère la navigation entre sections et les conditions
@@ -229,18 +230,38 @@ export class GameEngineNavigation {
 
       if (effet.type === 'stat' && effet.stat) {
         const statName = GameEngineHero.normalizeStat(effet.stat.name, hero)
-        if (effet.stat.ignore_max) {
+        const statWithName = { ...effet.stat, name: statName }
+        const valeurDelta = resolveStatValeurDelta(statWithName, hero)
+
+        if (valeurDelta !== null) {
+          // Effet avec valeur absolue (ex: "start-2") — ne descend pas sauf ignore_max
+          const effectiveDelta = valeurDelta > 0 ? valeurDelta : (effet.stat.ignore_max ? valeurDelta : 0)
+          if (effectiveDelta !== 0) {
+            if (effet.stat.ignore_max) {
+              hero.statistiques[statName] = (hero.statistiques[statName] ?? 0) + effectiveDelta
+              hero.historique.push({
+                timestamp: Date.now(),
+                stat: statName,
+                delta: effectiveDelta,
+                raison: effet.stat.raison ?? `section ${section.numero}`,
+              })
+            } else {
+              applyStatDelta(statName, effectiveDelta, effet.stat.raison ?? `section ${section.numero}`)
+            }
+          }
+        } else if (effet.stat.ignore_max) {
+          const delta = effet.stat.delta ?? 0
           if (hero.statistiques[statName] !== undefined) {
-            hero.statistiques[statName] += effet.stat.delta
+            hero.statistiques[statName] += delta
             hero.historique.push({
               timestamp: Date.now(),
               stat: statName,
-              delta: effet.stat.delta,
+              delta,
               raison: effet.stat.raison ?? `section ${section.numero}`,
             })
           }
         } else {
-          applyStatDelta(statName, effet.stat.delta, effet.stat.raison ?? `section ${section.numero}`)
+          applyStatDelta(statName, effet.stat.delta ?? 0, effet.stat.raison ?? `section ${section.numero}`)
         }
       } else if (effet.type === 'item' && effet.item) {
         // Cherche si l'item existe déjà

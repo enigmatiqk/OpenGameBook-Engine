@@ -194,7 +194,9 @@ export interface CombatData {
 
 export interface EffetStat {
   name: string        // nom de la stat (ex: "endurance", "habilete", "chance")
-  delta: number       // modification à appliquer (positif ou négatif)
+  delta?: number      // modification fixe à appliquer (positif ou négatif)
+  valeur?: string | number  // cible absolue : "start-N" | "start+N" | "start" | nombre fixe
+                            // "start-2" → monte jusqu'à (initiale - 2), sans dépasser ni descendre
   raison?: string     // raison de la modification (pour l'historique)
   ignore_max?: boolean // si true, peut dépasser le max initial de la stat
 }
