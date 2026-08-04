@@ -217,113 +217,25 @@ Permet au joueur de choisir des objets de départ parmi des options.
 
 ## `regles` ★ obligatoire
 
-### `combat` ★ obligatoire
+La documentation complète des règles est dans [11 - Règles](11-regles.md).
+
+### Règles système (résumé)
 
 ```json
-"combat": {
-  "stat_attaque":   "habilete+2d6",
-  "stat_vie":       "endurance",
-  "attaque":        ">",
-  "degats_victoire": 2,
-  "degats_defaite":  2,
-  "fuite": {
-    "possible": "section",
-    "cout":     "-2 endurance"
+"regles": {
+  "combat": {
+    "stat_attaque":    "habilete+2d6",
+    "stat_vie":        "endurance",
+    "attaque":         ">",
+    "degats_victoire": 2,
+    "degats_defaite":  2
   },
-  "events": {
-    "attaque": "attaque_chance",
-    "defense": "defense_chance",
-    "fuite":   "fuite_chance"
-  }
+  "victoire": { "sections": [400] },
+  "defaite":  { "endurance_min": 0 }
 }
 ```
 
-| Champ | Description |
-|-------|-------------|
-| `stat_attaque` | Formule de force d'attaque : `stat+NdX` |
-| `stat_vie` | Statistique utilisée comme points de vie |
-| `attaque` | Condition de victoire du round : `">"` ou `">="` |
-| `degats_victoire` | Dégâts infligés à l'ennemi si le héros gagne le round |
-| `degats_defaite` | Dégâts reçus par le héros si l'ennemi gagne le round |
-| `fuite.possible` | `"non"`, `"livre"` (toujours), `"section"` (si la section le permet) |
-| `fuite.cout` | Coût de la fuite (ex : `"-2 endurance"`) |
-| `events` | Événements déclenchables pendant le combat (attaque chance, défense chance, fuite…) |
-
-### `victoire` ★ obligatoire
-
-```json
-"victoire": {
-  "sections": [400]
-}
-```
-
-Liste des numéros de sections qui déclenchent la victoire (en plus du champ `end: "victoire"` sur les sections).
-
-### `defaite` ★ obligatoire
-
-```json
-"defaite": {
-  "endurance_min": 0
-}
-```
-
-Seuil d'endurance en dessous duquel le héros est mort.
-
-### Règles personnalisées — optionnel
-
-Trois types de règles peuvent être ajoutées :
-
-#### `restaurer_stat`
-Restaure une statistique (utilisé pour les potions).
-
-```json
-"potion_adresse": {
-  "type":  "restaurer_stat",
-  "stat":  "habilete",
-  "valeur": "start"
-}
-```
-
-| Champ | Description |
-|-------|-------------|
-| `stat` | Statistique à restaurer |
-| `valeur` | `"start"` (valeur initiale), `"start+1"`, ou un nombre |
-| `redefine` | Redéfinit la valeur initiale avant de restaurer |
-| `ignore_max` | Si `true`, ignore le plafond |
-
-#### `test_stat`
-Test de statistique avec résultats conditionnels (ex : tenter la chance).
-
-```json
-"tenter_chance": {
-  "type":      "test_stat",
-  "jet":       "2d6",
-  "stat":      "chance",
-  "condition": "<=",
-  "resultats": {
-    "reussi": "Vous êtes chanceux !",
-    "echoue": "Pas de chance..."
-  },
-  "effets": {
-    "toujours": "chance_delta:-1",
-    "reussi":   "endurance_delta:+2"
-  }
-}
-```
-
-#### `composite`
-Enchaîne plusieurs règles.
-
-```json
-"attaque_chance": {
-  "type":   "composite",
-  "utilise": "tenter_chance",
-  "effets": {
-    "reussi": "degats_bonus:+2",
-    "echoue": "degats_malus:-1"
-  }
-}
-```
+Voir [11 - Règles](11-regles.md) pour les règles personnalisées (`test_stat`, `composite`, `restaurer_stat`) et leurs options complètes.
 
 ---
 

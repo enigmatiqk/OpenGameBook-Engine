@@ -33,6 +33,12 @@ Comment ajouter des effets aux sections (augmentations de stat, items, etc.).
 ### [09 - Tests E2E](09-tests-e2e.md)
 Guide complet pour écrire et exécuter les tests end-to-end avec Playwright.
 
+### [10 - Schéma JSON pour IA](10-json-schema-ia.md)
+Schéma de sortie JSON à destination des IA pour la génération d'aventures.
+
+### [11 - Règles](11-regles.md)
+Référence complète des règles : types (`test_stat`, `composite`, `restaurer_stat`), champs, exemples, limites d'utilisation et architecture moteur.
+
 ---
 
 ## 🚀 Démarrage rapide
