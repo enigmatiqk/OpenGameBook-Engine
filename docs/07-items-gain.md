@@ -67,7 +67,12 @@ L'item est simplement ajouté à l'inventaire.
 ```
 
 ### `remplace: true`
-L'item remplace le premier item du même type dans l'inventaire (si `type` est défini).
+L'item est **équipé directement** dans le slot correspondant à son `type` (champ `type` obligatoire).
+
+- Si le slot est **vide** : l'item est équipé immédiatement.
+- Si le slot est **déjà occupé** : l'ancien item est déséquipé (retour dans l'inventaire) et le nouvel item prend sa place.
+
+> C'est le comportement attendu pour les armes et armures trouvées en cours d'aventure : le héros porte toujours quelque chose, et l'acquisition remplace ce qu'il avait.
 
 ```json
 {

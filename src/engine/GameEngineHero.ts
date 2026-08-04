@@ -149,24 +149,26 @@ export class GameEngineHero {
    * Gère le remplacement d'items si nécessaire
    * Applique les effets de l'item
    */
-  static addItemGain(hero: Hero, itemGain: ItemGain): { success: boolean; message: string } {
+  static addItemGain(hero: Hero, itemGain: ItemGain, emplacements: Record<string, import('../types').EmplacementDefinition> = {}): { success: boolean; message: string } {
     return GameEngineInventaire.addItemGain(
       hero,
       itemGain,
       (h, i) => this.removeItemEffects(h, i),
-      (h, i) => this.applyItemEffects(h, i)
+      (h, i) => this.applyItemEffects(h, i),
+      emplacements
     )
   }
 
   /**
    * Ajoute plusieurs items gagnés à l'inventaire
    */
-  static addItemGains(hero: Hero, itemGains: ItemGain[]): string[] {
+  static addItemGains(hero: Hero, itemGains: ItemGain[], emplacements: Record<string, import('../types').EmplacementDefinition> = {}): string[] {
     return GameEngineInventaire.addItemGains(
       hero,
       itemGains,
       (h, i) => this.removeItemEffects(h, i),
-      (h, i) => this.applyItemEffects(h, i)
+      (h, i) => this.applyItemEffects(h, i),
+      emplacements
     )
   }
 

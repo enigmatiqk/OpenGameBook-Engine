@@ -88,9 +88,38 @@ Liste d'effets appliqués au moment du clic, avant la navigation vers la section
 
 ---
 
-## Action avec dés
+## Action `lancer_de`
 
-Un choix peut déclencher un test de statistique (ex : tenter sa chance, tenter son habileté). Le résultat dirige vers `si_reussi` ou `si_echoue`.
+Quand un choix doit lancer des dés et naviguer vers une section selon le résultat (sans test de stat), utiliser `"type": "lancer_de"`.
+
+```json
+{
+  "texte": "Lancer le dé",
+  "action": {
+    "type": "lancer_de",
+    "lancer_de": {
+      "formule": "1d6",
+      "resultats": {
+        "6":   { "section": 158 },
+        "1-5": { "section": 298 }
+      }
+    }
+  }
+}
+```
+
+### Champs de `lancer_de`
+
+| Champ | Description |
+|-------|-------------|
+| `formule` | Formule de dés (ex : `"1d6"`, `"2d6"`) |
+| `resultats` | Table de résultats. Clés : valeur exacte (`"6"`) ou plage (`"1-5"`). Valeurs : `{ "section": N }` |
+
+> À distinguer d'une `action` de type `tenter_chance` qui compare le jet à une statistique. Ici le résultat navigue directement selon la valeur obtenue.
+
+---
+
+## Action avec dés (test de stat)
 
 ```json
 {

@@ -289,7 +289,7 @@ Chaque section doit inclure :
 | `items` | array | Items gagnés |
 | `libre` | boolean | Choix libre |
 | `end` | string | Fin de partie directe |
-| `action` | string | Règle à déclencher |
+| `action` | string/object | Règle à déclencher (`"tenter_chance"`, ou objet `{ "type": "lancer_de", ... }`) |
 | `si_reussi` / `si_echoue` | object | Résultats conditionnels |
 
 > Bonnes pratiques pour les choix :
@@ -327,11 +327,13 @@ Chaque section doit inclure :
 | Champ | Type | Description |
 |------|------|-------------|
 | `monstres` | array | Liste des ennemis |
-| `mode` | string | `sequentiel`, `fusion` ou `lancer_de` |
+| `mode` | string | `sequentiel` (défaut) ou `fusion` |
+| `lancer_de` | object | Sélection du monstre par dé : `{ "choix": "1d6" }` |
 | `attaque_heros` | string | Modificateur du héros |
 | `attaque_monstre` | string | Modificateur de l'ennemi |
 | `victoire` | object | Section après victoire |
 | `fuite` | object | Section après fuite |
+| `defense` | object | Lancer de défense : `{ "type": "lancer_de", "lancer_de": { "choix": "1d6", "resultats": {...} } }` |
 
 ### `effets`
 

@@ -95,12 +95,28 @@ export interface RegleComposite {
   effets: Record<string, string>
 }
 
+export interface MaxUtilisations {
+  section?: number          // max N fois sur une section donnée (ne reset jamais)
+  section_courante?: number // max N fois par visite de la section courante (reset à chaque navigation)
+  combat?: number           // max N fois pendant un combat actif (reset en fin de combat)
+  aventure?: number         // max N fois sur toute la partie
+}
+
 export interface RegleRestaurerStat {
   type: "restaurer_stat"
   stat: string
   redefine?: "start" | "start+1" | number  // redéfinit la valeur initiale EN PREMIER
-  valeur: "start" | "start+1" | number
+  valeur: "start" | "start+1" | number | `current+${number}`  // "current+N" ajoute N à la valeur courante
   ignore_max?: boolean  // si true, ignore le plafond normal
+  condition?: {
+    item_id?: string       // l'item requis dans l'inventaire
+    quantite?: number      // quantité minimale requise (défaut: 1)
+  }
+  cout_item?: {
+    item_id: string        // l'item à consommer
+    quantite?: number      // quantité à retirer (défaut: 1)
+  }
+  max_utilisations?: MaxUtilisations  // limites d'utilisation par contexte
 }
 
 export type Regle = RegleTestStat | RegleComposite | RegleRestaurerStat
@@ -141,10 +157,16 @@ export interface CombatModifier {
   raison?: string            // description de la modification
 }
 
+export interface LancerDeData {
+  choix: string                              // formule de dés (ex: "1d6")
+  resultats?: Record<string, string>         // pour defense : ex: {"2": "-1", "4": "-1", "6": "-2"}
+  formule?: string                           // pour action : alias de choix (rétrocompat)
+}
+
 export interface CombatData {
   monstres: MonstreData[]
-  mode?: "sequentiel" | "fusion" | "lancer_de"
-  choix?: string             // formule de dés pour mode "lancer_de" (ex: "1d6")
+  mode?: "sequentiel" | "fusion"
+  lancer_de?: LancerDeData                  // mode lancer_de : sélection du monstre par dé
   attaque_heros?: string      // ex: "+1", "-1"
   attaque_monstre?: string    // ex: "+2", "-1"
   degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
@@ -160,8 +182,7 @@ export interface CombatData {
   }
   defense?: {
     type: "lancer_de"
-    choix: string             // formule de dés (ex: "1d6")
-    resultats: Record<string, string>  // ex: {"2": "-1", "4": "-1", "6": "-2"}
+    lancer_de: LancerDeData   // données du lancer de dé de défense
   }
   condition?: ChoiceCondition // condition pour afficher le bouton de combat
 }
@@ -237,15 +258,22 @@ export interface ActionOutcome {
   end?: "victoire" | "defaite"
 }
 
-export interface Action {
+export interface ActionLancerDe {
+  type: "lancer_de"
+  lancer_de: {
+    formule: string
+    resultats: Record<string, { section?: number; effets?: Effet[] }>
+  }
+}
+
+export interface ActionRegle {
   name: string
-  // Pour lancer_de
-  formule?: string
-  resultats?: Record<string, { section?: number; effets?: Effet[] }>
   // Pour tenter_chance, test_stat, etc.
   si_reussi?: ActionOutcome
   si_echoue?: ActionOutcome
 }
+
+export type Action = ActionLancerDe | ActionRegle
 
 export interface Choice {
   texte: string
@@ -341,6 +369,7 @@ export interface SaveState {
   tempsJeuMs: number
   timestamp: number
   choixUtilisations?: Record<string, number>  // Track des utilisations par choix (clé: "section_numero-choix_index")
+  regleUtilisations?: Record<string, number>  // Track des utilisations des règles (clé: "section-N-règle", "section_courante-règle", "combat-règle", "aventure-règle")
   pendingMonsterStatMods?: Record<string, EffetMonstreStat[]>  // Mods en attente pour les monstres (clé: monstre_id ou "__any__")
 }
 
@@ -445,7 +474,7 @@ export interface CombatState {
   // fuite en cours (section vers laquelle fuir après le résultat de l'action)
   fuiteEnCours?: number
   // Mode sequentiel : liste des monstres restants
-  mode?: 'sequentiel' | 'fusion' | 'lancer_de'
+  mode?: 'sequentiel' | 'fusion'
   monstresRestants?: MonstreData[]
   monstreIndex?: number
   // Données de combat (bonus d'attaque, dégâts, défense)

@@ -253,11 +253,29 @@ export class GameView {
           continue
         }
 
+        // Vérifie les limites max_utilisations de la règle si ce choix a une action
+        if (choice.action && typeof choice.action === 'string') {
+          const regleCheck = this.engine.isRegleAvailable(choice.action)
+          if (!regleCheck.ok) {
+            btn.disabled = true
+            btn.classList.add('choice-btn--locked')
+            btn.title = regleCheck.raison ?? 'Limite d\'utilisation atteinte'
+            li.appendChild(btn)
+            ul.appendChild(li)
+            continue
+          }
+        }
+
         if (choice.action) {
-          // Choix action : déclenche un jet de dés
+          // Choix action : déclenche un jet de dés ou exécute immédiatement si pas de dé requis
           btn.addEventListener('click', () => {
             const pending = this.engine.getActionPendingRoll(choice)
-            if (!pending) return
+            if (!pending) {
+              // Action sans dé (ex: restaurer_stat) → exécution immédiate
+              this.engine.executeRestaurerStatAction(choice, choixIndex)
+              this._render()
+              return
+            }
             this._showActionRoll(pending, (rolls) => {
               this.engine.resolveActionChoice(choice, rolls)
               this._render()
@@ -279,7 +297,7 @@ export class GameView {
     // Si la section courante a un combat, afficher le bouton approprié
     if (section.combat) {
       // Mode lancer_de : afficher un tableau des monstres avant le bouton
-      if (section.combat.mode === 'lancer_de' && section.combat.choix) {
+      if (section.combat.lancer_de) {
         const table = document.createElement('table')
         table.className = 'monsters-table'
         
@@ -376,7 +394,7 @@ export class GameView {
       }
       
       // Mode lancer_de : afficher un bouton pour lancer les dés de sélection
-      if (section.combat.mode === 'lancer_de' && section.combat.choix) {
+      if (section.combat.lancer_de) {
         const pending = this.engine.getMonsterSelectionRoll()
         if (pending) {
           btn.textContent = 'Lancer un dé pour déterminer le monstre'

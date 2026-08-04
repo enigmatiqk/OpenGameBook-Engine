@@ -21,7 +21,8 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
 | `monstres` | ★ | Liste des ennemis (au moins un) |
-| `mode` | — | Mode de combat : `"sequentiel"` (défaut), `"fusion"`, `"lancer_de"` |
+| `mode` | — | Mode de combat : `"sequentiel"` (défaut) ou `"fusion"` |
+| `lancer_de` | — | Mode lancer de dé : `{ "choix": "1d6" }` — sélectionne un monstre aléatoire |
 | `attaque_heros` | — | Modificateur de force d'attaque du héros pour ce combat (ex : `"+1"`) |
 | `attaque_monstre` | — | Modificateur de force d'attaque de l'ennemi (ex : `"-1"`) |
 | `victoire` | — | Que se passe-t-il après victoire |
@@ -56,7 +57,23 @@ Les monstres sont combattus un par un dans l'ordre. Le suivant apparaît quand l
 Les stats de tous les monstres sont combinées en un seul ennemi.
 
 ### `lancer_de`
-Mode spécial où le joueur lance des dés pour déterminer l'ennemi (défini via `events`).
+Mode spécial où le joueur lance des dés pour déterminer quel ennemi il va affronter. Chaque monstre porte un champ `face` (numéro de face du dé). La formule de dés est définie dans `lancer_de.choix`.
+
+```json
+"combat": {
+  "lancer_de": { "choix": "1d6" },
+  "monstres": [
+    { "nom": "LUTIN",    "habilete": 5, "endurance": 3, "face": 1 },
+    { "nom": "FARFADET", "habilete": 6, "endurance": 3, "face": 2 },
+    { "nom": "TROLL",    "habilete": 8, "endurance": 4, "face": 6 }
+  ],
+  "victoire": { "section": -1 }
+}
+```
+
+> `combat.lancer_de` est le seul usage de `lancer_de` qui **ne porte pas** de champ `"type"` — la clé `lancer_de` sur le combat est elle-même le discriminant. Tous les autres usages (`action`, `defense`, `modifier`) utilisent `"type": "lancer_de"` avec les données dans un sous-objet `"lancer_de": { ... }`.
+
+Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lancer. Le résultat du dé sélectionne le monstre à combattre.
 
 ---
 
@@ -95,6 +112,32 @@ Mode spécial où le joueur lance des dés pour déterminer l'ennemi (défini vi
 > Le bouton fuite s'affiche pendant le combat uniquement si `combat.fuite` est défini **ou** si un event de type `"btn_fuite"` est déclenché au round courant. Dans les deux cas, le héros doit être encore en vie.
 >
 > Le coût de la fuite (ex : `-2 endurance`) est défini dans `regles.combat.fuite.cout`.
+
+---
+
+## Défense avec lancer de dé (`defense`)
+
+Quand le héros perd un round, il peut lancer un dé pour réduire les dégâts subis. Le résultat est cherché dans `resultats` ; la valeur est un modificateur de dégâts (ex : `"-1"` = retire 1 dégât).
+
+```json
+"defense": {
+  "type": "lancer_de",
+  "lancer_de": {
+    "choix": "1d6",
+    "resultats": {
+      "2": "-1",
+      "4": "-1",
+      "6": "-2"
+    }
+  }
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `type` | Toujours `"lancer_de"` |
+| `lancer_de.choix` | Formule de dés (ex : `"1d6"`) |
+| `lancer_de.resultats` | Modificateurs indexés par valeur de dé. Les clés non présentes = 0 (pas de réduction) |
 
 ---
 

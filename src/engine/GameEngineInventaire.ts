@@ -36,6 +36,17 @@ export class GameEngineInventaire {
       const stat = rule.stat
       const current = hero.statistiques[stat] ?? 0
 
+      // Vérifie la condition item si définie (ex: avoir au moins 1 repas)
+      if (rule.condition?.item_id) {
+        const condItemId = rule.condition.item_id
+        const condQty = rule.condition.quantite ?? 1
+        const condItem = hero.inventaire.find(i => typeof i !== 'string' && i.id === condItemId)
+        const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
+        if (availableQty < condQty) {
+          return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
+        }
+      }
+
       // ÉTAPE 1 : Appliquer redefine EN PREMIER (si présent)
       if (rule.redefine !== undefined) {
         let newInitialValue: number
@@ -55,6 +66,10 @@ export class GameEngineInventaire {
         targetValue = hero.statistiques_initiales[stat] ?? 0
       } else if (rule.valeur === 'start+1') {
         targetValue = (hero.statistiques_initiales[stat] ?? 0) + 1
+      } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
+        // "current+N" : ajoute N à la valeur courante
+        const n = parseInt(rule.valeur.slice('current+'.length), 10)
+        targetValue = current + (isNaN(n) ? 0 : n)
       } else {
         targetValue = rule.valeur
       }
@@ -71,12 +86,28 @@ export class GameEngineInventaire {
         }
       }
 
-      // Décrémente la quantité
-      if (item.quantite && item.quantite > 1) {
-        item.quantite--
+      // Consomme le cout_item si défini (ex: retirer 1 repas de l'inventaire)
+      if (rule.cout_item?.item_id) {
+        const coutId = rule.cout_item.item_id
+        const coutQty = rule.cout_item.quantite ?? 1
+        const coutIdx = hero.inventaire.findIndex(i => typeof i !== 'string' && i.id === coutId)
+        if (coutIdx !== -1) {
+          const coutItem = hero.inventaire[coutIdx]
+          if (typeof coutItem !== 'string') {
+            if (coutItem.quantite && coutItem.quantite > coutQty) {
+              coutItem.quantite -= coutQty
+            } else {
+              hero.inventaire.splice(coutIdx, 1)
+            }
+          }
+        }
       } else {
-        // Supprime l'item s'il n'en reste plus
-        hero.inventaire.splice(itemIndex, 1)
+        // Comportement par défaut : décrémente l'item lui-même
+        if (item.quantite && item.quantite > 1) {
+          item.quantite--
+        } else {
+          hero.inventaire.splice(itemIndex, 1)
+        }
       }
 
       return { success: true, message: `${item.label} consommée !` }
@@ -103,12 +134,14 @@ export class GameEngineInventaire {
    * Ajoute un item gagné à l'inventaire du héros
    * Gère le remplacement d'items si nécessaire
    * Applique les effets de l'item
+   * @param emplacements emplacements_equipement de l'aventure (requis pour remplace:true sur slot vide)
    */
   static addItemGain(
     hero: Hero,
     itemGain: ItemGain,
     removeItemEffects: (hero: Hero, item: InventaireItem) => void,
-    applyItemEffects: (hero: Hero, item: InventaireItem) => void
+    applyItemEffects: (hero: Hero, item: InventaireItem) => void,
+    emplacements: Record<string, import('../types').EmplacementDefinition> = {}
   ): { success: boolean; message: string } {
     const newItem: any = {
       id: itemGain.id,
@@ -124,35 +157,78 @@ export class GameEngineInventaire {
     if (itemGain.bonus) newItem.bonus = itemGain.bonus
     if (itemGain.effets) newItem.effets = itemGain.effets
 
-    // Gère le remplacement d'items
-    if (itemGain.remplace) {
-      let itemToRemove = -1
-
-      if (itemGain.remplace === true && itemGain.type) {
-        // Remplace le premier item du même type
-        itemToRemove = hero.inventaire.findIndex(i => 
-          typeof i !== 'string' && i.type === itemGain.type
-        )
-      } else if (typeof itemGain.remplace === 'string') {
-        // Remplace l'item avec cet id spécifique
-        itemToRemove = hero.inventaire.findIndex(i => 
-          typeof i !== 'string' && i.id === itemGain.remplace
-        )
+    // remplace: true → équipe directement dans le slot du type de l'item
+    // - slot occupé par même type : déséquipe l'ancien (retour inventaire), équipe le nouveau
+    // - slot vide : équipe directement
+    if (itemGain.remplace === true && itemGain.type) {
+      // Cherche un slot occupé par un item du même type
+      let targetSlot: string | null = null
+      for (const [slotName, equippedItem] of Object.entries(hero.equipement)) {
+        if (equippedItem.type === itemGain.type) {
+          targetSlot = slotName
+          break
+        }
       }
 
-      if (itemToRemove !== -1) {
-        const removedItem = hero.inventaire[itemToRemove]
-        
-        // Retire les effets de l'ancien item
-        if (typeof removedItem !== 'string' && removedItem.effets) {
-          removeItemEffects(hero, removedItem)
+      if (targetSlot) {
+        // Déséquipe l'ancien → retour inventaire
+        const old = hero.equipement[targetSlot]
+        if (old.effets) removeItemEffects(hero, old)
+        old.equipe = false
+        hero.inventaire.push(old)
+        delete hero.equipement[targetSlot]
+      } else {
+        // Slot vide : cherche le nom du slot via emplacements_equipement
+        for (const [slotName, slotDef] of Object.entries(emplacements)) {
+          if (slotDef.types_acceptes.includes(itemGain.type)) {
+            // Capacité > 1 : cherche le premier sous-slot libre
+            if (slotDef.capacite > 1) {
+              for (let i = 1; i <= slotDef.capacite; i++) {
+                const sub = `${slotName}_${i}`
+                if (!hero.equipement[sub]) { targetSlot = sub; break }
+              }
+            } else {
+              targetSlot = slotName
+            }
+            break
+          }
         }
-        
-        hero.inventaire.splice(itemToRemove, 1)
+        // Fallback si aucun emplacement défini : utilise le type comme clé de slot
+        if (!targetSlot) targetSlot = itemGain.type
+      }
+
+      // Équipe le nouvel item dans le slot trouvé
+      newItem.equipe = true
+      hero.equipement[targetSlot] = newItem
+      if (newItem.effets) applyItemEffects(hero, newItem)
+      return { success: true, message: `${itemGain.label} équipé` }
+    }
+
+    // remplace: string → remplace un item spécifique par id (inventaire ou équipement)
+    if (typeof itemGain.remplace === 'string') {
+      // Cherche dans l'inventaire
+      const invIdx = hero.inventaire.findIndex(i =>
+        typeof i !== 'string' && i.id === itemGain.remplace
+      )
+      if (invIdx !== -1) {
+        const old = hero.inventaire[invIdx]
+        if (typeof old !== 'string' && old.effets) removeItemEffects(hero, old)
+        hero.inventaire.splice(invIdx, 1)
+      } else {
+        // Cherche dans l'équipement
+        for (const [slotName, equippedItem] of Object.entries(hero.equipement)) {
+          if (equippedItem.id === itemGain.remplace) {
+            if (equippedItem.effets) removeItemEffects(hero, equippedItem)
+            equippedItem.equipe = false
+            hero.inventaire.push(equippedItem)
+            delete hero.equipement[slotName]
+            break
+          }
+        }
       }
     }
 
-    // Ajoute l'item
+    // Sinon ajoute dans l'inventaire
     hero.inventaire.push(newItem)
     
     // Applique les effets du nouvel item
@@ -173,10 +249,11 @@ export class GameEngineInventaire {
     hero: Hero,
     itemGains: ItemGain[],
     removeItemEffects: (hero: Hero, item: InventaireItem) => void,
-    applyItemEffects: (hero: Hero, item: InventaireItem) => void
+    applyItemEffects: (hero: Hero, item: InventaireItem) => void,
+    emplacements: Record<string, import('../types').EmplacementDefinition> = {}
   ): string[] {
     return itemGains.map(gain => 
-      this.addItemGain(hero, gain, removeItemEffects, applyItemEffects).message
+      this.addItemGain(hero, gain, removeItemEffects, applyItemEffects, emplacements).message
     )
   }
 

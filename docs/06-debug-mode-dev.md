@@ -46,6 +46,37 @@ Permet d'injecter des items dans l'inventaire du héros pour tester les choix co
 | `item_count2` | `&item_count2=1` | Quantité du second item |
 | `item_id3`… | `&item_id3=epee` | Jusqu'à `item_id9` / `item_count9` |
 
+### Équipement
+
+Permet d'injecter des items directement dans les slots d'équipement du héros. Utile pour tester des sections qui vérifient ou utilisent des items équipés (armure, arme, etc.).
+
+| Paramètre | Exemple | Description |
+|-----------|---------|-------------|
+| `equip` | `&equip=armure_Armure de cuir` | Équipe un item dans le slot correspondant à son type |
+| `equip2` | `&equip2=arme_1main_Épée magique` | Second item équipé |
+| `equip3` | `&equip3=...` | Jusqu'à `equip9` |
+
+**Format :** `<type>_<label>` — le premier `_` sépare le type du label.
+
+| Valeur par défaut | |
+|---|---|
+| `poids` | 1 |
+| `quantite` | 1 |
+| `remplace` | false |
+
+Le moteur cherche automatiquement le slot correspondant au `type` dans `emplacements_equipement` de l'aventure. Si aucun slot n'est trouvé (type inconnu ou tous occupés), l'item est ajouté à l'inventaire simple.
+
+> Bonus de stats et effets d'item ne sont **pas** supportés en mode debug URL (uniquement `id`, `label`, `type`, `poids`).
+
+**Exemples :**
+```
+# Tester section 72 qui attend une armure équipée
+http://localhost:5173/?section=72&adventure=1&equip=armure_Armure de cuir
+
+# Avec arme + armure
+http://localhost:5173/?section=27&adventure=1&equip=arme_1main_Épée normale&equip2=armure_Armure légère
+```
+
 ### Combat et Dés
 
 | Paramètre | Exemple | Description |

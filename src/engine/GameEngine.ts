@@ -41,6 +41,10 @@ export class GameEngine {
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
 
+  // Track des utilisations des règles par contexte
+  // Clés: "section-{N}-{action}", "section_courante-{action}", "combat-{action}", "aventure-{action}"
+  private regleUtilisations: Record<string, number> = {}
+
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -244,6 +248,10 @@ export class GameEngine {
     if (save.choixUtilisations) {
       this.choixUtilisations = { ...save.choixUtilisations }
     }
+    // Charger les utilisations des règles
+    if (save.regleUtilisations) {
+      this.regleUtilisations = { ...save.regleUtilisations }
+    }
     // Charger les mods de monstres en attente
     if (save.pendingMonsterStatMods) {
       this.pendingMonsterStatMods = { ...save.pendingMonsterStatMods }
@@ -267,6 +275,13 @@ export class GameEngine {
     // Réinitialise le tracking des actions pour cette nouvelle section
     this.navigation.resetSectionActions()
 
+    // Reset les compteurs section_courante des règles
+    for (const key of Object.keys(this.regleUtilisations)) {
+      if (key.startsWith('section_courante-')) {
+        delete this.regleUtilisations[key]
+      }
+    }
+
     // Met à jour l'historique de navigation
     this.navigation.updateNavHistory(this.currentSection)
 
@@ -282,7 +297,7 @@ export class GameEngine {
     // Si la section a un combat, on l'initialise (sans lancer de dés)
     if (section.combat && this.hero) {
       // Mode lancer_de : ne pas initialiser le combat, attendre la sélection du monstre
-      if (section.combat.mode === 'lancer_de' && section.combat.choix) {
+      if (section.combat.lancer_de) {
         this.combatState = null
       } else {
         // Mode par défaut ou sequentiel : initialiser avec le premier monstre
@@ -391,7 +406,7 @@ export class GameEngine {
     // Applique les items gagnés du choix
     if ((choice as any).items && this.hero) {
       for (const itemGain of (choice as any).items) {
-        GameEngineHero.addItemGain(this.hero, itemGain)
+        GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
       }
     }
 
@@ -440,6 +455,72 @@ export class GameEngine {
   }
 
   /**
+   * Vérifie si une règle est disponible selon ses max_utilisations par contexte.
+   * Retourne { ok: true } si disponible, { ok: false, raison } sinon.
+   */
+  isRegleAvailable(actionName: string): { ok: boolean; raison?: string } {
+    if (!this.adventure) return { ok: true }
+    const regle = GameEngineActions.getRegle(this.adventure, actionName) as any
+    if (!regle?.max_utilisations) return { ok: true }
+
+    const max = regle.max_utilisations
+
+    if (max.section !== undefined) {
+      const key = `section-${this.currentSection}-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.section) {
+        return { ok: false, raison: `Limite atteinte pour cette section (${max.section}x)` }
+      }
+    }
+    if (max.section_courante !== undefined) {
+      const key = `section_courante-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.section_courante) {
+        return { ok: false, raison: `Limite atteinte pour cette visite (${max.section_courante}x)` }
+      }
+    }
+    if (max.combat !== undefined) {
+      const key = `combat-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.combat) {
+        return { ok: false, raison: `Limite atteinte pendant ce combat (${max.combat}x)` }
+      }
+    }
+    if (max.aventure !== undefined) {
+      const key = `aventure-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.aventure) {
+        return { ok: false, raison: `Limite atteinte pour cette aventure (${max.aventure}x)` }
+      }
+    }
+
+    return { ok: true }
+  }
+
+  /**
+   * Incrémente les compteurs de max_utilisations pour une règle dans tous les contextes définis.
+   */
+  private _incrementRegleUtilisations(actionName: string): void {
+    if (!this.adventure) return
+    const regle = GameEngineActions.getRegle(this.adventure, actionName) as any
+    if (!regle?.max_utilisations) return
+
+    const max = regle.max_utilisations
+    if (max.section !== undefined) {
+      const key = `section-${this.currentSection}-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.section_courante !== undefined) {
+      const key = `section_courante-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.combat !== undefined) {
+      const key = `combat-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.aventure !== undefined) {
+      const key = `aventure-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+  }
+
+  /**
    * Vérifie si un choix local a encore des utilisations disponibles
    */
   isChoiceAvailable(choixIndex: number): boolean {
@@ -461,18 +542,26 @@ export class GameEngine {
   getActionPendingRoll(choice: Choice): PendingRoll | null {
     if (!choice.action || !this.adventure) return null
     
-    const actionName = typeof choice.action === 'string' ? choice.action : choice.action?.name
+    const action = choice.action
     
     // Support pour lancer_de avec formule directe
-    if (actionName === 'lancer_de') {
-      const formule = typeof choice.action === 'object' ? choice.action.formule : undefined
-      if (!formule) throw new Error(`lancer_de action manque la propriété 'formule'`)
+    if (typeof action === 'object' && action.type === 'lancer_de') {
+      const formule = action.lancer_de?.formule ?? action.lancer_de?.choix
+      if (!formule) throw new Error(`lancer_de action manque la propriété 'formule' dans lancer_de`)
       return {
         id: newRollId(),
         label: choice.texte,
         formula: formule,
         context: `action:lancer_de`,
       }
+    }
+    
+    const actionName = typeof action === 'string' ? action : (action as any).name
+    
+    // Si c'est un restaurer_stat, pas besoin de dé, retourne null
+    const regle = GameEngineActions.getRegle(this.adventure, actionName)
+    if (regle?.type === 'restaurer_stat') {
+      return null
     }
     
     const formula = GameEngineActions.getActionFormula(this.adventure, actionName)
@@ -488,13 +577,12 @@ export class GameEngine {
     if (!this.adventure || !this.hero) throw new Error('No active game.')
     if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
 
-    const actionName = typeof choice.action === 'string' ? choice.action : choice.action?.name
-    if (!actionName) throw new Error('Action name not found')
+    const action = choice.action
 
     // Gère l'action lancer_de
-    if (actionName === 'lancer_de') {
-      const resultats = typeof choice.action === 'object' ? choice.action.resultats : undefined
-      if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats'`)
+    if (typeof action === 'object' && action.type === 'lancer_de') {
+      const resultats = action.lancer_de?.resultats
+      if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats' dans lancer_de`)
       
       const total = rolls.reduce((a, b) => a + b, 0)
       let targetSection: number | undefined
@@ -524,6 +612,9 @@ export class GameEngine {
       return this.navigateTo(targetSection)
     }
 
+    const actionName = typeof action === 'string' ? action : (action as any).name
+    if (!actionName) throw new Error('Action name not found')
+
     const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, actionName, rolls,
       (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
     )
@@ -545,7 +636,7 @@ export class GameEngine {
       // Applique les items gagnés en cas de succès
       if (si_reussi?.items && this.hero) {
         for (const itemGain of si_reussi.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain)
+          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
         }
       }
     } else {
@@ -556,7 +647,7 @@ export class GameEngine {
       // Applique les items gagnés en cas d'échec
       if (si_echoue?.items && this.hero) {
         for (const itemGain of si_echoue.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain)
+          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
         }
       }
     }
@@ -585,6 +676,99 @@ export class GameEngine {
     }
     
     return this.navigateTo(targetSection)
+  }
+
+  /**
+   * Exécute une action restaurer_stat (sans dé)
+   * Retourne le message de résultat et navigue si nécessaire
+   */
+  executeRestaurerStatAction(choice: Choice, choixIndex?: number): { success: boolean; message: string } {
+    if (!this.adventure || !this.hero) throw new Error('No active game.')
+    if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
+
+    const actionName = typeof choice.action === 'string' ? choice.action : (choice.action as any).name
+    if (!actionName) throw new Error('Action name not found')
+
+    const regle = GameEngineActions.getRegle(this.adventure, actionName)
+    if (!regle || regle.type !== 'restaurer_stat') {
+      throw new Error('Cette action n\'est pas un restaurer_stat')
+    }
+
+    // Vérifie les limites d'utilisation par contexte (max_utilisations)
+    const availability = this.isRegleAvailable(actionName)
+    if (!availability.ok) {
+      return { success: false, message: availability.raison ?? 'Limite d\'utilisation atteinte' }
+    }
+
+    const rule = regle as any
+    const stat = rule.stat
+    const current = this.hero.statistiques[stat] ?? 0
+
+    // Vérifie la condition item si définie
+    if (rule.condition?.item_id) {
+      const condItemId = rule.condition.item_id
+      const condQty = rule.condition.quantite ?? 1
+      const condItem = this.hero.inventaire.find((i: any) => typeof i !== 'string' && i.id === condItemId)
+      const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
+      if (availableQty < condQty) {
+        return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
+      }
+    }
+
+    // Calcule la target value
+    let targetValue: number
+    if (rule.valeur === 'start') {
+      targetValue = this.hero.statistiques_initiales[stat] ?? 0
+    } else if (rule.valeur === 'start+1') {
+      targetValue = (this.hero.statistiques_initiales[stat] ?? 0) + 1
+    } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
+      const n = parseInt(rule.valeur.slice('current+'.length), 10)
+      targetValue = current + (isNaN(n) ? 0 : n)
+    } else {
+      targetValue = rule.valeur
+    }
+
+    const delta = targetValue - current
+
+    if (delta !== 0) {
+      if (rule.ignore_max) {
+        this.hero.statistiques[stat] = targetValue
+        this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
+      } else {
+        this.applyStatDelta(stat, delta, `action ${actionName}`)
+      }
+    }
+
+    // Consomme le cout_item si défini
+    if (rule.cout_item?.item_id) {
+      const coutId = rule.cout_item.item_id
+      const coutQty = rule.cout_item.quantite ?? 1
+      const coutIdx = this.hero.inventaire.findIndex((i: any) => typeof i !== 'string' && i.id === coutId)
+      if (coutIdx !== -1) {
+        const coutItem = this.hero.inventaire[coutIdx]
+        if (typeof coutItem !== 'string') {
+          if (coutItem.quantite && coutItem.quantite > coutQty) {
+            coutItem.quantite -= coutQty
+          } else {
+            this.hero.inventaire.splice(coutIdx, 1)
+          }
+        }
+      }
+    }
+
+    // Track l'action comme résolue avec succès
+    this.navigation.recordActionResult(actionName, 'succes')
+
+    // Incrémente les compteurs max_utilisations
+    this._incrementRegleUtilisations(actionName)
+
+    // Track les utilisations si c'est un choix local avec limite
+    if (choice.local && choice.utilisations !== undefined && choixIndex !== undefined) {
+      const key = `${this.currentSection}-${choixIndex}`
+      this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
+    }
+
+    return { success: true, message: `${choice.texte} effectué !` }
   }
 
   getTestStatInfo(nom: string): { jet: string; stat: string; condition: string; statValeur: number; resultats: Record<string, string> } | null {
@@ -645,12 +829,12 @@ export class GameEngine {
     if (!section?.combat) return null
     
     const combat = section.combat
-    if (combat.mode !== 'lancer_de' || !combat.choix) return null
+    if (!combat.lancer_de) return null
     
     return {
       id: newRollId(),
       label: 'Lancer un dé pour déterminer le monstre',
-      formula: combat.choix,
+      formula: combat.lancer_de.choix,
       context: 'monster_selection',
     }
   }
@@ -665,7 +849,7 @@ export class GameEngine {
     if (!section?.combat) throw new Error('Section sans combat.')
     
     const combat = section.combat
-    if (combat.mode !== 'lancer_de' || !combat.choix) throw new Error('Mode de combat invalide.')
+    if (!combat.lancer_de) throw new Error('Mode de combat invalide.')
     
     const diceResult = rolls.reduce((a, b) => a + b, 0)
     const monstre = combat.monstres.find(m => m.face === diceResult)
@@ -773,6 +957,13 @@ export class GameEngine {
     if (this.combatState.phase.type === 'termine') {
       const { victoire, heroEnduranceFinale } = this.combatState.phase
       
+      // Reset les compteurs combat des règles
+      for (const key of Object.keys(this.regleUtilisations)) {
+        if (key.startsWith('combat-')) {
+          delete this.regleUtilisations[key]
+        }
+      }
+
       // Sauvegarde les stats des monstres persistants une dernière fois
       this._savePersistentMonsterStats()
       
@@ -971,6 +1162,10 @@ export class GameEngine {
     if (state) {
       // Ajouter les utilisations des choix locaux
       state.choixUtilisations = { ...this.choixUtilisations }
+      // Ajouter les utilisations des règles
+      if (Object.keys(this.regleUtilisations).length > 0) {
+        state.regleUtilisations = { ...this.regleUtilisations }
+      }
       // Ajouter les mods de monstres en attente
       if (Object.keys(this.pendingMonsterStatMods).length > 0) {
         state.pendingMonsterStatMods = { ...this.pendingMonsterStatMods }

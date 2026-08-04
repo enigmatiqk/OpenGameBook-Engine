@@ -52,6 +52,10 @@ interface DebugParams {
   // Combat
   monstre_endurance:  string
   monstre_habilete:   string
+  // Équipement debug
+  equip:              string
+  equip2:             string
+  equip3:             string
   // Conditions dev
   lance_de:           string
   combat_victoire:    boolean
@@ -77,6 +81,9 @@ function parseCurrentParams(): DebugParams {
     item_count2:       p.get('item_count2')       ?? '',
     monstre_endurance: p.get('monstre_endurance') ?? '',
     monstre_habilete:  p.get('monstre_habilete')  ?? '',
+    equip:             p.get('equip')              ?? '',
+    equip2:            p.get('equip2')             ?? '',
+    equip3:            p.get('equip3')             ?? '',
     lance_de:          p.get('lance_de')           ?? '',
     combat_victoire:   p.get('combat_victoire')   === '1',
     action_resolved:   p.get('action_resolved')   ?? '',
@@ -103,6 +110,9 @@ function buildUrl(params: DebugParams): string {
   set('item_count2',        params.item_count2)
   set('monstre_endurance',  params.monstre_endurance)
   set('monstre_habilete',   params.monstre_habilete)
+  set('equip',              params.equip)
+  set('equip2',             params.equip2)
+  set('equip3',             params.equip3)
   set('lance_de',           params.lance_de)
   if (params.combat_victoire)   p.set('combat_victoire',   '1')
   if (params.action_resolved.trim()) p.set('action_resolved', params.action_resolved.trim())
@@ -345,6 +355,36 @@ export function showDebugPanel(): void {
   addRow(secCombat, 'monstre_endurance', '', makeInput(params, 'monstre_endurance', S.input, updatePreview))
   addRow(secCombat, 'monstre_habilete', '', makeInput(params, 'monstre_habilete', S.input, updatePreview))
   panel.appendChild(secCombat)
+
+  // ── Section : Équipement ──────────────────────────────────────────────────
+  const secEquip = document.createElement('div')
+  secEquip.setAttribute('style', S.section)
+  const equipTitle = document.createElement('div')
+  equipTitle.setAttribute('style', S.sectionTitle)
+  equipTitle.textContent = '🗡 Équipement forcé'
+  secEquip.appendChild(equipTitle)
+
+  const equipHintEl = document.createElement('div')
+  equipHintEl.setAttribute('style', S.hint + ';margin-bottom:8px')
+  equipHintEl.textContent = 'Format : <type>_<label>  ex: armure_Armure de cuir  |  arme_1main_Épée magique'
+  secEquip.appendChild(equipHintEl)
+
+  const makeEquipRow = (label: string, key: keyof DebugParams, placeholder: string) => {
+    const row = document.createElement('div')
+    row.setAttribute('style', S.row)
+    const lbl = document.createElement('span')
+    lbl.setAttribute('style', S.label)
+    lbl.textContent = label
+    const inp = makeInput(params, key, S.inputWide, updatePreview)
+    inp.placeholder = placeholder
+    row.append(lbl, inp)
+    secEquip.appendChild(row)
+  }
+
+  makeEquipRow('equip 1', 'equip',  'type_label')
+  makeEquipRow('equip 2', 'equip2', 'type_label')
+  makeEquipRow('equip 3', 'equip3', 'type_label')
+  panel.appendChild(secEquip)
 
   // ── Section : Conditions dev ──────────────────────────────────────────────
   const secDev = document.createElement('div')

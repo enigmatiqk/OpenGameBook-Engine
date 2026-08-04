@@ -138,7 +138,7 @@ export class CombatResolver {
         // Marque que le héros doit lancer les dés pour la défense
         // Le modificateur sera appliqué après le lancer
         defenseRollNeeded = true
-        defenseData = combatData.defense
+        defenseData = combatData.defense.lancer_de
       }
       
       cible = 'hero'
@@ -384,7 +384,7 @@ export class CombatResolver {
     const lastRound = state.rounds[state.rounds.length - 1]
     const defenseData = state.phase.defenseData
     
-    if (!defenseData || defenseData.type !== 'lancer_de') {
+    if (!defenseData || !defenseData.choix) {
       return state
     }
 

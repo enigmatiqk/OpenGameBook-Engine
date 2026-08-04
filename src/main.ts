@@ -297,6 +297,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const nCount = parseInt(params.get(`item_count${n}`) ?? '1', 10)
         hero.inventaire.push({ id: nId, label: nId, quantite: nCount })
       }
+
+      // Injection d'items équipés via ?equip=<type>_<label> (ex: equip=armure_Armure de cuir)
+      // Format : <type>_<label> — poids=1, quantite=1, remplace=false par défaut
+      for (let n = 1; n <= 9; n++) {
+        const paramKey = n === 1 ? 'equip' : `equip${n}`
+        const raw = params.get(paramKey)
+        if (!raw) break
+        const sep = raw.indexOf('_')
+        if (sep === -1) continue
+        const itemType = raw.slice(0, sep)
+        const itemLabel = raw.slice(sep + 1)
+        const itemId = `debug_equip_${itemType}_${n}`
+        const equipItem: import('./types').InventaireItem = {
+          id: itemId,
+          label: itemLabel,
+          type: itemType,
+          poids: 1,
+          // pas de quantite : un équipement n'a pas de quantite (évite l'affichage du compteur)
+          equipe: false,
+        }
+        // Cherche le slot correspondant au type dans emplacements_equipement
+        const emplacements = adventure.personnage.emplacements_equipement ?? {}
+        let targetSlot: string | null = null
+        for (const [slotName, slotDef] of Object.entries(emplacements)) {
+          if (slotDef.types_acceptes.includes(itemType)) {
+            // Trouve le premier sous-slot libre
+            if (slotDef.capacite > 1) {
+              for (let i = 1; i <= slotDef.capacite; i++) {
+                const subSlot = `${slotName}_${i}`
+                if (!hero.equipement[subSlot]) { targetSlot = subSlot; break }
+              }
+            } else if (!hero.equipement[slotName]) {
+              targetSlot = slotName
+            }
+            break
+          }
+        }
+        if (targetSlot) {
+          equipItem.equipe = true
+          hero.equipement[targetSlot] = equipItem
+        } else {
+          // Pas de slot trouvé (aucun emplacements_equipement défini, ou tous occupés) → inventaire seulement
+          hero.inventaire.push(equipItem)
+        }
+      }
       ;(engine as any).currentSection = -1
       engine.timer.start()
       engine.navigateTo(parseInt(debugSection))
