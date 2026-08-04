@@ -280,7 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
       for (const k of Object.keys(adventure.personnage.statistiques)) {
         stats[k] = parseInt(params.get(k) ?? '10', 10)
       }
-      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: { ...stats }, inventaire: [], historique: [], equipement: {} }
+      // Stats de départ : si <stat>_start est précisé, utiliser sa valeur pour statistiques_initiales
+      // Sinon, utiliser la même valeur que la stat courante (comportement par défaut)
+      const statsInitiales: Record<string, number> = {}
+      for (const k of Object.keys(adventure.personnage.statistiques)) {
+        const startVal = params.get(`${k}_start`)
+        statsInitiales[k] = startVal !== null ? parseInt(startVal, 10) : stats[k]
+      }
+      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: statsInitiales, inventaire: [], historique: [], equipement: {} }
 
       // Injection d'items via ?item_id=pieces_or&item_count=5
       // Supporte plusieurs items : ?item_id=pieces_or&item_count=5&item_id2=cle_or&item_count2=1

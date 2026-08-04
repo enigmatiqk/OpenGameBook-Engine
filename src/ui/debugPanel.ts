@@ -40,10 +40,14 @@ interface DebugParams {
   sn1:                string
   sn2:                string
   sn3:                string
-  // Stats héros
+  // Stats héros (courantes)
   habilete:           string
   endurance:          string
   chance:             string
+  // Stats de départ (statistiques_initiales)
+  habilete_start:     string
+  endurance_start:    string
+  chance_start:       string
   // Items
   item_id:            string
   item_count:         string
@@ -75,6 +79,9 @@ function parseCurrentParams(): DebugParams {
     habilete:          p.get('habilete')          ?? '',
     endurance:         p.get('endurance')         ?? '',
     chance:            p.get('chance')            ?? '',
+    habilete_start:    p.get('habilete_start')    ?? '',
+    endurance_start:   p.get('endurance_start')   ?? '',
+    chance_start:      p.get('chance_start')      ?? '',
     item_id:           p.get('item_id')           ?? '',
     item_count:        p.get('item_count')        ?? '',
     item_id2:          p.get('item_id2')          ?? '',
@@ -104,6 +111,9 @@ function buildUrl(params: DebugParams): string {
   set('habilete',           params.habilete)
   set('endurance',          params.endurance)
   set('chance',             params.chance)
+  set('habilete_start',     params.habilete_start)
+  set('endurance_start',    params.endurance_start)
+  set('chance_start',       params.chance_start)
   set('item_id',            params.item_id)
   set('item_count',         params.item_count)
   set('item_id2',           params.item_id2)
@@ -305,9 +315,39 @@ export function showDebugPanel(): void {
   statsTitle.textContent = '🧙 Stats du héros (défaut : 10)'
   secStats.appendChild(statsTitle)
 
-  addRow(secStats, 'Habilete', '', makeInput(params, 'habilete', S.input, updatePreview))
-  addRow(secStats, 'Endurance', '', makeInput(params, 'endurance', S.input, updatePreview))
-  addRow(secStats, 'Chance', '', makeInput(params, 'chance', S.input, updatePreview))
+  // Hint deux colonnes
+  const statsHintEl = document.createElement('div')
+  statsHintEl.setAttribute('style', S.hint + ';margin-bottom:8px')
+  statsHintEl.textContent = 'stat = valeur courante  |  stat_start = valeur de départ (statistiques_initiales)'
+  secStats.appendChild(statsHintEl)
+
+  // En-tête colonnes
+  const statsHeaderRow = document.createElement('div')
+  statsHeaderRow.setAttribute('style', S.row)
+  const statsHeaderSpacer = document.createElement('span')
+  statsHeaderSpacer.setAttribute('style', S.label)
+  const statsHeaderCurrent = document.createElement('span')
+  statsHeaderCurrent.setAttribute('style', 'color:#aaa;font-size:11px;width:100px;text-align:center')
+  statsHeaderCurrent.textContent = 'courante'
+  const statsHeaderStart = document.createElement('span')
+  statsHeaderStart.setAttribute('style', 'color:#aaa;font-size:11px;width:100px;text-align:center')
+  statsHeaderStart.textContent = 'de départ (_start)'
+  statsHeaderRow.append(statsHeaderSpacer, statsHeaderCurrent, statsHeaderStart)
+  secStats.appendChild(statsHeaderRow)
+
+  const makeStatRow = (label: string, keyCurrent: keyof DebugParams, keyStart: keyof DebugParams) => {
+    const row = document.createElement('div')
+    row.setAttribute('style', S.row)
+    const lbl = document.createElement('span')
+    lbl.setAttribute('style', S.label)
+    lbl.textContent = label
+    row.append(lbl, makeInput(params, keyCurrent, S.input, updatePreview), makeInput(params, keyStart, S.input, updatePreview))
+    secStats.appendChild(row)
+  }
+
+  makeStatRow('Habilete',  'habilete',  'habilete_start')
+  makeStatRow('Endurance', 'endurance', 'endurance_start')
+  makeStatRow('Chance',    'chance',    'chance_start')
   panel.appendChild(secStats)
 
   // ── Section : Inventaire ──────────────────────────────────────────────────
