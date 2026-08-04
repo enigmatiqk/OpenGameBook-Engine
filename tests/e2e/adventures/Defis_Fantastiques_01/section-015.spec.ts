@@ -30,18 +30,24 @@ test.describe('Section 015', () => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('Vérifier l\'augmentation de stat', async ({ page }) => {
+  test('Vérifier l\'augmentation de la stat habileté', async ({ page }) => {
     // Charger avec endurance initiale de 10 et ignore_stat_limit pour dépasser le max
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&endurance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit=1`)
     await page.waitForSelector('.section-text')
-    
-    // Vérifier que l'endurance a augmenté de 2 (10 + 2 = 12)
-    let enduranceValue = await page.locator('#stat-endurance').textContent()
-    expect(enduranceValue).toBe('12')
 
     // Vérifier que l'habilete a augmenté de 1 (10 + 1 = 11)
     let habiletyValue = await page.locator('#stat-habilete').textContent()
     expect(habiletyValue).toBe('11')
+  })
+
+  test('manger repas', async ({ page }) => {
+    // Charger avec endurance initiale de 10 et ignore_stat_limit pour dépasser le max
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=repas&item_count=1&endurance=10&ignore_stat_limit=1`)
+    await page.waitForSelector('.section-text')
+    
+    // Vérifier que l'endurance a augmenté de 4
+    let enduranceValue = await page.locator('#stat-endurance').textContent()
+    expect(enduranceValue).toBe('14')
   })
 
   test('Navigation vers section 367', async ({ page }) => {

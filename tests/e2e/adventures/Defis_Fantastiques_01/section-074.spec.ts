@@ -51,6 +51,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
     await page.click('.action-roll-btn') // lancer dés
 
-    await testSection(page, 178)
+    await testSection(page, 118)
   })
 })

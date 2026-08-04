@@ -1,7 +1,6 @@
 import type { Section, Choice, Hero, CombatState } from '../types'
 import { GameEngineHero } from './GameEngineHero'
-import { parseDiceFormula, rollDice } from './CombatResolver'
-import { resolveStatValeurDelta } from './schema-effects'
+import { resolveStatValeurDelta, applyItemEffect } from './schema-effects'
 
 /**
  * Gère la navigation entre sections et les conditions
@@ -264,26 +263,7 @@ export class GameEngineNavigation {
           applyStatDelta(statName, effet.stat.delta ?? 0, effet.stat.raison ?? `section ${section.numero}`)
         }
       } else if (effet.type === 'item' && effet.item) {
-        // Cherche si l'item existe déjà
-        const itemName = effet.item.name
-        const delta = effet.item.delta_de
-          ? (() => { const { count, sides, modifier } = parseDiceFormula(effet.item.delta_de!); return rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier })()
-          : (effet.item.delta ?? 1)
-        const existingItem = hero.inventaire.find(i => 
-          typeof i !== 'string' && i.id === itemName
-        )
-        
-        if (existingItem && typeof existingItem !== 'string') {
-          // Augmente la quantité
-          existingItem.quantite = (existingItem.quantite ?? 1) + delta
-        } else {
-          // Crée un nouvel item avec quantité
-          hero.inventaire.push({
-            id: itemName,
-            label: itemName,
-            quantite: delta
-          })
-        }
+        applyItemEffect(effet.item, hero)
       }
 
       // Applique le coût de l'effet (ex: consommer 1 repas après avoir récupéré de l'endurance)

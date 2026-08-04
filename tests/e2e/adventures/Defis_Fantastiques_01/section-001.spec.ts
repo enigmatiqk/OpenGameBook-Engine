@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, navigationTests } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 1
@@ -24,18 +24,12 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('Navigation vers section 71 (ouest)', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0)
-  })
-
-  test('Navigation vers section 278 (est)', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 1)
-  })
+  navigationTests(test, SECTION_CHOICES)
 })

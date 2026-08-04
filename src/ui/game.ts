@@ -162,13 +162,13 @@ export class GameView {
     const remaining = this.engine.getSectionsAvantSauvegarde()
     const canSave = this.engine.canSave()
     const saveLabel = canSave ? '💾 Sauver / Quitter' : `💾 Sauver / Quitter (${String(remaining).padStart(2, '0')})`
-    const saveBtn = this._btn(saveLabel, 'btn btn-secondary', () => this._onSave(toolbar))
+    const saveBtn = this._btn(saveLabel, 'btn btn-secondary btn-save-quit', () => this._onSave(toolbar))
     if (!canSave) saveBtn.disabled = true
 
-    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary', () => this._showModal("Mode d'emploi", `<pre class="modal-text">${this._escHtml(adventure.mode_emploi)}</pre>`))
-    const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary', () => this._showHeroModal())
-    const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary', () => this._showImagesModal(adventure))
-    const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary', () => {
+    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<pre class="modal-text">${this._escHtml(adventure.mode_emploi)}</pre>`))
+    const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => this._showHeroModal())
+    const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => this._showImagesModal(adventure))
+    const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
       if (confirm('Quitter sans sauvegarder ? La partie en cours sera perdue.')) {
         this.callbacks.onBackToLibrary()
       }

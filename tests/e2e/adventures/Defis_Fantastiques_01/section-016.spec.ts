@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 16
@@ -25,7 +25,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -57,9 +57,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.click('button.combat-next-btn')
 
     // Vérifier qu'on a gagné et qu'on est à la section 50
-    await page.waitForSelector('[data-section="50"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="50"]')
-    await expect(sectionContent).toBeVisible()
+     await testSection(page, 50)
   })
 
   test('Combat perdu avec habilete=5 et lance_de=6', async ({ page }) => {
@@ -125,8 +123,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.click('button.combat-fuite-chance-btn')
 
     // Vérifier qu'on a fuit et qu'on est à la section 269
-    await page.waitForSelector('[data-section="269"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="269"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 269)
   })
 })

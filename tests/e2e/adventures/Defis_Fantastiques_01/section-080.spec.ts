@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, navigationTests } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 80
 const SECTION_TEXT = 'La clé entre dans la serrure'
 const SECTION_CHOICES = {
   129: "Sourire et revenir sur mes pas",
-  123: "\"Hey, je suis venu acheter un bateau\"",
-  195: "\"Je suis le nouveau patron, au boulot !\"",
+  123: "Hey, je suis venu acheter un bateau",
+  195: "Je suis le nouveau patron, au boulot !",
   140: "Sortir mon épée"
 }
 
@@ -35,19 +35,5 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('Navigation vers section 129', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0)
-  })
-
-  test('Navigation vers section 123', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 1)
-  })
-
-  test('Navigation vers section 195', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 2)
-  })
-
-  test('Navigation vers section 140', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 3)
-  })
+  navigationTests(test, SECTION_CHOICES)
 })

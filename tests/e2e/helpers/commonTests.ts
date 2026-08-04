@@ -76,7 +76,7 @@ export function navigationTests(test: (name: string, fn: (args: { page: Page }) 
 }
 
 /**
- * Passe au round suivant du combat
+ * verifie une stat
  * @param page - La page Playwright
  * @param stat - la statistique (ex: habilete)
  * @param value - la valeur de la statistique attendue
@@ -84,6 +84,28 @@ export function navigationTests(test: (name: string, fn: (args: { page: Page }) 
 export async function testStat(page: Page, stat: String, value: Number) {
     const statValue = Number(await page.locator(`#stat-${stat}`).textContent())
     expect(statValue).toBe(value)
+}
+
+/**
+ * Vérifie qu'un item est visible dans l'inventaire et que son data-count est correct
+ * @param page - La page Playwright
+ * @param item_id - l'id DOM de l'item (ex: "cle-111")
+ * @param count - le nombre d'item attendu (default: 1)
+ * @param strict - si true: data-count === count, si false: data-count >= count (default: false)
+ */
+export async function testItem(page: Page, item_id: string, count: number = 1, strict: boolean = false) {
+  const item = page.locator(`#${item_id}`)
+  await expect(item).toBeVisible()
+
+  const rawCount = await item.getAttribute('data-count')
+  if (rawCount !== null) {
+    const actual = Number(rawCount)
+    if (strict) {
+      expect(actual).toBe(count)
+    } else {
+      expect(actual).toBeGreaterThanOrEqual(count)
+    }
+  }
 }
 
 /**

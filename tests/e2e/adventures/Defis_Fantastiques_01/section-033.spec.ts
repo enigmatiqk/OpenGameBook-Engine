@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant, testStat } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 33
 const SECTION_TEXT = "La créature endormie se réveille"
 const SECTION_CHOICES = {
-  320: 'Prendre la porte',
+  320: "Fuir par la porte",
   147: 'Combattre'
 }
 
@@ -26,7 +26,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -73,7 +73,11 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await expect(deathInfo).toBeVisible()
   })
 
-  test('Fuir vers section 320', async ({ page }) => {
+  test('Fuir vers section 320 avec perte endurance', async ({ page }) => {
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10`)
+    await page.waitForSelector('.section-text')
+
     await testNavigation(page, SECTION_CHOICES, 1)
+    testStat(page,"endurance",8)
   })
 })

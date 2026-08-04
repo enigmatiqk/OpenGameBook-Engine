@@ -3,10 +3,10 @@ import { testSection, testChoiceButtons, testNavigation } from '../../helpers/co
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 82
-const SECTION_TEXT = 'Tentez votre Chance. Si vous êtes chanceux'
+const SECTION_TEXT = "La porte s'ouvre sur une petite pièce où règne une forte odeur"
 const SECTION_CHOICES = {
-  208: "Regagner le couloir",
-  0: "Tentez votre Chance"
+  0: "Tentez votre Chance",
+  208: "Regagner le couloir"
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
@@ -32,7 +32,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Navigation vers section 208', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0)
+    await testNavigation(page, SECTION_CHOICES, 1)
   })
 
   test('Si réussi - section 147', async ({ page }) => {

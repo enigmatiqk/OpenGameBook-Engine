@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { testSection, testChoiceButtons, navigationTests } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
-const SECTION_NUMBER = 106
+const SECTION_NUMBER = 107
 const SECTION_TEXT = "Vous traversez la pièce sur la pointe des pieds"
 const SECTION_CHOICES = {
   148: "Revenir en arrière pour fouiller les corps",

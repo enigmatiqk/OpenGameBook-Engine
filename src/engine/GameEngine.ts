@@ -12,7 +12,7 @@ import { GameEngineCombat } from './GameEngineCombat'
 import { GameEngineNavigation } from './GameEngineNavigation'
 import { GameEngineActions } from './GameEngineActions'
 import { GameEngineSave } from './GameEngineSave'
-import { resolveStatValeurDelta } from './schema-effects'
+import { resolveStatValeurDelta, applyItemEffect } from './schema-effects'
 
 let rollIdCounter = 0
 function newRollId(): string { return `roll_${++rollIdCounter}` }
@@ -800,7 +800,7 @@ export class GameEngine {
 
       const delta = targetValue - current
       if (delta !== 0) {
-        if (rule.ignore_max) {
+        if (rule.ignore_max || this.isDebugIgnoreStatLimit()) {
           this.hero.statistiques[stat] = targetValue
           this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
         } else {
@@ -1094,26 +1094,7 @@ export class GameEngine {
           this.applyStatDelta(effet.stat.name, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
         }
       } else if (effet.type === 'item' && effet.item) {
-        const itemName = effet.item.name
-        let delta: number
-        if (effet.item.delta_de) {
-          const { count, sides, modifier } = parseDiceFormula(effet.item.delta_de)
-          delta = rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
-        } else {
-          delta = effet.item.delta ?? 1
-        }
-        const existingItem = this.hero.inventaire.find(i =>
-          typeof i !== 'string' && i.id === itemName
-        )
-        if (existingItem && typeof existingItem !== 'string') {
-          existingItem.quantite = (existingItem.quantite ?? 1) + delta
-        } else {
-          this.hero.inventaire.push({
-            id: itemName,
-            label: itemName,
-            quantite: delta
-          })
-        }
+        applyItemEffect(effet.item, this.hero)
       } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
         const ms = effet.monstre_stat
         const key = ms.monstre_id || '__any__'
@@ -1228,7 +1209,17 @@ export class GameEngine {
       this.hero,
       this.adventure,
       itemId,
-      (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
+      (stat, delta, raison) => {
+        if (this.isDebugIgnoreStatLimit()) {
+          const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero!)
+          if (this.hero!.statistiques[normalizedStat] !== undefined) {
+            this.hero!.statistiques[normalizedStat] += delta
+            this.hero!.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
+          }
+        } else {
+          this.applyStatDelta(stat, delta, raison)
+        }
+      }
     )
   }
 

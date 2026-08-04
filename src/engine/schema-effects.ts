@@ -53,6 +53,22 @@ export function resolveStatValeurDelta(
 }
 
 /**
+ * Applique un effet item au héros (ajout ou augmentation de quantité).
+ * Utilise item.id en priorité sur item.name comme identifiant.
+ */
+export function applyItemEffect(item: NonNullable<Effet['item']>, hero: Hero): void {
+  const itemId    = item.id ?? item.name
+  const itemLabel = item.name
+  const delta     = resolveItemDelta(item)
+  const existing  = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
+  if (existing && typeof existing !== 'string') {
+    existing.quantite = (existing.quantite ?? 1) + delta
+  } else {
+    hero.inventaire.push({ id: itemId, label: itemLabel, quantite: delta })
+  }
+}
+
+/**
  * Applique un effet au héros
  */
 export function applyEffect(effet: Effet, hero: Hero): void {
@@ -70,18 +86,7 @@ export function applyEffect(effet: Effet, hero: Hero): void {
       hero.statistiques[statName] = Math.max(0, current + (effet.stat.delta ?? 0))
     }
   } else if (effet.type === 'item' && effet.item) {
-    const itemName = effet.item.name
-    const delta = resolveItemDelta(effet.item)
-    const existingItem = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
-    if (existingItem && typeof existingItem !== 'string') {
-      existingItem.quantite = (existingItem.quantite ?? 1) + delta
-    } else {
-      hero.inventaire.push({
-        id: itemName,
-        label: itemName,
-        quantite: delta
-      })
-    }
+    applyItemEffect(effet.item, hero)
   }
 }
 
