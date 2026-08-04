@@ -286,8 +286,21 @@ export class CombatView {
       if (state.eventDeclenche && state.eventDeclenche.action !== 'btn_fuite' && state.eventDeclenche.action !== 'fuite_chance') {
         const event = state.eventDeclenche
         
-        // Afficher un bouton seulement si l'event a une propriété "texte" ou "action"
-        if (event.texte || event.action) {
+        // Afficher les boutons de choix multiples si l'event a un tableau "choix"
+        if (Array.isArray(event.choix)) {
+          for (const c of event.choix) {
+            const choixBtn = document.createElement('button')
+            choixBtn.className = 'btn btn-secondary combat-event-choice-btn'
+            choixBtn.type = 'button'
+            choixBtn.textContent = c.texte
+            choixBtn.addEventListener('click', () => {
+              this.engine.navigateTo(c.section)
+              this.onCombatEnd()
+            })
+            actionsEl.appendChild(choixBtn)
+          }
+        } else if (event.texte || event.action) {
+          // Afficher un bouton simple si l'event a une propriété "texte" ou "action"
           const eventBtn = document.createElement('button')
           eventBtn.className = 'btn btn-secondary combat-triggered-action-btn'
           eventBtn.type = 'button'

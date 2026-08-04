@@ -139,13 +139,18 @@ export interface MonstreData {
   persistant?: boolean       // true si le monstre persiste entre les sections
 }
 
+export interface CombatEventChoix {
+  texte: string              // libellé du bouton de choix
+  section: number            // section vers laquelle naviguer
+}
+
 export interface CombatEvent {
   declencheur: "degats_heros" | "degats_monstre" | "degats" | "round"
   round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
-  section: number            // section vers laquelle aller
+  section?: number           // section vers laquelle aller (optionnel si choix[] est fourni)
   action?: string            // type d'action ('btn_fuite', 'fuite_chance', 'attaque', 'defense', etc.)
-  choix?: string             // libellé personnalisé du bouton
-  texte?: string             // libellé personnalisé du bouton (alias de choix)
+  choix?: string | CombatEventChoix[]  // string = libellé bouton simple, array = boutons de choix multiples
+  texte?: string             // libellé personnalisé du bouton (alias de choix string)
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
   condition?: ChoiceCondition // condition pour déclencher l'action
 }
