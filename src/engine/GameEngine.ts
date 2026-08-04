@@ -4,7 +4,7 @@ import type {
   HeroInitState, CombatState, RegleComposite, EffetMonstreStat
 } from '../types'
 import { PlayTimer } from './PlayTimer'
-import { CombatResolver, parseDiceFormula, parseAttackFormula } from './CombatResolver'
+import { CombatResolver, parseDiceFormula, parseAttackFormula, rollDice } from './CombatResolver'
 import { SaveStore } from './SaveStore'
 import { initDebugNavHistory, initDebugConditions } from './GameEngineDebug'
 import { GameEngineHero } from './GameEngineHero'
@@ -629,7 +629,33 @@ export class GameEngine {
 
     // Applique les effets du résultat
     if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
-      // Succès
+      // Succès — vérifie si un effet item avec delta_de nécessite un jet manuel
+      const effets: import('../types').Effet[] = si_reussi?.effets ?? []
+      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
+      if (gainDiceEffet?.item?.delta_de) {
+        // Applique les effets sans delta_de immédiatement
+        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
+        if (autresEffets.length > 0) this._applyEffets(autresEffets, choice.texte)
+        if (si_reussi?.items && this.hero) {
+          for (const itemGain of si_reussi.items) {
+            GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
+          }
+        }
+        const targetSection = si_reussi?.choix?.section
+        if (!targetSection) throw new Error('si_reussi avec delta_de doit avoir choix.section')
+        return {
+          pendingGainRoll: {
+            formula: gainDiceEffet.item.delta_de,
+            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
+            itemName: gainDiceEffet.item.name,
+            itemLabel: gainDiceEffet.item.name,
+            raison: gainDiceEffet.item.raison ?? choice.texte,
+            targetSection,
+            remainingEffets: [],
+          }
+        } as any
+      }
+      // Succès sans delta_de — chemin normal
       if (si_reussi?.effets) {
         this._applyEffets(si_reussi.effets, choice.texte)
       }
@@ -640,7 +666,32 @@ export class GameEngine {
         }
       }
     } else {
-      // Échec
+      // Échec — vérifie si un effet item avec delta_de nécessite un jet manuel
+      const effets: import('../types').Effet[] = si_echoue?.effets ?? []
+      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
+      if (gainDiceEffet?.item?.delta_de) {
+        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
+        if (autresEffets.length > 0) this._applyEffets(autresEffets, choice.texte)
+        if (si_echoue?.items && this.hero) {
+          for (const itemGain of si_echoue.items) {
+            GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
+          }
+        }
+        const targetSection = si_echoue?.choix?.section
+        if (!targetSection) throw new Error('si_echoue avec delta_de doit avoir choix.section')
+        return {
+          pendingGainRoll: {
+            formula: gainDiceEffet.item.delta_de,
+            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
+            itemName: gainDiceEffet.item.name,
+            itemLabel: gainDiceEffet.item.name,
+            raison: gainDiceEffet.item.raison ?? choice.texte,
+            targetSection,
+            remainingEffets: [],
+          }
+        } as any
+      }
+      // Échec sans delta_de — chemin normal
       if (si_echoue?.effets) {
         this._applyEffets(si_echoue.effets, choice.texte)
       }
@@ -676,6 +727,24 @@ export class GameEngine {
     }
     
     return this.navigateTo(targetSection)
+  }
+
+  /**
+   * Résout un jet de gain d'item (delta_de) après que l'UI a obtenu le résultat du joueur.
+   * Crédite l'item avec la quantité obtenue et navigue vers la section cible.
+   */
+  resolveGainRoll(pending: import('../types').PendingGainRoll, rolls: number[]): Section {
+    if (!this.adventure || !this.hero) throw new Error('No active game.')
+    const total = rolls.reduce((a, b) => a + b, 0)
+    const itemName = pending.itemName
+    const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
+    if (existingItem && typeof existingItem !== 'string') {
+      existingItem.quantite = (existingItem.quantite ?? 0) + total
+    } else {
+      this.hero.inventaire.push({ id: itemName, label: pending.itemLabel, quantite: total })
+    }
+    this.hero.historique.push({ timestamp: Date.now(), stat: itemName, delta: total, raison: pending.raison })
+    return this.navigateTo(pending.targetSection)
   }
 
   /**
@@ -1017,16 +1086,23 @@ export class GameEngine {
         this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? labelSource)
       } else if (effet.type === 'item' && effet.item) {
         const itemName = effet.item.name
+        let delta: number
+        if (effet.item.delta_de) {
+          const { count, sides, modifier } = parseDiceFormula(effet.item.delta_de)
+          delta = rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
+        } else {
+          delta = effet.item.delta ?? 1
+        }
         const existingItem = this.hero.inventaire.find(i =>
           typeof i !== 'string' && i.id === itemName
         )
         if (existingItem && typeof existingItem !== 'string') {
-          existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
+          existingItem.quantite = (existingItem.quantite ?? 1) + delta
         } else {
           this.hero.inventaire.push({
             id: itemName,
             label: itemName,
-            quantite: effet.item.delta ?? 1
+            quantite: delta
           })
         }
       } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {

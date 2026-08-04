@@ -202,6 +202,7 @@ export interface EffetStat {
 export interface EffetItem {
   name: string        // id de l'item
   delta?: number      // quantité à ajouter (défaut: 1)
+  delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur delta
   raison?: string     // raison pour l'historique
 }
 
@@ -248,6 +249,7 @@ export interface ItemGain {
   type?: string
   poids?: number
   quantite?: number
+  delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur quantite
   remplace?: boolean | string  // true = remplace un item du même type, string = remplace l'item avec cet id
   image?: string
   image_ia?: string
@@ -404,6 +406,21 @@ export interface PendingRoll {
   label: string        // libellé affiché sur le bouton ex: "Lancer les dés du monstre"
   formula: string      // ex: "2d6"
   context: string      // contexte machine ex: "hero_init:habilete", "combat:hero", "combat:ennemi"
+}
+
+/**
+ * Jet de dés secondaire pour déterminer un gain d'item (ex: "lancez 2d6 Pièces d'Or").
+ * Produit par resolveActionChoice quand un effet item avec delta_de est présent dans si_reussi/si_echoue.
+ * L'UI ouvre une seconde modale, puis appelle resolveGainRoll() avec le résultat.
+ */
+export interface PendingGainRoll {
+  formula: string      // ex: "2d6"
+  label: string        // ex: "Lancez 2 dés — Pièces d'Or"
+  itemName: string     // id de l'item à créditer
+  itemLabel: string    // label affiché (= itemName si pas de label séparé)
+  raison: string       // raison pour l'historique
+  targetSection: number
+  remainingEffets: Effet[]  // autres effets de si_reussi sans delta_de, déjà appliqués
 }
 
 export interface RollResult {

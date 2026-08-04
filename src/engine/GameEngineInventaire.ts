@@ -1,4 +1,5 @@
 import type { Hero, Adventure, ChoixInitialOption, ItemGain, InventaireItem } from '../types'
+import { parseDiceFormula, rollDice } from './CombatResolver'
 
 /**
  * Gère l'inventaire du héros : ajout d'items, consommation, effets
@@ -150,7 +151,13 @@ export class GameEngineInventaire {
 
     if (itemGain.type) newItem.type = itemGain.type
     if (itemGain.poids) newItem.poids = itemGain.poids
-    if (itemGain.quantite) newItem.quantite = itemGain.quantite
+    // delta_de prioritaire sur quantite
+    if (itemGain.delta_de) {
+      const { count, sides, modifier } = parseDiceFormula(itemGain.delta_de)
+      newItem.quantite = rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
+    } else if (itemGain.quantite) {
+      newItem.quantite = itemGain.quantite
+    }
     if (itemGain.image) newItem.image = itemGain.image
     if (itemGain.image_ia) newItem.image_ia = itemGain.image_ia
     if (itemGain.description) newItem.description = itemGain.description

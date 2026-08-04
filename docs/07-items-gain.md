@@ -45,6 +45,7 @@ Les items peuvent avoir des **effets liés** : quand le héros porte l'item, les
 | `type` | string | | Type d'item (ex: `arme_1main`, `armure`, `casque`) — optionnel |
 | `poids` | number | | Poids de l'item (défaut: 1) |
 | `quantite` | number | | Quantité gagnée (défaut: 1) |
+| `delta_de` | string | | Quantité aléatoire déterminée par un lancé de dés (ex: `"2d6"`, `"1d6"`). Prioritaire sur `quantite` si les deux sont présents. |
 | `remplace` | boolean \| string | | Stratégie de remplacement (voir ci-dessous) |
 | `image` | string | | Chemin vers l'image de l'item |
 | `image_ia` | string | | Chemin vers l'image IA de l'item |
@@ -94,6 +95,31 @@ L'item remplace un item spécifique par son ID.
   "remplace": "armure_cuir"
 }
 ```
+
+## Quantité aléatoire par lancé de dés
+
+Quand la quantité d'un item doit être déterminée par un lancé de dés (ex: "lancez 2 dés pour savoir combien de Pièces d'Or vous gagnez"), utiliser `delta_de` à la place de `quantite`.
+
+### Syntaxe
+
+`"delta_de": "<nb_dés>d<faces>"` — ex: `"2d6"`, `"1d6"`, `"3d6"`
+
+### Exemple — gain de pièces d'or par 2d6
+
+```json
+{
+  "type": "item",
+  "item": {
+    "name": "pieces d'or",
+    "delta_de": "2d6",
+    "raison": "gain par la triche"
+  }
+}
+```
+
+Le moteur lance les dés au moment de l'exécution de l'effet et ajoute le résultat obtenu à l'inventaire.
+
+> Si `delta_de` et `quantite` sont tous les deux présents, `delta_de` est prioritaire.
 
 ## Effets d'items
 

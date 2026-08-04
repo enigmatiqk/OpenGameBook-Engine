@@ -1,5 +1,6 @@
 import type { Section, Choice, Hero, CombatState } from '../types'
 import { GameEngineHero } from './GameEngineHero'
+import { parseDiceFormula, rollDice } from './CombatResolver'
 
 /**
  * Gère la navigation entre sections et les conditions
@@ -244,19 +245,22 @@ export class GameEngineNavigation {
       } else if (effet.type === 'item' && effet.item) {
         // Cherche si l'item existe déjà
         const itemName = effet.item.name
+        const delta = effet.item.delta_de
+          ? (() => { const { count, sides, modifier } = parseDiceFormula(effet.item.delta_de!); return rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier })()
+          : (effet.item.delta ?? 1)
         const existingItem = hero.inventaire.find(i => 
           typeof i !== 'string' && i.id === itemName
         )
         
         if (existingItem && typeof existingItem !== 'string') {
           // Augmente la quantité
-          existingItem.quantite = (existingItem.quantite ?? 1) + (effet.item.delta ?? 1)
+          existingItem.quantite = (existingItem.quantite ?? 1) + delta
         } else {
           // Crée un nouvel item avec quantité
           hero.inventaire.push({
             id: itemName,
             label: itemName,
-            quantite: effet.item.delta ?? 1
+            quantite: delta
           })
         }
       }

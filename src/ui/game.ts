@@ -277,8 +277,13 @@ export class GameView {
               return
             }
             this._showActionRoll(pending, (rolls) => {
-              this.engine.resolveActionChoice(choice, rolls)
-              this._render()
+              const result = this.engine.resolveActionChoice(choice, rolls)
+              // Vérifie si un jet de gain secondaire est requis (delta_de)
+              if (result && typeof result === 'object' && 'pendingGainRoll' in result) {
+                this._showGainRoll((result as any).pendingGainRoll, () => this._render())
+              } else {
+                this._render()
+              }
             })
           })
         } else {
@@ -696,6 +701,56 @@ export class GameView {
         setTimeout(() => {
           overlay.remove()
           onRolled(rolls)
+        }, 2000)
+      }, 800)
+    })
+
+    document.body.appendChild(overlay)
+  }
+
+  private _showGainRoll(pending: import('../types').PendingGainRoll, onDone: () => void): void {
+    const { count, sides } = parseDiceFormula(pending.formula)
+
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+
+    overlay.innerHTML = `
+      <div class="modal-box action-roll-box">
+        <div class="modal-header">
+          <h2 class="modal-title">${this._escHtml(pending.label)}</h2>
+        </div>
+        <div class="modal-body">
+          <p class="action-roll-formula">${this._escHtml(pending.formula)}</p>
+          <div class="action-roll-dice"></div>
+          <button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button>
+        </div>
+      </div>
+    `
+
+    const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
+    const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+
+    btn.addEventListener('click', () => {
+      btn.disabled = true
+      const rolls = rollDice(count, sides)
+      const total = rolls.reduce((a, b) => a + b, 0)
+
+      // Affiche les dés
+      diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
+        `<span class="action-roll-total">= ${total}</span>`
+
+      // Affiche le gain après 800ms
+      setTimeout(() => {
+        const resultEl = document.createElement('div')
+        resultEl.className = 'action-roll-result action-roll-result--gain'
+        resultEl.textContent = `+${total} ${this._escHtml(pending.itemLabel)}`
+        overlay.querySelector('.modal-body')!.appendChild(resultEl)
+
+        // Applique le gain et navigue après 2s
+        setTimeout(() => {
+          overlay.remove()
+          this.engine.resolveGainRoll(pending, rolls)
+          onDone()
         }, 2000)
       }, 800)
     })
