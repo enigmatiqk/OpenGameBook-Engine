@@ -285,6 +285,32 @@ export class GameEngineNavigation {
           })
         }
       }
+
+      // Applique le coût de l'effet (ex: consommer 1 repas après avoir récupéré de l'endurance)
+      if (effet.cout) {
+        for (const cout of effet.cout) {
+          if (cout.type === 'stat' && cout.stat) {
+            applyStatDelta(cout.stat, cout.delta, cout.raison ?? `cout section ${section.numero}`)
+          } else if (cout.type === 'item_quantite' && cout.item_id) {
+            if (hero.statistiques[cout.item_id] !== undefined) {
+              applyStatDelta(cout.item_id, cout.delta, cout.raison ?? `cout section ${section.numero}`)
+            } else {
+              const item = hero.inventaire.find(i => typeof i !== 'string' && i.id === cout.item_id)
+              if (item && typeof item !== 'string') {
+                const newQty = (item.quantite ?? 1) + cout.delta
+                if (newQty <= 0) {
+                  hero.inventaire.splice(hero.inventaire.indexOf(item), 1)
+                } else {
+                  item.quantite = newQty
+                }
+                if (cout.raison) {
+                  hero.historique.push({ timestamp: Date.now(), stat: cout.item_id, delta: cout.delta, raison: cout.raison })
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

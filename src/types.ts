@@ -221,6 +221,7 @@ export interface Effet {
   item?: EffetItem          // pour type "item"
   monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
   condition?: ChoiceCondition
+  cout?: CoutEffet[]        // coût appliqué quand l'effet est déclenché (ex: consommer 1 repas)
 }
 
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
