@@ -25,10 +25,12 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 | `lancer_de` | — | Mode lancer de dé : `{ "choix": "1d6" }` — sélectionne un monstre aléatoire |
 | `attaque_heros` | — | Modificateur de force d'attaque du héros pour ce combat (ex : `"+1"`) |
 | `attaque_monstre` | — | Modificateur de force d'attaque de l'ennemi (ex : `"-1"`) |
+| `degats_heros` | — | Bonus/malus aux dégâts infligés par le héros (ex : `"+1"`) |
 | `victoire` | — | Que se passe-t-il après victoire |
 | `fuite` | — | Que se passe-t-il en cas de fuite |
-| `defense` | — | Règle de défense spéciale |
-| `events` | — | Actions déclenchées à certains rounds |
+| `defense` | — | Règle de défense spéciale (lancer de dé pour réduire les dégâts reçus) |
+| `events` | — | Actions déclenchées à certains rounds ou occurrences de dégâts |
+| `modifier` | — | Modifications de stats appliquées avant le début du combat |
 
 ---
 
@@ -45,6 +47,9 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 | `nom` | ★ | Nom affiché |
 | `habilete` | ★ | Habileté du monstre |
 | `endurance` | ★ | Points de vie du monstre |
+| `id` | — | Identifiant unique (requis pour `monstre_stat` ciblé depuis les choix) |
+| `face` | — | Numéro de face du dé (mode `lancer_de` uniquement) |
+| `persistant` | — | `true` si le monstre persiste entre les sections (son endurance est sauvegardée) |
 
 ---
 
@@ -91,7 +96,7 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 | Champ | Description |
 |-------|-------------|
 | `section` | Section vers laquelle naviguer après victoire |
-| `effets` | Effets appliqués après victoire (voir [effets.md](effets.md)) |
+| `effets` | Effets appliqués après victoire (voir [08-section-03-effets.md](08-section-03-effets.md)) |
 
 ---
 
@@ -143,30 +148,45 @@ Quand le héros perd un round, il peut lancer un dé pour réduire les dégâts 
 
 ## Événements (`events`)
 
-Les events permettent de déclencher des actions à des rounds ou occurrences spécifiques du combat.
+Les events déclenchent des actions ou des boutons de choix à des moments précis du combat : un round donné, ou après un certain nombre d'occurrences de dégâts.
 
 ```json
 "events": [
   {
-    "round":   2,
-    "section": 375,
-    "action":  "btn_fuite",
-    "texte":   "Fuir le long du couloir"
-  },
-  {
-    "round":   1,
-    "section": 0,
-    "action":  "tenter_chance"
+    "declencheur": "round",
+    "round":       2,
+    "section":     375,
+    "action":      "btn_fuite",
+    "texte":       "Fuir le long du couloir"
   }
 ]
 ```
 
-| Champ | Description |
-|-------|-------------|
-| `round` | Numéro du round (ou occurrence) qui déclenche l'event |
-| `section` | Section cible si l'event est une navigation |
-| `action` | Type d'action : `"btn_fuite"`, `"tenter_chance"`, `"attaque"`, `"defense"`, … |
-| `texte` | Libellé personnalisé du bouton déclenché |
+### Champs d'un event
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `declencheur` | ★ | Quand l'event se déclenche — voir tableau ci-dessous |
+| `round` | ★ | Numéro du round (ou Nème occurrence de dégâts) qui déclenche l'event |
+| `section` | — | Section cible si l'event est une navigation simple |
+| `action` | — | Type d'action : `"btn_fuite"`, `"tenter_chance"`, `"attaque"`, `"defense"`, … |
+| `texte` | — | Libellé personnalisé du bouton |
+| `choix` | — | Tableau de boutons de choix multiples — voir [Choix multiples](#choix-multiples) |
+| `ignorerDegats` | — | Si `true`, annule les dégâts du coup qui a déclenché l'event |
+| `condition` | — | Condition supplémentaire pour que l'event se déclenche |
+
+### Types de déclencheur (`declencheur`)
+
+| Valeur | Déclenchement |
+|--------|---------------|
+| `"round"` | Au round dont le numéro correspond à `round` (indépendamment des dégâts) |
+| `"degats_heros"` | Quand le héros a subi des dégâts pour la Nème fois (`round` = N) |
+| `"degats_monstre"` | Quand le monstre a subi des dégâts pour la Nème fois (`round` = N) |
+| `"degats"` | Quand l'un ou l'autre a subi des dégâts pour la Nème fois (`round` = N) |
+
+> Chaque event ne se déclenche **qu'une seule fois** — il est marqué comme déclenché dès sa première activation.
+
+---
 
 ### Action `btn_fuite`
 
@@ -174,12 +194,39 @@ Affiche les boutons de fuite **uniquement pendant le round courant**. À disting
 
 ```json
 {
-  "round":  2,
-  "section": 375,
-  "action": "btn_fuite",
-  "texte":  "Prendre la fuite"
+  "declencheur": "round",
+  "round":       2,
+  "section":     375,
+  "action":      "btn_fuite",
+  "texte":       "Prendre la fuite"
 }
 ```
+
+---
+
+### Choix multiples
+
+Quand un event doit proposer plusieurs destinations au joueur (en plus du bouton "Round suivant"), utiliser un tableau `choix` à la place de `section` + `texte`.
+
+Chaque entrée du tableau est un bouton indépendant qui navigue vers la section correspondante et termine le combat.
+
+```json
+{
+  "declencheur": "round",
+  "round":       2,
+  "choix": [
+    { "texte": "Essayer d'occuper votre adversaire", "section": 350 },
+    { "texte": "Fuir vers la sortie",                "section": 12  }
+  ]
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `texte` | ★ | Libellé du bouton |
+| `section` | ★ | Section vers laquelle naviguer au clic |
+
+> Les boutons de choix apparaissent en parallèle du bouton "Round suivant" — le joueur peut soit continuer le combat, soit emprunter l'un des choix proposés.
 
 ---
 
@@ -187,19 +234,20 @@ Affiche les boutons de fuite **uniquement pendant le round courant**. À disting
 
 ```json
 {
-  "numero": 61,
-  "texte":  "Une araignée géante surgit derrière vous !",
+  "numero": 86,
+  "texte":  "Un crocodile de trois mètres glisse vers vous...",
   "combat": {
     "monstres": [
-      { "nom": "ARAIGNÉE GÉANTE", "habilete": 7, "endurance": 8 }
+      { "nom": "CROCODILE", "habilete": 7, "endurance": 6 }
     ],
-    "victoire": { "section": 29 },
+    "victoire": { "section": 259 },
     "events": [
       {
-        "round":   2,
-        "section": 375,
-        "action":  "btn_fuite",
-        "texte":   "Fuir le long du couloir"
+        "declencheur": "round",
+        "round":       2,
+        "choix": [
+          { "texte": "Essayer d'occuper votre adversaire", "section": 350 }
+        ]
       }
     ]
   }
@@ -210,11 +258,11 @@ Affiche les boutons de fuite **uniquement pendant le round courant**. À disting
 
 ## Règles de combat globales
 
-Les paramètres généraux du combat sont définis dans `regles.combat` (voir `03-creer-une-aventure.md`) :
+Les paramètres généraux du combat sont définis dans `regles.combat` (voir [11-regles.md](11-regles.md)) :
 
 - `stat_attaque` : formule de la force d'attaque (ex : `"habilete+2d6"`)
 - `stat_vie` : statistique utilisée comme points de vie
 - `attaque` : condition de victoire du round (`">"` ou `">="`)
 - `degats_victoire` / `degats_defaite` : dégâts par round
 - `fuite.possible` / `fuite.cout` : règles de fuite globales
-- `events.fuite` : règle déclenchée lors d'une fuite par test de chance
+- `events.attaque` / `events.defense` / `events.fuite` : règles déclenchables après chaque round
