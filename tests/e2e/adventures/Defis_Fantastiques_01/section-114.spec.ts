@@ -5,7 +5,7 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 114
 const SECTION_TEXT = "Le passage mène vers le sud"
 const SECTION_CHOICES = {
-  259: 'Continuer'
+  359: 'Continuer'
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

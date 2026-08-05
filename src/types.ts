@@ -57,6 +57,7 @@ export interface PersonnageTemplate {
   image?: string        // image du personnage pour l'équipement
   image_ia?: string     // image IA du personnage pour l'équipement
   equipement?: InventaireItem[]  // items équipés au démarrage (tableau)
+  monnaie?: string      // id de l'item traité comme monnaie (affiché séparément de l'inventaire)
 }
 
 export interface CombatRules {

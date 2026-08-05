@@ -193,9 +193,14 @@ export class GameView {
       stat.innerHTML = `<span class="stat-label">${this._escHtml(label)}</span><span class="stat-value" id="stat-${key}">${value}</span>`
       statsEl.appendChild(stat)
     }
+
+    // Affiche la monnaie à côté des stats si définie
+    const monnaiWidget = InventaireView.buildMonnaiWidget(adventure, hero, (s) => this._escHtml(s))
+    if (monnaiWidget) statsEl.appendChild(monnaiWidget)
+
     panel.appendChild(statsEl)
 
-    // Affiche l'inventaire (sans les items équipés)
+    // Affiche l'inventaire (sans les items équipés ni la monnaie)
     const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s))
     panel.appendChild(inventoryPanel)
 
@@ -516,11 +521,14 @@ export class GameView {
     }
     content += '</tbody></table>'
 
+    // Section Monnaie (entre les stats et l'inventaire, si définie)
+    content += InventaireView.buildMonnaiSection(adventure, hero, (s) => this._escHtml(s))
+
     // Conteneur pour inventaire et équipement côte à côte
     content += '<div class="hero-layout">'
 
-    // Section Inventaire (gauche)
-    content += InventaireView.buildInventorySection(hero, (s) => this._escHtml(s), (s) => this._escAttr(s), this.engine)
+    // Section Inventaire (gauche) — exclut la monnaie
+    content += InventaireView.buildInventorySection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s), this.engine)
 
     // Section Équipement (droite)
     content += EquipementView.buildEquipmentSection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s))

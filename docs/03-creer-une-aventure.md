@@ -126,92 +126,17 @@ Section d'introduction affichée avant la création du héros.
 
 Définit le template du héros créé au début de la partie.
 
-### `statistiques` ★ obligatoire
-
-Dictionnaire de statistiques. Chaque clé est le nom interne de la stat.
-
-```json
-"statistiques": {
-  "habilete": {
-    "label": "Habileté",
-    "valeur": 0,
-    "init":   "1d6+6",
-    "max":    "start"
-  },
-  "endurance": {
-    "label": "Endurance",
-    "valeur": 0,
-    "init":   "2d6+12",
-    "max":    "start"
-  },
-  "chance": {
-    "label": "Chance",
-    "valeur": 0,
-    "init":   "1d6+6",
-    "max":    "start"
-  }
-}
-```
+La documentation complète est dans [12 - Personnage](12-personnage.md). Résumé des champs principaux :
 
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
-| `label` | ★ | Nom affiché dans l'UI |
-| `valeur` | ★ | Valeur initiale (0 = sera remplacée par le jet de dés) |
-| `init` | ★ | Formule de dés : `NdX+Y` (ex: `2d6+12`) |
-| `max` | — | Plafond : `"start"` (valeur initiale) ou un nombre fixe |
-
-### `inventaire` — optionnel
-
-Liste d'objets de départ. Chaque entrée est soit une chaîne simple, soit un objet détaillé.
-
-```json
-"inventaire": [
-  "Épée",
-  "Armure en cuir",
-  {
-    "id":             "pieces_or",
-    "label":          "Pièces d'or",
-    "quantite":       10,
-    "quantite_label": "pièces",
-    "description":    "Monnaie courante du royaume"
-  }
-]
-```
-
-| Champ | Obligatoire | Description |
-|-------|-------------|-------------|
-| `id` | ★ (objet) | Identifiant interne |
-| `label` | ★ (objet) | Nom affiché |
-| `quantite` | — | Quantité (défaut : 1) |
-| `quantite_label` | — | Unité affichée (ex : "mesures", "charges") |
-| `usage` | — | Nom de la règle déclenchée à la consommation |
-| `description` | — | Texte affiché au survol |
-
-### `choix_initial` — optionnel
-
-Permet au joueur de choisir des objets de départ parmi des options.
-
-```json
-"choix_initial": [
-  {
-    "id":       "potion",
-    "label":    "Choisissez votre potion",
-    "quantite": 1,
-    "options": [
-      {
-        "id":             "potion",
-        "label":          "Potion d'Adresse",
-        "quantite":       2,
-        "quantite_label": "mesures",
-        "usage":          "potion_adresse",
-        "description":    "Restaure votre Habileté"
-      }
-    ]
-  }
-]
-```
-
-`quantite` indique combien d'options le joueur peut choisir parmi la liste.
+| `statistiques` | ★ | Dictionnaire des stats (habilete, endurance, chance…) |
+| `emplacements_equipement` | — | Slots d'équipement disponibles |
+| `equipement` | — | Items équipés dès le départ |
+| `inventaire` | — | Items dans le sac au départ |
+| `monnaie` | — | Id de l'item traité comme monnaie (affiché séparément) |
+| `choix_initial` | — | Choix d'objets proposés avant de commencer |
+| `image` / `image_ia` | — | Image du personnage pour la grille d'équipement |
 
 ---
 
