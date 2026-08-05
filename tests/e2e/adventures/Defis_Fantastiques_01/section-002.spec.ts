@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 2
@@ -25,7 +25,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -48,8 +48,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
     
     // Vérifier qu'on est à la section 269
-    const sectionContent = page.locator('[data-section="269"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 269)
   })
 
   test('Navigation vers section 16 (sans chance - lance_de=11)', async ({ page }) => {
@@ -68,7 +67,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
     
     // Vérifier qu'on est à la section 16
-    const sectionContent = page.locator('[data-section="16"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 16)
   })
 })

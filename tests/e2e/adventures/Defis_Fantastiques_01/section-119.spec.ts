@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testMonnaie } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 119
@@ -98,7 +98,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
     test('Le choix s\'active automatiquement et il reste 3 pièces d\'or', async ({ page }) => {
       await expect(page.locator(`.choices-list button:has-text("${SECTION_CHOICES[269]}")`)).toBeEnabled()
-      await expect(page.locator('.monnaie-value')).toHaveText('3')
+      await testMonnaie(page, 3)
     })
 
     test('Navigation vers la section 269', async ({ page }) => {

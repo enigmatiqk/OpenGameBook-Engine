@@ -235,7 +235,7 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'item_dropped' | 'no_droppable_item'
+  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item'
   item_id?: string    // pour item_quantite
   quantite?: number   // pour item_quantite
   section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
@@ -244,6 +244,7 @@ export interface ChoiceCondition {
   id?: string         // pour combat_degats_monstre/heros : id du monstre persistant (optionnel)
   degats_min?: number // pour combat_degats_monstre/heros : dégâts minimum
   degats_max?: number // pour combat_degats_monstre/heros : dégâts maximum
+  trigger?: string    // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
 }
 
 export interface CoutEffet {
@@ -274,6 +275,7 @@ export interface ActionOutcome {
   items?: ItemGain[]
   choix?: Choice
   end?: "victoire" | "defaite"
+  trigger?: string    // trigger à activer si cet outcome est atteint (ex: "corde_coupe")
 }
 
 export interface ActionLancerDe {

@@ -684,6 +684,10 @@ export class GameEngine {
           GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
         }
       }
+      // Active le trigger de l'outcome si défini
+      if (si_reussi?.trigger) {
+        this.navigation.recordTrigger(si_reussi.trigger)
+      }
     } else {
       // Échec — vérifie si un effet item avec delta_de nécessite un jet manuel
       const effets: import('../types').Effet[] = si_echoue?.effets ?? []
@@ -719,6 +723,10 @@ export class GameEngine {
         for (const itemGain of si_echoue.items) {
           GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
         }
+      }
+      // Active le trigger de l'outcome si défini
+      if (si_echoue?.trigger) {
+        this.navigation.recordTrigger(si_echoue.trigger)
       }
     }
 
@@ -1127,8 +1135,8 @@ export class GameEngine {
       }
 
       // Active le trigger si défini
-      if (effet.trigger === 'item_dropped') {
-        this.navigation.recordItemDrop()
+      if (effet.trigger) {
+        this.navigation.recordTrigger(effet.trigger)
       }
     }
   }
@@ -1229,7 +1237,25 @@ export class GameEngine {
 
   applyStatDelta(stat: string, delta: number, raison: string): number {
     if (!this.hero || !this.adventure) return 0
-    return GameEngineHero.applyStatDelta(this.hero, this.adventure, stat, delta, raison)
+    const realDelta = GameEngineHero.applyStatDelta(this.hero, this.adventure, stat, delta, raison)
+
+    // Vérifie si la stat de vie est tombée sous le seuil de défaite
+    if (!this.gameOver) {
+      const statVie = this.adventure.regles.combat?.stat_vie
+      const enduranceMin = (this.adventure.regles.defaite as any)?.endurance_min ?? 0
+      const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero)
+      if (statVie && normalizedStat === statVie && this.hero.statistiques[normalizedStat] <= enduranceMin) {
+        this.gameOver = true
+        this.victory = false
+        this.finalTimeMs = this.timer.getElapsedMs()
+        this.timer.pause()
+        if (this.adventure) {
+          this.saveModule.deleteSave(this.adventure.titre)
+        }
+      }
+    }
+
+    return realDelta
   }
 
   consumeItem(itemId: string): { success: boolean; message: string } {

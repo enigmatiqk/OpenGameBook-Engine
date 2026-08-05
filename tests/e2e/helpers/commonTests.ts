@@ -109,9 +109,31 @@ export async function testItem(page: Page, item_id: string, count: number = 1, s
 }
 
 /**
- * Lance le combat (clic sur le bouton de combat)
+ * Vérifie la valeur affichée de la monnaie dans le hero-panel
  * @param page - La page Playwright
+ * @param value - La valeur attendue
  */
+export async function testMonnaie(page: Page, value: number) {
+  const monnaie = page.locator('.monnaie-value')
+  await expect(monnaie).toBeVisible()
+  await expect(monnaie).toHaveText(String(value))
+}
+
+/**
+ * Lance une action avec dés (tenter_chance, tenter_habilete, etc.)
+ * Clique sur le bouton d'action puis sur "Lancer" et attend que le résultat soit appliqué.
+ * @param page - La page Playwright
+ * @param buttonText - Texte du bouton d'action (ex: "Tentez votre Chance")
+ */
+export async function tenterChance(page: Page, buttonText: string) {
+  await page.click(`.choices-list button:has-text("${buttonText}")`)
+  await page.waitForSelector('button:has-text("Lancer")', { timeout: 5000 })
+  await page.click('button:has-text("Lancer")')
+  // Attend que le bouton "Lancer" disparaisse : signe que le résultat a été appliqué et rendu
+  await page.waitForSelector('button:has-text("Lancer")', { state: 'hidden', timeout: 5000 })
+}
+
+
 export async function testCombatStart(page: Page) {
   await page.click('button.choice-btn--combat')
   await page.waitForSelector('.combat-view', { timeout: 10000 })

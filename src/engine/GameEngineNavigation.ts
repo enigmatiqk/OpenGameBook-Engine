@@ -11,7 +11,7 @@ export class GameEngineNavigation {
   private sectionActionResults: Record<string, string> = {}
   private lastCombatVictory: boolean | null = null
   private lastCombatState: CombatState | null = null
-  private itemDropped: boolean = false
+  private activeTriggers: Set<string> = new Set()
 
   /**
    * Initialise la navigation avec un historique optionnel
@@ -45,14 +45,21 @@ export class GameEngineNavigation {
    */
   resetSectionActions(): void {
     this.sectionActionResults = {}
-    this.itemDropped = false
+    this.activeTriggers = new Set()
   }
 
   /**
-   * Enregistre qu'un item a été jeté (active le trigger item_dropped)
+   * Active un trigger nommé
+   */
+  recordTrigger(name: string): void {
+    this.activeTriggers.add(name)
+  }
+
+  /**
+   * Rétrocompat — active le trigger "item_dropped"
    */
   recordItemDrop(): void {
-    this.itemDropped = true
+    this.recordTrigger('item_dropped')
   }
 
   /**
@@ -193,10 +200,14 @@ export class GameEngineNavigation {
           raison = `Dégâts au héros insuffisants (${degats})`
         }
       }
-    } else if (cond.type === 'item_dropped') {
-      if (!this.itemDropped) {
+    } else if (cond.type === 'trigger') {
+      const triggerName = cond.trigger
+      if (!triggerName) {
         conditionOk = false
-        raison = 'Vous devez d\'abord jeter un objet'
+        raison = 'Condition trigger invalide : propriété "trigger" manquante'
+      } else if (!this.activeTriggers.has(triggerName)) {
+        conditionOk = false
+        raison = 'Action requise non effectuée'
       }
     } else if (cond.type === 'no_droppable_item') {
       // Vrai si le héros n'a aucun item dropable :
@@ -303,8 +314,8 @@ export class GameEngineNavigation {
       }
 
       // Active le trigger si défini
-      if (effet.trigger === 'item_dropped') {
-        this.recordItemDrop()
+      if (effet.trigger) {
+        this.recordTrigger(effet.trigger)
       }
 
       // Applique le coût de l'effet (ex: consommer 1 repas après avoir récupéré de l'endurance)

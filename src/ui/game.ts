@@ -111,33 +111,26 @@ export class GameView {
       return
     }
     if (gameOver && !victory) {
-      // Affiche d'abord la section de défaite avec son texte et image
+      // Affiche brièvement la section courante (avec endurance à 0 visible) puis redirige
       const sectionNum = this.engine.getCurrentSection()
       const section = adventure.sections.find(s => s.numero === sectionNum)
-      
+
       container.innerHTML = ''
       container.appendChild(this._buildToolbar(adventure))
       container.appendChild(this._buildHeroPanel(adventure, hero))
-      
       if (section) {
         container.appendChild(this._buildSectionContent(adventure, section))
       }
       updateSectionNotes(null)
-      
-      // Ajoute un bouton pour continuer vers les images de défaite
-      const btnDefeat = document.createElement('button')
-      btnDefeat.className = 'btn btn-primary defeat-next-btn'
-      const hasDefeatImages = adventure.images_defaite && adventure.images_defaite.length > 0
-      btnDefeat.textContent = hasDefeatImages ? 'Continuer' : '💀 Défaite'
-      btnDefeat.addEventListener('click', () => {
+
+      setTimeout(() => {
         const images = resolveImages(adventure.images_defaite, adventure.images_defaite_ia)
         if (images && images.length > 0) {
           this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat(), 'defeat')
         } else {
           this.callbacks.onDefeat()
         }
-      })
-      container.appendChild(btnDefeat)
+      }, 2000)
       return
     }
 
