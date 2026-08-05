@@ -223,6 +223,23 @@ export class GameEngine {
   }
 
   /**
+   * Applique un delta de stat en tenant compte du flag debug ignore_stat_limit.
+   * Si le flag est actif, contourne le plafond et écrit directement dans les statistiques.
+   */
+  private _applyStatDeltaWithDebug(stat: string, delta: number, raison: string): void {
+    if (!this.hero) return
+    const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero)
+    if (this.isDebugIgnoreStatLimit()) {
+      if (this.hero.statistiques[normalizedStat] !== undefined) {
+        this.hero.statistiques[normalizedStat] += delta
+        this.hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
+      }
+    } else {
+      this.applyStatDelta(normalizedStat, delta, raison)
+    }
+  }
+
+  /**
    * Retourne les choix initiaux à présenter après la création du héros, s'il y en a.
    */
   getChoixInitiaux(): import('../types').ChoixInitial[] {
@@ -356,15 +373,7 @@ export class GameEngine {
         section,
         this.hero,
         (stat, delta, raison) => {
-          const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero!)
-          if (this.isDebugIgnoreStatLimit()) {
-            if (this.hero!.statistiques[normalizedStat] !== undefined) {
-              this.hero!.statistiques[normalizedStat] += delta
-              this.hero!.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
-            }
-          } else {
-            this.applyStatDelta(normalizedStat, delta, raison)
-          }
+          this._applyStatDeltaWithDebug(stat, delta, raison)
         },
         this.adventure?.personnage.monnaie
       )
@@ -588,6 +597,7 @@ export class GameEngine {
       
       const total = rolls.reduce((a, b) => a + b, 0)
       let targetSection: number | undefined
+      let targetEffets: import('../types').Effet[] | undefined
       
       // Cherche le résultat correspondant
       for (const [key, value] of Object.entries(resultats)) {
@@ -596,12 +606,14 @@ export class GameEngine {
           const [min, max] = key.split('-').map(Number)
           if (total >= min && total <= max) {
             targetSection = (value as any).section
+            targetEffets = (value as any).effets
             break
           }
         } else {
           // Valeur unique
           if (total === Number(key)) {
             targetSection = (value as any).section
+            targetEffets = (value as any).effets
             break
           }
         }
@@ -609,6 +621,11 @@ export class GameEngine {
       
       if (targetSection === undefined) {
         throw new Error(`Aucun résultat trouvé pour ${total}`)
+      }
+
+      // Applique les effets du résultat avant de naviguer
+      if (targetEffets && targetEffets.length > 0) {
+        this._applyEffets(targetEffets, choice.texte)
       }
       
       return this.navigateTo(targetSection)
@@ -801,11 +818,11 @@ export class GameEngine {
 
       const delta = targetValue - current
       if (delta !== 0) {
-        if (rule.ignore_max || this.isDebugIgnoreStatLimit()) {
+        if (rule.ignore_max) {
           this.hero.statistiques[stat] = targetValue
           this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
         } else {
-          this.applyStatDelta(stat, delta, `action ${actionName}`)
+          this._applyStatDeltaWithDebug(stat, delta, `action ${actionName}`)
         }
       }
 
@@ -1085,14 +1102,20 @@ export class GameEngine {
       if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
 
       if (effet.type === 'stat' && effet.stat) {
+        const statName = GameEngineHero.normalizeStat(effet.stat.name, this.hero)
         const valeurDelta = resolveStatValeurDelta(effet.stat, this.hero)
         if (valeurDelta !== null) {
           const effectiveDelta = valeurDelta > 0 ? valeurDelta : (effet.stat.ignore_max ? valeurDelta : 0)
           if (effectiveDelta !== 0) {
-            this.applyStatDelta(effet.stat.name, effectiveDelta, effet.stat.raison ?? labelSource)
+            if (effet.stat.ignore_max) {
+              this.hero.statistiques[statName] = (this.hero.statistiques[statName] ?? 0) + effectiveDelta
+              this.hero.historique.push({ timestamp: Date.now(), stat: statName, delta: effectiveDelta, raison: effet.stat.raison ?? labelSource })
+            } else {
+              this._applyStatDeltaWithDebug(statName, effectiveDelta, effet.stat.raison ?? labelSource)
+            }
           }
         } else {
-          this.applyStatDelta(effet.stat.name, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
+          this._applyStatDeltaWithDebug(statName, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
         }
       } else if (effet.type === 'item' && effet.item) {
         applyItemEffect(effet.item, this.hero)
@@ -1101,6 +1124,11 @@ export class GameEngine {
         const key = ms.monstre_id || '__any__'
         if (!this.pendingMonsterStatMods[key]) this.pendingMonsterStatMods[key] = []
         this.pendingMonsterStatMods[key].push(ms)
+      }
+
+      // Active le trigger si défini
+      if (effet.trigger === 'item_dropped') {
+        this.navigation.recordItemDrop()
       }
     }
   }
@@ -1211,15 +1239,7 @@ export class GameEngine {
       this.adventure,
       itemId,
       (stat, delta, raison) => {
-        if (this.isDebugIgnoreStatLimit()) {
-          const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero!)
-          if (this.hero!.statistiques[normalizedStat] !== undefined) {
-            this.hero!.statistiques[normalizedStat] += delta
-            this.hero!.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
-          }
-        } else {
-          this.applyStatDelta(stat, delta, raison)
-        }
+        this._applyStatDeltaWithDebug(stat, delta, raison)
       }
     )
   }
