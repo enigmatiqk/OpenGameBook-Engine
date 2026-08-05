@@ -1,5 +1,5 @@
 import type { GameEngine } from '../engine/GameEngine'
-import type { Adventure, Hero, InventaireItem } from '../types'
+import type { Adventure, Hero } from '../types'
 
 /**
  * Convertit un texte en slug utilisable comme id DOM
@@ -57,7 +57,7 @@ export class InventaireView {
    * Retourne null si la propriété monnaie n'est pas définie dans cette aventure
    * Affiche 0 si la monnaie est définie mais que le héros n'en a pas
    */
-  static buildMonnaiWidget(adventure: Adventure, hero: Hero, escHtml: (s: string) => string): HTMLElement | null {
+  static buildMonnaiWidget(adventure: Adventure, hero: Hero, _escHtml: (s: string) => string): HTMLElement | null {
     const monnaie = getMonnaiInfo(adventure, hero)
     if (!monnaie) return null
 
@@ -76,70 +76,111 @@ export class InventaireView {
   /**
    * Construit le panneau d'inventaire pour la vue principale
    */
-  static buildHeroInventoryPanel(adventure: Adventure, hero: Hero, engine: GameEngine, escHtml: (s: string) => string): HTMLElement {
+  static buildHeroInventoryPanel(adventure: Adventure, _hero: Hero, engine: GameEngine, escHtml: (s: string) => string, onDrop?: () => void): HTMLElement {
     const panel = document.createElement('div')
     panel.className = 'hero-inventory'
-    
+
+    /** Reconstruit le contenu du panel en place */
+    const rebuild = () => {
+      panel.innerHTML = ''
+      const lbl = document.createElement('span')
+      lbl.className = 'inv-label'
+      lbl.textContent = 'Inventaire :'
+      panel.appendChild(lbl)
+      panel.appendChild(buildItems())
+    }
+
+    const buildItems = (): HTMLElement => {
+      const itemsContainer = document.createElement('span')
+      itemsContainer.className = 'inv-items'
+
+      const currentHero = engine.getHero()
+      if (!currentHero) return itemsContainer
+
+      const inventoryItems = getInventaireItems(adventure, currentHero)
+      const dropAllowed = engine.isDropAllowed()
+
+      for (let i = 0; i < inventoryItems.length; i++) {
+        const item = inventoryItems[i]
+
+        if (i > 0) {
+          const separator = document.createElement('span')
+          separator.textContent = ', '
+          itemsContainer.appendChild(separator)
+        }
+
+        if (typeof item === 'string') {
+          const span = document.createElement('span')
+          span.id = slugify(item)
+          span.textContent = escHtml(item)
+          itemsContainer.appendChild(span)
+        } else {
+          // Item avec usage = consommable
+          if (item.usage) {
+            const btn = document.createElement('button')
+            btn.className = 'inv-item-btn'
+            btn.type = 'button'
+            btn.id = slugify(item.id)
+            if (item.quantite !== undefined) btn.dataset.count = String(item.quantite)
+            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
+            btn.textContent = escHtml(item.label) + qty
+            btn.title = item.description || 'Cliquez pour consommer'
+            btn.addEventListener('click', () => {
+              const result = engine.consumeItem(item.id)
+              if (result.success) {
+                rebuild()
+              } else {
+                alert(result.message)
+              }
+            })
+            itemsContainer.appendChild(btn)
+          } else {
+            // Item sans usage = non consommable
+            const span = document.createElement('span')
+            span.id = slugify(item.id)
+            if (item.quantite !== undefined) span.dataset.count = String(item.quantite)
+            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
+            span.textContent = escHtml(item.label) + qty
+            if (item.description) {
+              span.title = item.description
+            }
+            itemsContainer.appendChild(span)
+          }
+
+          // Bouton Jeter (icône seulement)
+          if (dropAllowed) {
+            const dropBtn = document.createElement('button')
+            dropBtn.className = 'inv-drop-btn'
+            dropBtn.type = 'button'
+            dropBtn.textContent = '🗑️'
+            dropBtn.title = `Jeter ${item.label}`
+            dropBtn.setAttribute('aria-label', `Jeter ${item.label}`)
+            dropBtn.addEventListener('click', () => {
+              const result = engine.dropItem(item.id)
+              if (result.success) {
+                if (onDrop) {
+                  onDrop()
+                } else {
+                  rebuild()
+                }
+              } else {
+                alert(result.message)
+              }
+            })
+            itemsContainer.appendChild(dropBtn)
+          }
+        }
+      }
+
+      return itemsContainer
+    }
+
     const label = document.createElement('span')
     label.className = 'inv-label'
     label.textContent = 'Inventaire :'
     panel.appendChild(label)
+    panel.appendChild(buildItems())
 
-    const itemsContainer = document.createElement('span')
-    itemsContainer.className = 'inv-items'
-
-    const inventoryItems = getInventaireItems(adventure, hero)
-
-    for (let i = 0; i < inventoryItems.length; i++) {
-      const item = inventoryItems[i]
-      
-      if (i > 0) {
-        const separator = document.createElement('span')
-        separator.textContent = ', '
-        itemsContainer.appendChild(separator)
-      }
-
-      if (typeof item === 'string') {
-        const span = document.createElement('span')
-        span.id = slugify(item)
-        span.textContent = escHtml(item)
-        itemsContainer.appendChild(span)
-      } else {
-        // Item avec usage = consommable
-        if (item.usage) {
-          const btn = document.createElement('button')
-          btn.className = 'inv-item-btn'
-          btn.type = 'button'
-          btn.id = slugify(item.id)
-          if (item.quantite !== undefined) btn.dataset.count = String(item.quantite)
-          const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-          btn.textContent = escHtml(item.label) + qty
-          btn.title = item.description || 'Cliquez pour consommer'
-          btn.addEventListener('click', () => {
-            const result = engine.consumeItem(item.id)
-            if (result.success) {
-              window.dispatchEvent(new CustomEvent('game-render'))
-            } else {
-              alert(result.message)
-            }
-          })
-          itemsContainer.appendChild(btn)
-        } else {
-          // Item sans usage = non consommable
-          const span = document.createElement('span')
-          span.id = slugify(item.id)
-          if (item.quantite !== undefined) span.dataset.count = String(item.quantite)
-          const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-          span.textContent = escHtml(item.label) + qty
-          if (item.description) {
-            span.title = item.description
-          }
-          itemsContainer.appendChild(span)
-        }
-      }
-    }
-
-    panel.appendChild(itemsContainer)
     return panel
   }
 
@@ -166,6 +207,7 @@ export class InventaireView {
     content += '<h3>Inventaire</h3>'
     
     const inventoryItems = getInventaireItems(adventure, hero)
+    const dropAllowed = _engine.isDropAllowed()
     
     if (inventoryItems.length > 0) {
       content += '<ul class="inventory-list">'
@@ -175,7 +217,8 @@ export class InventaireView {
         } else {
           const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
           const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${escAttr(item.id)}">⚔️</button>` : ''
-          content += `<li>${escHtml(item.label)}${qty} ${equipBtn}</li>`
+          const dropBtn = dropAllowed ? `<button class="btn-drop-modal" data-item-id="${escAttr(item.id)}">🗑️ Jeter</button>` : ''
+          content += `<li>${escHtml(item.label)}${qty} ${equipBtn}${dropBtn}</li>`
         }
       }
       content += '</ul>'
@@ -200,6 +243,27 @@ export class InventaireView {
           const result = engine.equipItem(itemId)
           if (result.success) {
             onEquipped()
+          } else {
+            alert(result.message)
+          }
+        }
+      })
+    })
+  }
+
+  /**
+   * Ajoute les event listeners pour les boutons Jeter dans la modal
+   */
+  static attachDropListeners(overlay: HTMLElement, engine: GameEngine, onDropped: () => void): void {
+    overlay.querySelectorAll<HTMLButtonElement>('.btn-drop-modal').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const itemId = btn.dataset.itemId
+        if (itemId) {
+          const result = engine.dropItem(itemId)
+          if (result.success) {
+            onDropped()
           } else {
             alert(result.message)
           }

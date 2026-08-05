@@ -122,11 +122,17 @@ export interface RegleRestaurerStat {
 
 export type Regle = RegleTestStat | RegleComposite | RegleRestaurerStat
 
+export interface ItemDropRules {
+  aventure?: boolean  // si true, le bouton Jeter est toujours visible
+  section?: boolean   // si true, le bouton Jeter n'est visible que sur les sections avec item_dropable: true
+}
+
 export interface Regles {
   combat: CombatRules
   victoire: { sections: number[] }
   defaite: { endurance_min: number }
-  [key: string]: Regle | CombatRules | { sections: number[] } | { endurance_min: number }
+  item_drop?: ItemDropRules
+  [key: string]: Regle | CombatRules | { sections: number[] } | { endurance_min: number } | ItemDropRules | undefined
 }
 
 // ─── Adventure content ────────────────────────────────────────────────────────
@@ -223,12 +229,13 @@ export interface Effet {
   monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
   condition?: ChoiceCondition
   cout?: CoutEffet[]        // coût appliqué quand l'effet est déclenché (ex: consommer 1 repas)
+  trigger?: string          // trigger moteur à activer après exécution (ex: "item_dropped")
 }
 
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros'
+  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'item_dropped' | 'no_droppable_item'
   item_id?: string    // pour item_quantite
   quantite?: number   // pour item_quantite
   section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
@@ -310,6 +317,7 @@ export interface Section {
   effets?: Effet[]
   choix: Choice[]
   end?: "victoire" | "defaite"
+  item_dropable?: boolean   // si true, le bouton Jeter est visible sur cette section (quand regles.item_drop.section: true)
   /** Questions en suspens sur cette section (conversion/traduction du livre) */
   questions?: string[]
   /** Notes diverses sur cette section */

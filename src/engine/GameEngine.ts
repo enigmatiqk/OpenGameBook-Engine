@@ -365,7 +365,8 @@ export class GameEngine {
           } else {
             this.applyStatDelta(normalizedStat, delta, raison)
           }
-        }
+        },
+        this.adventure?.personnage.monnaie
       )
     }
 
@@ -1221,6 +1222,54 @@ export class GameEngine {
         }
       }
     )
+  }
+
+  /**
+   * Supprime un item de l'inventaire (drop).
+   * L'item doit être dans l'inventaire, non équipé, et ne pas être la monnaie.
+   */
+  dropItem(itemId: string): { success: boolean; message: string } {
+    if (!this.hero || !this.adventure) return { success: false, message: 'Pas de héros actif' }
+
+    const monnaiId = this.adventure.personnage.monnaie
+    if (monnaiId && itemId === monnaiId) {
+      return { success: false, message: 'La monnaie ne peut pas être jetée' }
+    }
+
+    const idx = this.hero.inventaire.findIndex(i =>
+      typeof i !== 'string' && i.id === itemId && !i.equipe
+    )
+    if (idx === -1) {
+      return { success: false, message: 'Item non trouvé ou équipé' }
+    }
+
+    const item = this.hero.inventaire[idx]
+    const label = typeof item !== 'string' ? item.label : item
+
+    if (typeof item !== 'string' && item.quantite !== undefined && item.quantite > 1) {
+      item.quantite--
+    } else {
+      this.hero.inventaire.splice(idx, 1)
+    }
+
+    this.navigation.recordItemDrop()
+    return { success: true, message: `${label} jeté` }
+  }
+
+  /**
+   * Indique si le bouton Jeter doit être affiché pour la section courante.
+   * Basé sur regles.item_drop et la propriété item_dropable de la section.
+   */
+  isDropAllowed(): boolean {
+    if (!this.adventure) return false
+    const itemDrop = (this.adventure.regles as any).item_drop as { aventure?: boolean; section?: boolean } | undefined
+    if (!itemDrop) return false
+    if (itemDrop.aventure) return true
+    if (itemDrop.section) {
+      const section = this.adventure.sections.find(s => s.numero === this.currentSection)
+      return section?.item_dropable === true
+    }
+    return false
   }
 
   equipItem(itemId: string): { success: boolean; message: string } {

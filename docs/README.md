@@ -39,6 +39,18 @@ Schéma de sortie JSON à destination des IA pour la génération d'aventures.
 ### [11 - Règles](11-regles.md)
 Référence complète des règles : types (`test_stat`, `composite`, `restaurer_stat`), champs, exemples, limites d'utilisation et architecture moteur.
 
+### [08-section-01 - Choix](08-section-01-choix.md)
+Structure des choix, conditions, coûts, actions avec dés, items gagnés.
+
+### [08-section-02 - Combat](08-section-02-combat.md)
+Système de combat : monstres, rounds, fuite, événements de combat.
+
+### [08-section-03 - Effets](08-section-03-effets.md)
+Types d'effets (`stat`, `stat_total`, `item`), effets conditionnels, triggers.
+
+### [08-section-04 - Conditions](08-section-04-conditions.md)
+Référence complète de tous les types de conditions : `item_quantite`, `retour`, `action_resolved`, `combat_victoire`, `item_dropped`, `no_droppable_item`, etc.
+
 ---
 
 ## 🚀 Démarrage rapide

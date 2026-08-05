@@ -11,6 +11,7 @@ export class GameEngineNavigation {
   private sectionActionResults: Record<string, string> = {}
   private lastCombatVictory: boolean | null = null
   private lastCombatState: CombatState | null = null
+  private itemDropped: boolean = false
 
   /**
    * Initialise la navigation avec un historique optionnel
@@ -44,6 +45,14 @@ export class GameEngineNavigation {
    */
   resetSectionActions(): void {
     this.sectionActionResults = {}
+    this.itemDropped = false
+  }
+
+  /**
+   * Enregistre qu'un item a été jeté (active le trigger item_dropped)
+   */
+  recordItemDrop(): void {
+    this.itemDropped = true
   }
 
   /**
@@ -184,6 +193,27 @@ export class GameEngineNavigation {
           raison = `Dégâts au héros insuffisants (${degats})`
         }
       }
+    } else if (cond.type === 'item_dropped') {
+      if (!this.itemDropped) {
+        conditionOk = false
+        raison = 'Vous devez d\'abord jeter un objet'
+      }
+    } else if (cond.type === 'no_droppable_item') {
+      // Vrai si le héros n'a aucun item dropable :
+      // - aucun item en inventaire (hors monnaie, hors équipés)
+      // - ET aucun item équipé
+      const monnaiId: string | null = (hero as any)._monnaiId ?? null
+      const hasDroppableInInv = hero.inventaire.some(i => {
+        if (typeof i === 'string') return false
+        if (i.equipe) return false
+        if (monnaiId && i.id === monnaiId) return false
+        return true
+      })
+      const hasEquipped = Object.keys(hero.equipement).length > 0
+      if (hasDroppableInInv || hasEquipped) {
+        conditionOk = false
+        raison = 'Le héros a encore des items à jeter'
+      }
     }
 
     // Applique la négation si `not` est true
@@ -219,9 +249,15 @@ export class GameEngineNavigation {
   applySectionEffects(
     section: Section,
     hero: Hero,
-    applyStatDelta: (stat: string, delta: number, raison: string) => void
+    applyStatDelta: (stat: string, delta: number, raison: string) => void,
+    monnaiId?: string
   ): void {
     if (!section.effets) return
+
+    // Injecte l'id de la monnaie sur le héros pour la condition no_droppable_item
+    if (monnaiId) {
+      ;(hero as any)._monnaiId = monnaiId
+    }
 
     for (const effet of section.effets) {
       // Vérifie la condition de l'effet
@@ -266,6 +302,11 @@ export class GameEngineNavigation {
         applyItemEffect(effet.item, hero)
       }
 
+      // Active le trigger si défini
+      if (effet.trigger === 'item_dropped') {
+        this.recordItemDrop()
+      }
+
       // Applique le coût de l'effet (ex: consommer 1 repas après avoir récupéré de l'endurance)
       if (effet.cout) {
         for (const cout of effet.cout) {
@@ -291,6 +332,11 @@ export class GameEngineNavigation {
           }
         }
       }
+    }
+
+    // Nettoyage de la propriété temporaire
+    if (monnaiId) {
+      delete (hero as any)._monnaiId
     }
   }
 }

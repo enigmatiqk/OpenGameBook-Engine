@@ -201,7 +201,7 @@ export class GameView {
     panel.appendChild(statsEl)
 
     // Affiche l'inventaire (sans les items équipés ni la monnaie)
-    const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s))
+    const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s), () => this._render())
     panel.appendChild(inventoryPanel)
 
     return panel
@@ -571,6 +571,12 @@ export class GameView {
     
     // Ajouter les event listeners pour les boutons d'équipement/déséquipement
     InventaireView.attachEquipmentListeners(overlay, this.engine, () => {
+      close()
+      this._showHeroModal() // Rouvrir la modal rafraîchie
+      this._render() // Rafraîchir la page principale
+    })
+
+    InventaireView.attachDropListeners(overlay, this.engine, () => {
       close()
       this._showHeroModal() // Rouvrir la modal rafraîchie
       this._render() // Rafraîchir la page principale

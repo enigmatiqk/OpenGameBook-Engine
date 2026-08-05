@@ -97,6 +97,39 @@ Principalement utilisé dans les effets d'items équipés (voir [07-items-gain.m
 
 ---
 
+## Trigger (`trigger`)
+
+Un effet peut activer un **trigger moteur** une fois exécuté, en ajoutant la propriété `trigger` au niveau de l'objet effet (pas à l'intérieur de `stat` ou `item`).
+
+```json
+{
+  "type": "item",
+  "trigger": "item_dropped",
+  "condition": { "type": "no_droppable_item" },
+  "item": {
+    "name":   "pieces_or",
+    "delta":  -1,
+    "raison": "Lancer une Pièce d'Or pour distraire l'Ogre"
+  }
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `trigger` | — | Nom du trigger à activer après exécution de l'effet |
+
+Le trigger n'est activé que si la condition de l'effet est remplie (ou absente). Si l'effet est ignoré, le trigger n'est pas déclenché.
+
+### Triggers disponibles
+
+| Valeur | Description |
+|--------|-------------|
+| `"item_dropped"` | Indique qu'un item a été jeté. Utilisé comme fallback quand le joueur n'a rien à jeter manuellement (ex : dépense automatique d'une Pièce d'Or). |
+
+> Le trigger `item_dropped` est aussi activé automatiquement quand le joueur utilise le bouton **Jeter** dans l'inventaire — pas besoin de trigger dans ce cas. Le `trigger` sur un effet sert uniquement pour les activations automatiques (fallback).
+
+---
+
 ## Effets conditionnels
 
 Un effet peut être soumis à une condition. S'il n'est pas remplie, l'effet est ignoré silencieusement.
