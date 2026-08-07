@@ -4,7 +4,7 @@ import type {
   HeroInitState, CombatState, RegleComposite, EffetMonstreStat
 } from '../types'
 import { PlayTimer } from './PlayTimer'
-import { CombatResolver, parseDiceFormula, parseAttackFormula, rollDice } from './CombatResolver'
+import { CombatResolver, parseDiceFormula, parseAttackFormula } from './CombatResolver'
 import { SaveStore } from './SaveStore'
 import { initDebugNavHistory, initDebugConditions } from './GameEngineDebug'
 import { GameEngineHero } from './GameEngineHero'
@@ -38,6 +38,9 @@ export class GameEngine {
   // Modifications de stats des monstres en attente (appliquées lors du prochain combat)
   // clé : monstre_id (ou "__any__" pour s'appliquer au premier monstre sans id ciblé)
   private pendingMonsterStatMods: Record<string, EffetMonstreStat[]> = {}
+
+  // Modifications de stats du monstre (ancien format string — rétrocompat)
+  private nextCombatMonsterStatMods: string = ''
 
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
@@ -562,8 +565,9 @@ export class GameEngine {
     const action = choice.action
     
     // Support pour lancer_de avec formule directe
-    if (typeof action === 'object' && action.type === 'lancer_de') {
-      const formule = action.lancer_de?.formule ?? action.lancer_de?.choix
+    if (typeof action === 'object' && 'type' in action && action.type === 'lancer_de') {
+      const lancerDe = (action as import('../types').ActionLancerDe).lancer_de
+      const formule = lancerDe?.formule ?? (lancerDe as any)?.choix
       if (!formule) throw new Error(`lancer_de action manque la propriété 'formule' dans lancer_de`)
       return {
         id: newRollId(),
@@ -720,8 +724,8 @@ export class GameEngine {
     const action = choice.action
 
     // Gère l'action lancer_de
-    if (typeof action === 'object' && action.type === 'lancer_de') {
-      const resultats = action.lancer_de?.resultats
+    if (typeof action === 'object' && 'type' in action && action.type === 'lancer_de') {
+      const resultats = (action as import('../types').ActionLancerDe).lancer_de?.resultats
       if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats' dans lancer_de`)
       
       const total = rolls.reduce((a, b) => a + b, 0)
@@ -784,7 +788,9 @@ export class GameEngine {
     this.navigation.recordActionResult(actionName, resultat)
 
     // Extrait les outcomes (ancien format vs nouveau)
-    const actionObj = typeof choice.action === 'object' ? choice.action : null
+    const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+      ? choice.action as import('../types').ActionRegle
+      : null
     const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
     const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
 
@@ -1222,7 +1228,7 @@ export class GameEngine {
         if (sectionVictoire?.effets && this.hero) {
           for (const effet of sectionVictoire.effets) {
             if (effet.type === 'stat' && effet.stat) {
-              this.applyStatDelta(effet.stat.name, effet.stat.delta, effet.stat.raison ?? 'Victoire au combat')
+              this.applyStatDelta(effet.stat.name, effet.stat.delta ?? 0, effet.stat.raison ?? 'Victoire au combat')
             }
           }
         }

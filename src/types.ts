@@ -233,7 +233,8 @@ export interface EffetStat {
 }
 
 export interface EffetItem {
-  name: string        // id de l'item
+  id?: string         // id de l'item (prioritaire sur name si présent)
+  name: string        // id de l'item (legacy) ou label
   delta?: number      // quantité à ajouter (défaut: 1)
   delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur delta
   raison?: string     // raison pour l'historique

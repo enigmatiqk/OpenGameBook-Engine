@@ -5,8 +5,8 @@ import type { Effet } from '../types'
  */
 export function formatEffect(effet: Effet): string {
   if (effet.type === 'stat' && effet.stat) {
-    const sign = effet.stat.delta > 0 ? '+' : ''
-    return `${effet.stat.name} ${sign}${effet.stat.delta}`
+    const sign = (effet.stat.delta ?? 0) > 0 ? '+' : ''
+    return `${effet.stat.name} ${sign}${effet.stat.delta ?? 0}`
   } else if (effet.type === 'item' && effet.item) {
     return `Gain : ${effet.item.name}`
   }

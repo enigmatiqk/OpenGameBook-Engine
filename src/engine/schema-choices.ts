@@ -73,8 +73,8 @@ export function resolveChoice(
     section = (choice as any).si_reussi.choix.section
   }
   // Format nouveau action object avec si_reussi
-  else if (typeof choice.action === 'object' && choice.action?.si_reussi?.choix?.section) {
-    section = choice.action.si_reussi.choix.section
+  else if (typeof choice.action === 'object' && !('type' in choice.action) && (choice.action as import('../types').ActionRegle)?.si_reussi?.choix?.section) {
+    section = (choice.action as import('../types').ActionRegle).si_reussi!.choix!.section
   }
 
   return { success: true, section }

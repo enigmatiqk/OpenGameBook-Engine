@@ -57,7 +57,16 @@ export function resolveStatValeurDelta(
  * Utilise item.id en priorité sur item.name comme identifiant.
  */
 export function applyItemEffect(item: NonNullable<Effet['item']>, hero: Hero): void {
-  const itemId    = item.id ?? item.name
+  // Normalise l'id : si absent, on le dérive du name via slugify
+  if (!item.id) {
+    item.id = item.name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  }
+  const itemId    = item.id
   const itemLabel = item.name
   const delta     = resolveItemDelta(item)
   const existing  = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
