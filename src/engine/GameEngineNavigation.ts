@@ -160,6 +160,16 @@ export class GameEngineNavigation {
           raison = `${label} insuffisant (${qty}/${required})`
         }
       }
+    } else if (cond.type === 'item_type_quantite' && cond.item_type) {
+      // Compte tous les items de l'inventaire ayant le type sémantique demandé
+      const required = cond.quantite ?? 1
+      const count = hero.inventaire.filter(
+        i => typeof i !== 'string' && (i as import('../types').InventaireItem).type === cond.item_type
+      ).length
+      if (count < required) {
+        conditionOk = false
+        raison = `Il vous faut au moins ${required} objet(s) de type "${cond.item_type}" (vous en avez ${count})`
+      }
     } else if (cond.type === 'combat_degats_monstre') {
       // Vérifier les dégâts infligés au monstre du combat précédent
       const lastCombatState = this.lastCombatState

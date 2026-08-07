@@ -19,7 +19,7 @@ function buildItemParams(itemIds: string[]): string {
   return itemIds
     .map((id, i) => i === 0
       ? `item_id=${id}&item_count=1`
-      : `item_id${i + 1}=${id}&item_count${i + 1}=1`)
+      : `item${i + 1}_id=${id}&item${i + 1}_count=1`)
     .join('&')
 }
 

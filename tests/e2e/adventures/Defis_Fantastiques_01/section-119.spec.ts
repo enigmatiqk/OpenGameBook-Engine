@@ -36,7 +36,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   // ─── Scénario 1 : velo x4, stylo x1, armure_papier équipée ──────────────────
 
   test.describe('Scénario 1 - Items en inventaire et armure équipée', () => {
-    const PARAMS = 'item_id=velo&item_count=4&item_id2=stylo&item_count2=1&equip=armure_papier'
+    const PARAMS = 'item_id=velo&item_count=4&item2_id=stylo&item2_count=1&equip=armure_papier'
 
     test.beforeEach(async ({ page }) => {
       await page.goto(BASE_URL(PARAMS))

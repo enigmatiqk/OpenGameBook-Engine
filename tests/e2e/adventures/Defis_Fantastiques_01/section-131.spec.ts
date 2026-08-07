@@ -6,7 +6,7 @@ const SECTION_NUMBER = 131
 const SECTION_TEXT = "Vous bavardez de choses et d'autres"
 const SECTION_CHOICES = {
   0: "Prendre un repas",
-  291: "Rendez-vous au 291"
+  291: "Sortir de la pièce"
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

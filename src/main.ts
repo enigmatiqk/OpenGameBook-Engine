@@ -289,20 +289,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       ;(engine as any).hero = { statistiques: stats, statistiques_initiales: statsInitiales, inventaire: [], historique: [], equipement: {} }
 
-      // Injection d'items via ?item_id=pieces_or&item_count=5
-      // Supporte plusieurs items : ?item_id=pieces_or&item_count=5&item_id2=cle_or&item_count2=1
+      // Injection d'items via ?item_id=pieces_or&item_count=5&item_type=monnaie
+      // Supporte jusqu'à 3 items : ?item_id=...&item2_id=...&item3_id=...
       const hero = (engine as any).hero
       const itemId = params.get('item_id')
       if (itemId) {
         const itemCount = parseInt(params.get('item_count') ?? '1', 10)
-        hero.inventaire.push({ id: itemId, label: itemId, quantite: itemCount })
+        const itemType = params.get('item_type') ?? undefined
+        const entry: Record<string, unknown> = { id: itemId, label: itemId, quantite: itemCount }
+        if (itemType) entry.type = itemType
+        hero.inventaire.push(entry)
       }
-      // Supports multiples : item_id2, item_id3…
-      for (let n = 2; n <= 9; n++) {
-        const nId = params.get(`item_id${n}`)
+      for (let n = 2; n <= 3; n++) {
+        const nId = params.get(`item${n}_id`)
         if (!nId) break
-        const nCount = parseInt(params.get(`item_count${n}`) ?? '1', 10)
-        hero.inventaire.push({ id: nId, label: nId, quantite: nCount })
+        const nCount = parseInt(params.get(`item${n}_count`) ?? '1', 10)
+        const nType = params.get(`item${n}_type`) ?? undefined
+        const entry: Record<string, unknown> = { id: nId, label: nId, quantite: nCount }
+        if (nType) entry.type = nType
+        hero.inventaire.push(entry)
       }
 
       // Injection d'items équipés via ?equip=<type>_<label> (ex: equip=armure_Armure de cuir)

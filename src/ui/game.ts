@@ -334,6 +334,11 @@ export class GameView {
               }
             })
           })
+        } else if ((choice as any).libre || choice.section_saisie) {
+          // Saisie utilisateur du numéro de section (section_saisie) — libre est déprécié
+          btn.addEventListener('click', () => {
+            this._showSectionSaisieInput(choice)
+          })
         } else {
           btn.addEventListener('click', () => {
             this.engine.applyChoice(choice)
@@ -798,6 +803,68 @@ export class GameView {
     })
 
     document.body.appendChild(overlay)
+  }
+
+  private _showSectionSaisieInput(choice: import('../types').Choice): void {
+    const saisie = choice.section_saisie ?? {}
+    const aventure = this.engine.getAdventure()
+    const maxAventure = aventure ? Math.max(...aventure.sections.map(s => s.numero)) : 400
+    const min = saisie.min ?? 1
+    const max = saisie.max ?? maxAventure
+    const liste = saisie.liste
+    const messageInvalide = saisie.message_invalide ?? 'Cette section n\'est pas valide.'
+
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+
+    overlay.innerHTML = `
+      <div class="modal-box action-roll-box">
+        <div class="modal-header">
+          <h2 class="modal-title">${this._escHtml(choice.texte)}</h2>
+        </div>
+        <div class="modal-body">
+          <p class="action-roll-condition">Saisissez le numéro de section (${min} – ${max})</p>
+          <div class="duel-mise-input-row">
+            <input class="duel-mise-input section-saisie-input" type="number"
+              min="${min}" max="${max}" />
+          </div>
+          <div class="section-saisie-error" style="color:var(--color-error,#e94560);font-size:12px;min-height:18px;visibility:hidden;margin-top:4px"></div>
+          <div class="duel-mise-actions">
+            <button class="btn btn-secondary section-saisie-cancel" type="button">Annuler</button>
+            <button class="btn btn-primary section-saisie-confirm" type="button">→ Aller à cette section</button>
+          </div>
+        </div>
+      </div>
+    `
+
+    const input = overlay.querySelector<HTMLInputElement>('.section-saisie-input')!
+    const errorEl = overlay.querySelector<HTMLElement>('.section-saisie-error')!
+    const confirmBtn = overlay.querySelector<HTMLButtonElement>('.section-saisie-confirm')!
+    const cancelBtn = overlay.querySelector<HTMLButtonElement>('.section-saisie-cancel')!
+
+    const showError = () => {
+      errorEl.textContent = messageInvalide
+      errorEl.style.visibility = 'visible'
+      setTimeout(() => { errorEl.style.visibility = 'hidden' }, 2000)
+    }
+
+    const doConfirm = () => {
+      const section = parseInt(input.value, 10)
+      if (isNaN(section)) { showError(); return }
+      if (liste && !liste.includes(section)) { showError(); return }
+      if (section < min || section > max) { showError(); return }
+      overlay.remove()
+      this.engine.applyChoice({ ...choice, section })
+      this._render()
+    }
+
+    confirmBtn.addEventListener('click', doConfirm)
+    cancelBtn.addEventListener('click', () => overlay.remove())
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doConfirm() })
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove() })
+
+    document.body.appendChild(overlay)
+    input.focus()
   }
 
   private _showActionRoll(pending: import('../types').PendingRoll, onRolled: (rolls: number[]) => void): void {

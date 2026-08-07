@@ -274,19 +274,20 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'stat' | 'expr'
-  item_id?: string    // pour item_quantite
-  quantite?: number   // pour item_quantite / stat
-  stat?: string       // pour stat : nom de la stat
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'stat' | 'expr'
+  item_id?: string        // pour item_quantite
+  item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
+  quantite?: number       // pour item_quantite / item_type_quantite / stat
+  stat?: string           // pour stat : nom de la stat
   condition?: "<=" | "<" | ">=" | ">"  // pour stat : opérateur de comparaison
-  expr?: string       // pour expr : expression littérale avec variables (ex: "{jet_heros} > {jet_adversaire}")
-  section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
-  not?: boolean       // pour retour : inverse la condition (true = "pas un retour")
-  action?: string     // pour action_resolved : nom de l'action
-  id?: string         // pour combat_degats_monstre/heros : id du monstre persistant (optionnel)
-  degats_min?: number // pour combat_degats_monstre/heros : dégâts minimum
-  degats_max?: number // pour combat_degats_monstre/heros : dégâts maximum
-  trigger?: string    // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
+  expr?: string           // pour expr : expression littérale avec variables (ex: "{jet_heros} > {jet_adversaire}")
+  section?: number        // pour retour : section spécifique depuis laquelle on revient (optionnel)
+  not?: boolean           // pour retour : inverse la condition (true = "pas un retour")
+  action?: string         // pour action_resolved : nom de l'action
+  id?: string             // pour combat_degats_monstre/heros : id du monstre persistant (optionnel)
+  degats_min?: number     // pour combat_degats_monstre/heros : dégâts minimum
+  degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum
+  trigger?: string        // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
 }
 
 export interface CoutEffet {
@@ -337,6 +338,13 @@ export interface ActionRegle {
 
 export type Action = ActionLancerDe | ActionRegle
 
+export interface SectionSaisie {
+  min?: number              // section minimum autorisée (défaut: 1)
+  max?: number              // section maximum autorisée (défaut: nb sections de l'aventure)
+  liste?: number[]          // liste fixe de sections valides — affiche un select, valide par message
+  message_invalide?: string // message affiché 2s si la saisie n'est pas dans liste (défaut: générique)
+}
+
 export interface Choice {
   texte: string
   section?: number
@@ -346,7 +354,8 @@ export interface Choice {
   cout?: CoutEffet[]
   effets?: Effet[]
   items?: ItemGain[]  // items gagnés en prenant ce choix
-  libre?: boolean
+  libre?: boolean           // @deprecated — remplacé par section_saisie
+  section_saisie?: SectionSaisie  // saisie utilisateur du numéro de section cible
   end?: "victoire" | "defaite"
   action?: Action | string  // Action object ou string pour backward compatibility
   regle_surcharge?: Record<string, unknown>  // surcharge partielle des propriétés de la règle référencée par action

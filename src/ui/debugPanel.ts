@@ -50,9 +50,14 @@ interface DebugParams {
   chance_start:       string
   // Items
   item_id:            string
+  item_type:          string
   item_count:         string
-  item_id2:           string
-  item_count2:        string
+  item2_id:           string
+  item2_type:         string
+  item2_count:        string
+  item3_id:           string
+  item3_type:         string
+  item3_count:        string
   // Combat
   monstre_endurance:  string
   monstre_habilete:   string
@@ -84,9 +89,14 @@ function parseCurrentParams(): DebugParams {
     endurance_start:   p.get('endurance_start')   ?? '',
     chance_start:      p.get('chance_start')      ?? '',
     item_id:           p.get('item_id')           ?? '',
+    item_type:         p.get('item_type')         ?? '',
     item_count:        p.get('item_count')        ?? '',
-    item_id2:          p.get('item_id2')          ?? '',
-    item_count2:       p.get('item_count2')       ?? '',
+    item2_id:          p.get('item2_id')          ?? '',
+    item2_type:        p.get('item2_type')        ?? '',
+    item2_count:       p.get('item2_count')       ?? '',
+    item3_id:          p.get('item3_id')          ?? '',
+    item3_type:        p.get('item3_type')        ?? '',
+    item3_count:       p.get('item3_count')       ?? '',
     monstre_endurance: p.get('monstre_endurance') ?? '',
     monstre_habilete:  p.get('monstre_habilete')  ?? '',
     equip:             p.get('equip')              ?? '',
@@ -117,9 +127,14 @@ function buildUrl(params: DebugParams): string {
   set('endurance_start',    params.endurance_start)
   set('chance_start',       params.chance_start)
   set('item_id',            params.item_id)
+  set('item_type',          params.item_type)
   set('item_count',         params.item_count)
-  set('item_id2',           params.item_id2)
-  set('item_count2',        params.item_count2)
+  set('item2_id',           params.item2_id)
+  set('item2_type',         params.item2_type)
+  set('item2_count',        params.item2_count)
+  set('item3_id',           params.item3_id)
+  set('item3_type',         params.item3_type)
+  set('item3_count',        params.item3_count)
   set('monstre_endurance',  params.monstre_endurance)
   set('monstre_habilete',   params.monstre_habilete)
   set('equip',              params.equip)
@@ -353,7 +368,6 @@ export function showDebugPanel(): void {
   makeStatRow('Chance',    'chance',    'chance_start')
   panel.appendChild(secStats)
 
-  // ── Section : Inventaire ──────────────────────────────────────────────────
   const secItems = document.createElement('div')
   secItems.setAttribute('style', S.section)
   const itemsTitle = document.createElement('div')
@@ -361,29 +375,42 @@ export function showDebugPanel(): void {
   itemsTitle.textContent = '🎒 Inventaire initial'
   secItems.appendChild(itemsTitle)
 
-  const itemRow1 = document.createElement('div')
-  itemRow1.setAttribute('style', S.row)
-  const itemLabel1 = document.createElement('span')
-  itemLabel1.setAttribute('style', S.label)
-  itemLabel1.textContent = 'Item 1'
-  const itemIdInput1 = makeInput(params, 'item_id', S.inputWide, updatePreview)
-  itemIdInput1.placeholder = 'item_id (ex: pieces_or)'
-  const itemCountInput1 = makeInput(params, 'item_count', S.input, updatePreview)
-  itemCountInput1.placeholder = 'quantité'
-  itemRow1.append(itemLabel1, itemIdInput1, itemCountInput1)
-  secItems.appendChild(itemRow1)
+  // En-tête colonnes
+  const itemsHeaderRow = document.createElement('div')
+  itemsHeaderRow.setAttribute('style', S.row)
+  const itemsHeaderSpacer = document.createElement('span')
+  itemsHeaderSpacer.setAttribute('style', S.label)
+  const itemsHeaderId = document.createElement('span')
+  itemsHeaderId.setAttribute('style', 'color:#aaa;font-size:11px;flex:1;text-align:center')
+  itemsHeaderId.textContent = 'id'
+  const itemsHeaderType = document.createElement('span')
+  itemsHeaderType.setAttribute('style', 'color:#aaa;font-size:11px;width:90px;text-align:center')
+  itemsHeaderType.textContent = 'type'
+  const itemsHeaderCount = document.createElement('span')
+  itemsHeaderCount.setAttribute('style', 'color:#aaa;font-size:11px;width:70px;text-align:center')
+  itemsHeaderCount.textContent = 'quantité'
+  itemsHeaderRow.append(itemsHeaderSpacer, itemsHeaderId, itemsHeaderType, itemsHeaderCount)
+  secItems.appendChild(itemsHeaderRow)
 
-  const itemRow2 = document.createElement('div')
-  itemRow2.setAttribute('style', S.row)
-  const itemLabel2 = document.createElement('span')
-  itemLabel2.setAttribute('style', S.label)
-  itemLabel2.textContent = 'Item 2'
-  const itemIdInput2 = makeInput(params, 'item_id2', S.inputWide, updatePreview)
-  itemIdInput2.placeholder = 'item_id'
-  const itemCountInput2 = makeInput(params, 'item_count2', S.input, updatePreview)
-  itemCountInput2.placeholder = 'quantité'
-  itemRow2.append(itemLabel2, itemIdInput2, itemCountInput2)
-  secItems.appendChild(itemRow2)
+  const makeItemRow = (label: string, keyId: keyof DebugParams, keyType: keyof DebugParams, keyCount: keyof DebugParams) => {
+    const row = document.createElement('div')
+    row.setAttribute('style', S.row)
+    const lbl = document.createElement('span')
+    lbl.setAttribute('style', S.label)
+    lbl.textContent = label
+    const idInp = makeInput(params, keyId, S.inputWide, updatePreview)
+    idInp.placeholder = 'item_id'
+    const typeInp = makeInput(params, keyType, 'background:#0f3460;color:#eee;border:1px solid #444;border-radius:6px;padding:4px 8px;font-size:13px;width:90px', updatePreview)
+    typeInp.placeholder = 'type'
+    const countInp = makeInput(params, keyCount, 'background:#0f3460;color:#eee;border:1px solid #444;border-radius:6px;padding:4px 8px;font-size:13px;width:70px', updatePreview)
+    countInp.placeholder = 'qté'
+    row.append(lbl, idInp, typeInp, countInp)
+    secItems.appendChild(row)
+  }
+
+  makeItemRow('Item 1', 'item_id',  'item_type',  'item_count')
+  makeItemRow('Item 2', 'item2_id', 'item2_type', 'item2_count')
+  makeItemRow('Item 3', 'item3_id', 'item3_type', 'item3_count')
 
   panel.appendChild(secItems)
 
