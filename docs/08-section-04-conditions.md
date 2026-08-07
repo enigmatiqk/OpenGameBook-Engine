@@ -170,31 +170,51 @@ Vérifie que les dégâts reçus par le héros pendant le dernier combat sont da
 
 ---
 
-## `item_dropped` — un item a été jeté
+## `item_dropped` → remplacé par `trigger`
 
-Vérifie que le trigger `item_dropped` a été activé depuis l'arrivée dans la section courante.
+> **Note :** Le type `item_dropped` est obsolète. Utilisez `{ "type": "trigger", "trigger": "item_dropped" }` à la place.
+
+---
+
+## `trigger` — un trigger nommé a été activé
+
+Vérifie qu'un trigger moteur nommé a été activé depuis l'arrivée dans la section courante.
 
 ```json
-{ "type": "item_dropped" }
+{
+  "type":    "trigger",
+  "trigger": "corde_coupe"
+}
 ```
 
-Aucun champ supplémentaire. Le trigger est activé dans deux cas :
-- Le joueur a cliqué sur le bouton **Jeter** dans l'inventaire
-- Un effet avec `"trigger": "item_dropped"` a été exécuté (fallback automatique)
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `trigger` | ★ | Nom du trigger à vérifier (ex: `"item_dropped"`, `"corde_coupe"`) |
 
-Le trigger est réinitialisé à chaque navigation vers une nouvelle section.
+Les triggers sont réinitialisés à chaque navigation vers une nouvelle section.
 
-**Usage typique :** bloquer un choix de continuation tant que le joueur n'a pas jeté d'item.
+Un trigger peut être activé de trois façons :
+- Par le joueur via l'UI (ex : bouton **Jeter** active `item_dropped`)
+- Par un `effet.trigger` sur un effet de section
+- Par un `si_reussi.trigger` ou `si_echoue.trigger` sur une action
 
+**Exemple — bloquer un choix tant que la corde n'est pas coupée :**
+```json
+{
+  "texte":     "Aller au nord",
+  "section":   73,
+  "condition": { "type": "trigger", "trigger": "corde_coupe" }
+}
+```
+
+**Exemple — bloquer un choix tant qu'un item n'a pas été jeté :**
 ```json
 {
   "texte":     "Retourner à la bifurcation",
   "section":   269,
-  "condition": { "type": "item_dropped" }
+  "condition": { "type": "trigger", "trigger": "item_dropped" }
 }
 ```
-
-> Cette condition s'utilise sur un `choix`. Pour la condition symétrique sur un `effet` (tester l'absence d'items), voir `no_droppable_item`.
 
 ---
 
@@ -256,7 +276,7 @@ Illustre l'utilisation combinée de `item_dropped`, `no_droppable_item`, et du `
     {
       "texte":     "Retourner à la bifurcation",
       "section":   269,
-      "condition": { "type": "item_dropped" }
+      "condition": { "type": "trigger", "trigger": "item_dropped" }
     }
   ]
 }
@@ -284,5 +304,5 @@ Illustre l'utilisation combinée de `item_dropped`, `no_droppable_item`, et du `
 | `combat_victoire` | choix | Le dernier combat a été gagné |
 | `combat_degats_monstre` | choix | Dégâts infligés au monstre dans une plage |
 | `combat_degats_heros` | choix | Dégâts reçus par le héros dans une plage |
-| `item_dropped` | choix | Un item a été jeté dans la section courante |
+| `trigger` | choix | Un trigger nommé a été activé dans la section courante |
 | `no_droppable_item` | effet | Le héros n'a aucun item à jeter |

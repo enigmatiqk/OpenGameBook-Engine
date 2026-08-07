@@ -22,6 +22,7 @@ export class GameEngineActions {
     if (regle.type === 'test_stat') return true
     if (regle.type === 'composite') return true  // composite délègue à test_stat
     if (regle.type === 'restaurer_stat') return false
+    if (regle.type === 'duel_de') return true
     return true  // comportement sûr par défaut
   }
 
@@ -36,6 +37,9 @@ export class GameEngineActions {
     }
     if (regle.type === 'test_stat') {
       return regle.jet
+    }
+    if (regle.type === 'duel_de') {
+      return regle.jet_heros
     }
     return '2d6'
   }
@@ -234,8 +238,70 @@ export class GameEngineActions {
         }
       }
     }
+
+    if (regle.type === 'duel_de') {
+      const itemId = regle.cout.item_id
+      const min = regle.cout.quantite_heros?.min ?? regle.cout.quantite ?? 1
+      const item = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
+      const disponible = item && typeof item !== 'string' ? (item.quantite ?? 1) : 0
+      if (disponible < min) {
+        return {
+          ok: false,
+          raison: `Mise minimum : ${min} ${itemId} (vous en avez ${disponible})`
+        }
+      }
+    }
     
     return { ok: true }
+  }
+
+  /**
+   * Évalue la condition de victoire d'un duel de dés.
+   * Supporte les expressions "{jet_heros} > {jet_adversaire}" et "{jet_heros} >= {jet_adversaire}".
+   */
+  static evalDuelCondition(expression: string, totalHeros: number, totalAdversaire: number): boolean {
+    // Substitue les variables
+    const expr = expression
+      .replace(/\{jet_heros\}/g, String(totalHeros))
+      .replace(/\{jet_adversaire\}/g, String(totalAdversaire))
+
+    // Parse "N >= M" ou "N > M"
+    const m = expr.match(/^(\d+)\s*(>=|>)\s*(\d+)$/)
+    if (!m) return false
+    const left = parseInt(m[1], 10)
+    const op = m[2]
+    const right = parseInt(m[3], 10)
+    return op === '>=' ? left >= right : left > right
+  }
+
+  /**
+   * Calcule la mise effective pour un duel_de (plafonnée à la quantité disponible)
+   */
+  static getMiseEffective(
+    regle: import('../types').RegleDuelDe,
+    hero: Hero,
+    miseDemandee?: number
+  ): number {
+    const itemId = regle.cout.item_id
+    const item = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
+    const disponible = item && typeof item !== 'string' ? (item.quantite ?? 1) : 0
+
+    if (regle.cout.quantite_heros) {
+      const min = regle.cout.quantite_heros.min
+      const max = Math.min(regle.cout.quantite_heros.max, disponible)
+      const demandee = miseDemandee ?? min
+      return Math.max(min, Math.min(max, demandee))
+    }
+    return Math.min(regle.cout.quantite ?? 1, disponible)
+  }
+
+  /**
+   * Parse le multiplicateur de gain : "x2" → 2, "x3" → 3, absent → 1
+   */
+  static parseGain(gain: string | undefined): number {
+    if (!gain) return 1
+    const m = gain.match(/^x(\d+)$/)
+    return m ? parseInt(m[1], 10) : 1
   }
 
   /**

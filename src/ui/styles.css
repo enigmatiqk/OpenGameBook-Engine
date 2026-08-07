@@ -499,3 +499,31 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 
 
+
+
+/* ─── Duel de dés — saisie de mise ──────────────────────────────────────────── */
+.duel-mise-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.duel-mise-input {
+  width: 80px;
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-align: center;
+}
+.duel-mise-disponible {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.duel-mise-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}

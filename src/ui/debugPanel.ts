@@ -62,6 +62,7 @@ interface DebugParams {
   equip3:             string
   // Conditions dev
   lance_de:           string
+  lance_de2:          string
   combat_victoire:    boolean
   action_resolved:    string
   item_quantite:      string
@@ -92,6 +93,7 @@ function parseCurrentParams(): DebugParams {
     equip2:            p.get('equip2')             ?? '',
     equip3:            p.get('equip3')             ?? '',
     lance_de:          p.get('lance_de')           ?? '',
+    lance_de2:         p.get('lance_de2')          ?? '',
     combat_victoire:   p.get('combat_victoire')   === '1',
     action_resolved:   p.get('action_resolved')   ?? '',
     item_quantite:     p.get('item_quantite')     ?? '',
@@ -124,6 +126,7 @@ function buildUrl(params: DebugParams): string {
   set('equip2',             params.equip2)
   set('equip3',             params.equip3)
   set('lance_de',           params.lance_de)
+  set('lance_de2',          params.lance_de2)
   if (params.combat_victoire)   p.set('combat_victoire',   '1')
   if (params.action_resolved.trim()) p.set('action_resolved', params.action_resolved.trim())
   set('item_quantite',      params.item_quantite)
@@ -435,7 +438,8 @@ export function showDebugPanel(): void {
   secDev.appendChild(devTitle)
 
   // lance_de
-  addRow(secDev, 'lance_de', '(force chaque dé à cette valeur, ex: 1 ou 6)', makeInput(params, 'lance_de', S.input, updatePreview))
+  addRow(secDev, 'lance_de', '(force chaque dé héros à cette valeur, ex: 1 ou 6)', makeInput(params, 'lance_de', S.input, updatePreview))
+  addRow(secDev, 'lance_de2', '(force le dé adversaire — duel_de uniquement)', makeInput(params, 'lance_de2', S.input, updatePreview))
 
   // combat_victoire checkbox
   const cvRow = document.createElement('div')

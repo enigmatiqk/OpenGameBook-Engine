@@ -151,7 +151,34 @@ Quand un choix doit lancer des dés et naviguer vers une section selon le résul
 | `choix` | Choix de navigation `{ texte, section }` |
 | `effets` | Effets à appliquer (voir [effets.md](effets.md)) |
 | `items` | Items à gagner |
+| `trigger` | Nom d'un trigger à activer si cet outcome est atteint (ex : `"corde_coupe"`) |
 | `end` | `"victoire"` ou `"defaite"` |
+
+**Exemple avec trigger — action répétable jusqu'à réussite :**
+```json
+{
+  "texte": "Tentez votre Chance",
+  "local": true,
+  "action": {
+    "name": "tenter_chance",
+    "si_reussi": {
+      "trigger": "corde_coupe"
+    },
+    "si_echoue": {
+      "effets": [
+        { "type": "stat", "stat": { "name": "endurance", "delta": -1, "raison": "La corde se resserre" } }
+      ]
+    }
+  }
+},
+{
+  "texte": "Aller au nord",
+  "section": 73,
+  "condition": { "type": "trigger", "trigger": "corde_coupe" }
+}
+```
+
+Le joueur peut retenter indéfiniment (`local: true` sans `utilisations`). À chaque échec il perd 1 endurance. À la réussite, le trigger `corde_coupe` est activé et débloque le choix de navigation. Si l'endurance tombe à 0, la défaite est déclenchée automatiquement.
 
 ### Exemple avec effets et items sur si_reussi
 

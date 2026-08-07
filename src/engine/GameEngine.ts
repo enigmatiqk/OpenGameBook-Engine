@@ -46,6 +46,12 @@ export class GameEngine {
   // Clés: "section-{N}-{action}", "section_courante-{action}", "combat-{action}", "aventure-{action}"
   private regleUtilisations: Record<string, number> = {}
 
+  // État intermédiaire d'un duel de dés (jet héros effectué, attente jet adversaire)
+  private pendingDuelRoll: import('../types').PendingDuelRoll | null = null
+
+  // Mise courante saisie par le joueur pour un duel_de (avant débit)
+  private currentMiseDuel: number = 0
+
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -574,6 +580,16 @@ export class GameEngine {
     if (regle && !GameEngineActions.requiresDice(regle)) {
       return null
     }
+
+    // duel_de : le premier PendingRoll est le jet héros
+    if (regle?.type === 'duel_de') {
+      return {
+        id: newRollId(),
+        label: `Votre jet (${regle.jet_heros})`,
+        formula: regle.jet_heros,
+        context: `action:duel_de:heros:${actionName}`,
+      }
+    }
     
     const formula = GameEngineActions.getActionFormula(this.adventure, actionName)
     return {
@@ -581,6 +597,119 @@ export class GameEngine {
       label: choice.texte,
       formula,
       context: `action:${actionName}`,
+    }
+  }
+
+  /**
+   * Retourne le PendingRoll pour le jet adversaire d'un duel en cours.
+   * Null si aucun duel en attente.
+   */
+  getDuelAdversairePendingRoll(): PendingRoll | null {
+    if (!this.pendingDuelRoll || !this.adventure) return null
+    const regle = GameEngineActions.getRegle(this.adventure, this.pendingDuelRoll.actionName)
+    if (!regle || regle.type !== 'duel_de') return null
+    return {
+      id: newRollId(),
+      label: `Jet de l'adversaire (${regle.jet_adversaire})`,
+      formula: regle.jet_adversaire,
+      context: `action:duel_de:adversaire:${this.pendingDuelRoll.actionName}`,
+    }
+  }
+
+  /**
+   * Retourne les infos du duel en cours pour affichage UI du jet adversaire.
+   */
+  getDuelState(): { totalHeros: number; conditionSucces: string; libelleSucces: string; libelleEchec: string } | null {
+    if (!this.pendingDuelRoll || !this.adventure) return null
+    const regle = GameEngineActions.getRegle(this.adventure, this.pendingDuelRoll.actionName)
+    if (!regle || regle.type !== 'duel_de') return null
+    return {
+      totalHeros: this.pendingDuelRoll.totalHeros,
+      conditionSucces: regle.conditions?.succes ?? '{jet_heros} > {jet_adversaire}',
+      libelleSucces: regle.resultats.succes,
+      libelleEchec: regle.resultats.echec,
+    }
+  }
+
+  /**
+   * Résout le jet adversaire d'un duel et finalise le résultat.
+   */
+  resolveDuelAdversaire(rolls: number[]): Section {
+    if (!this.adventure || !this.hero || !this.pendingDuelRoll) {
+      throw new Error('Aucun duel en attente.')
+    }
+    const { actionName, choice, totalHeros, mise } = this.pendingDuelRoll
+    this.pendingDuelRoll = null
+
+    const regle = GameEngineActions.getRegle(this.adventure, actionName)
+    if (!regle || regle.type !== 'duel_de') throw new Error(`Règle duel_de introuvable : ${actionName}`)
+
+    const totalAdversaire = rolls.reduce((a, b) => a + b, 0)
+    const conditionExpr = regle.conditions?.succes ?? '{jet_heros} > {jet_adversaire}'
+    const succes = GameEngineActions.evalDuelCondition(conditionExpr, totalHeros, totalAdversaire)
+
+    // Track résultat de l'action
+    const resultat = succes ? regle.resultats.succes : regle.resultats.echec
+    this.navigation.recordActionResult(actionName, resultat)
+
+    if (succes) {
+      // Crédit du gain : mise × multiplicateur
+      const multiplicateur = GameEngineActions.parseGain(regle.gain)
+      const credit = mise * multiplicateur
+      this._applyItemDelta(regle.cout.item_id, credit, `Gain pari (${actionName})`)
+
+      const si_reussi = (choice.action as any)?.si_reussi ?? (choice as any).si_reussi
+      if (si_reussi?.effets) this._applyEffets(si_reussi.effets, choice.texte)
+      if (si_reussi?.trigger) this.navigation.recordTrigger(si_reussi.trigger)
+      if (si_reussi?.items && this.hero) {
+        for (const itemGain of si_reussi.items) {
+          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
+        }
+      }
+    } else {
+      const si_echoue = (choice.action as any)?.si_echoue ?? (choice as any).si_echoue
+      if (si_echoue?.effets) this._applyEffets(si_echoue.effets, choice.texte)
+      if (si_echoue?.trigger) this.navigation.recordTrigger(si_echoue.trigger)
+      if (si_echoue?.items && this.hero) {
+        for (const itemGain of si_echoue.items) {
+          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
+        }
+      }
+    }
+
+    // Navigation
+    const targetSection = succes
+      ? (choice as any).si_reussi?.choix?.section
+      : (choice as any).si_echoue?.choix?.section
+
+    if (targetSection !== undefined) {
+      return this.navigateTo(targetSection)
+    }
+
+    // Pas de navigation (local: true) — retourner la section courante
+    return this.adventure.sections.find(s => s.numero === this.currentSection)!
+  }
+
+  /**
+   * Définit la mise courante pour le prochain duel (saisie utilisateur)
+   */
+  setMiseDuel(mise: number): void {
+    this.currentMiseDuel = mise
+  }
+
+  /**
+   * Retourne les infos de mise pour affichage UI : min, max effectif, disponible
+   */
+  getDuelMiseInfo(actionName: string): { min: number; max: number; disponible: number } | null {
+    if (!this.adventure || !this.hero) return null
+    const regle = GameEngineActions.getRegle(this.adventure, actionName)
+    if (!regle || regle.type !== 'duel_de' || !regle.cout.quantite_heros) return null
+    const item = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === regle.cout.item_id)
+    const disponible = item && typeof item !== 'string' ? (item.quantite ?? 1) : 0
+    return {
+      min: regle.cout.quantite_heros.min,
+      max: Math.min(regle.cout.quantite_heros.max, disponible),
+      disponible,
     }
   }
 
@@ -633,6 +762,19 @@ export class GameEngine {
 
     const actionName = typeof action === 'string' ? action : (action as any).name
     if (!actionName) throw new Error('Action name not found')
+
+    // Gère duel_de : premier appel = jet héros, on débite la mise et on attend le jet adversaire
+    const regleDuel = GameEngineActions.getRegle(this.adventure, actionName)
+    if (regleDuel?.type === 'duel_de') {
+      const totalHeros = rolls.reduce((a, b) => a + b, 0)
+      const mise = GameEngineActions.getMiseEffective(regleDuel, this.hero, this.currentMiseDuel)
+      // Débite la mise immédiatement
+      this._applyItemDelta(regleDuel.cout.item_id, -mise, `Mise pari (${actionName})`)
+      // Stocke l'état intermédiaire
+      this.pendingDuelRoll = { actionName, choice, totalHeros, mise }
+      // Retourne la section courante — l'UI doit demander le jet adversaire
+      return this.adventure.sections.find(s => s.numero === this.currentSection)!
+    }
 
     const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, actionName, rolls,
       (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
@@ -1104,6 +1246,23 @@ export class GameEngine {
    * Applique une liste d'effets au héros (stat, item, monstre_stat).
    * Point d'entrée unique pour tous les contextes : choix, si_reussi, si_echoue, section.
    */
+  /**
+   * Applique un delta de quantité sur un item de l'inventaire.
+   * Si la quantité tombe à 0 ou moins, l'item est retiré.
+   */
+  private _applyItemDelta(itemId: string, delta: number, raison: string): void {
+    if (!this.hero) return
+    const item = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
+    if (!item || typeof item === 'string') return
+    const newQty = (item.quantite ?? 1) + delta
+    if (newQty <= 0) {
+      this.hero.inventaire.splice(this.hero.inventaire.indexOf(item), 1)
+    } else {
+      item.quantite = newQty
+    }
+    this.hero.historique.push({ timestamp: Date.now(), stat: itemId, delta, raison })
+  }
+
   private _applyEffets(effets: import('../types').Effet[], labelSource: string): void {
     if (!this.hero) return
     for (const effet of effets) {

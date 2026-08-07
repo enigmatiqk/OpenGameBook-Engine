@@ -120,7 +120,31 @@ export interface RegleRestaurerStat {
   max_utilisations?: MaxUtilisations  // limites d'utilisation par contexte
 }
 
-export type Regle = RegleTestStat | RegleComposite | RegleRestaurerStat
+export interface RegleDuelDe {
+  type: "duel_de"
+  jet_heros: string              // formule de dés du héros (ex: "1d6")
+  jet_adversaire: string         // formule de dés de l'adversaire (ex: "1d6")
+  resultats: {
+    succes: string               // libellé retourné en cas de victoire (ex: "chanceux")
+    echec: string                // libellé retourné en cas de défaite (ex: "malchanceux")
+  }
+  conditions?: {
+    succes?: string              // expression de victoire (ex: "{jet_heros} >= {jet_adversaire}")
+                                 // défaut : "{jet_heros} > {jet_adversaire}"
+  }
+  cout: {
+    item_id: string              // id de l'item monnaie à miser
+    quantite?: number            // mise fixe
+    quantite_heros?: {           // saisie utilisateur : le héros choisit sa mise
+      min: number
+      max: number
+    }
+  }
+  gain?: string                  // multiplicateur de gain : "x2", "x3", etc. Défaut : "x1"
+  max_utilisations?: MaxUtilisations
+}
+
+export type Regle = RegleTestStat | RegleComposite | RegleRestaurerStat | RegleDuelDe
 
 export interface ItemDropRules {
   aventure?: boolean  // si true, le bouton Jeter est toujours visible
@@ -443,7 +467,15 @@ export interface RollResult {
   total: number        // somme des dés (sans modificateur — le moteur applique le modificateur)
 }
 
-export interface DiceRollResult {
+/**
+ * État intermédiaire d'un duel de dés : le jet héros est résolu, on attend le jet adversaire.
+ */
+export interface PendingDuelRoll {
+  actionName: string       // nom de la règle duel_de
+  choice: any              // le Choice en cours (pour récupérer si_reussi/si_echoue)
+  totalHeros: number       // résultat du jet héros déjà effectué
+  mise: number             // montant misé (déjà débité)
+}export interface DiceRollResult {
   stat: string
   label: string
   rolls: number[]

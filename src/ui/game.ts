@@ -3,9 +3,10 @@ import type { Adventure, Hero, Section } from '../types'
 import { CombatView } from './combat'
 import { InventaireView } from './inventaire'
 import { EquipementView } from './equipement'
-import { parseDiceFormula, rollDice } from '../engine/CombatResolver'
+import { parseDiceFormula, rollDice, rollDiceAdversaire } from '../engine/CombatResolver'
 import { resolveImage, resolveImages } from '../utils/imageUtils'
 import { updateSectionNotes } from './sectionNotes'
+import { GameEngineActions } from '../engine/GameEngineActions'
 
 export interface GameViewCallbacks {
   onVictory: () => void
@@ -274,6 +275,37 @@ export class GameView {
               this._render()
               return
             }
+
+            // duel_de : affiche d'abord la saisie de mise, puis les deux jets
+            if (pending.context.startsWith('action:duel_de:heros:')) {
+              const actionName = pending.context.replace('action:duel_de:heros:', '')
+              const miseInfo = this.engine.getDuelMiseInfo(actionName)
+              const doJets = () => {
+                this._showActionRoll(pending, (rollsHeros) => {
+                  this.engine.resolveActionChoice(choice, rollsHeros)
+                  const adversairePending = this.engine.getDuelAdversairePendingRoll()
+                  if (adversairePending) {
+                    const totalHeros = rollsHeros.reduce((a, b) => a + b, 0)
+                    this._showDuelAdversaireRoll(adversairePending, totalHeros, (rollsAdv) => {
+                      this.engine.resolveDuelAdversaire(rollsAdv)
+                      this._render()
+                    })
+                  } else {
+                    this._render()
+                  }
+                })
+              }
+              if (miseInfo) {
+                this._showDuelMiseInput(miseInfo, (mise) => {
+                  this.engine.setMiseDuel(mise)
+                  doJets()
+                })
+              } else {
+                doJets()
+              }
+              return
+            }
+
             this._showActionRoll(pending, (rolls) => {
               const result = this.engine.resolveActionChoice(choice, rolls)
               // Vérifie si un jet de gain secondaire est requis (delta_de)
@@ -637,6 +669,116 @@ export class GameView {
     document.addEventListener('keydown', function onKey(e) {
       if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
     }, { once: true })
+    document.body.appendChild(overlay)
+  }
+
+  private _showDuelAdversaireRoll(
+    pending: import('../types').PendingRoll,
+    totalHeros: number,
+    onRolled: (rolls: number[]) => void
+  ): void {
+    const { count, sides } = parseDiceFormula(pending.formula)
+    const duelState = this.engine.getDuelState()
+
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+
+    overlay.innerHTML = `
+      <div class="modal-box action-roll-box">
+        <div class="modal-header">
+          <h2 class="modal-title">${this._escHtml(pending.label)}</h2>
+        </div>
+        <div class="modal-body">
+          <p class="action-roll-condition">Votre total : <strong>${totalHeros}</strong></p>
+          <div class="action-roll-dice"></div>
+          <button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button>
+        </div>
+      </div>
+    `
+
+    const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
+    const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+
+    btn.addEventListener('click', () => {
+      btn.disabled = true
+      const rolls = rollDiceAdversaire(count, sides)
+      const totalAdv = rolls.reduce((a, b) => a + b, 0)
+
+      diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
+        `<span class="action-roll-total">= ${totalAdv}</span>`
+
+      setTimeout(() => {
+        const succes = duelState
+          ? GameEngineActions.evalDuelCondition(duelState.conditionSucces, totalHeros, totalAdv)
+          : totalHeros > totalAdv
+        const libelle = duelState
+          ? (succes ? duelState.libelleSucces : duelState.libelleEchec)
+          : (succes ? 'Chanceux !' : 'Malchanceux...')
+
+        const resultEl = document.createElement('div')
+        resultEl.className = `action-roll-result action-roll-result--${succes ? 'succes' : 'echec'}`
+        resultEl.textContent = libelle
+        overlay.querySelector('.modal-body')!.appendChild(resultEl)
+
+        setTimeout(() => {
+          overlay.remove()
+          onRolled(rolls)
+        }, 2000)
+      }, 800)
+    })
+
+    document.body.appendChild(overlay)
+  }
+
+  private _showDuelMiseInput(
+    miseInfo: { min: number; max: number; disponible: number },
+    onConfirm: (mise: number) => void
+  ): void {
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay'
+
+    overlay.innerHTML = `
+      <div class="modal-box action-roll-box">
+        <div class="modal-header">
+          <h2 class="modal-title">Votre mise</h2>
+        </div>
+        <div class="modal-body">
+          <p class="action-roll-condition">Choisissez votre mise (${miseInfo.min} – ${miseInfo.max})</p>
+          <div class="duel-mise-input-row">
+            <input class="duel-mise-input" type="number"
+              min="${miseInfo.min}" max="${miseInfo.max}"
+              value="${miseInfo.min}" />
+            <span class="duel-mise-disponible">/ ${miseInfo.disponible} disponibles</span>
+          </div>
+          <div class="duel-mise-actions">
+            <button class="btn btn-secondary duel-mise-cancel" type="button">Annuler</button>
+            <button class="btn btn-primary action-roll-btn" type="button">Confirmer</button>
+          </div>
+        </div>
+      </div>
+    `
+
+    const input = overlay.querySelector<HTMLInputElement>('.duel-mise-input')!
+    const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+    const cancelBtn = overlay.querySelector<HTMLButtonElement>('.duel-mise-cancel')!
+
+    // Clamp en temps réel pendant la saisie
+    input.addEventListener('input', () => {
+      const v = parseInt(input.value, 10)
+      if (!isNaN(v)) {
+        if (v > miseInfo.max) input.value = String(miseInfo.max)
+        if (v < miseInfo.min) input.value = String(miseInfo.min)
+      }
+    })
+
+    cancelBtn.addEventListener('click', () => overlay.remove())
+
+    btn.addEventListener('click', () => {
+      const mise = Math.max(miseInfo.min, Math.min(miseInfo.max, parseInt(input.value, 10) || miseInfo.min))
+      overlay.remove()
+      onConfirm(mise)
+    })
+
     document.body.appendChild(overlay)
   }
 

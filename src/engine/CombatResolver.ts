@@ -39,6 +39,20 @@ export function rollDice(count: number, sides: number): number[] {
   return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
 }
 
+/**
+ * Lance N dés à D faces pour l'adversaire (duel_de).
+ * En mode debug, utilise ?lance_de2=X si défini, sinon ?lance_de=X.
+ */
+export function rollDiceAdversaire(count: number, sides: number): number[] {
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+  const debugValue = params.get('lance_de2') ?? params.get('lance_de')
+  if (debugValue) {
+    const fixedValue = Math.min(parseInt(debugValue, 10), sides)
+    return Array.from({ length: count }, () => fixedValue)
+  }
+  return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
+}
+
 export class CombatResolver {
 
   /**

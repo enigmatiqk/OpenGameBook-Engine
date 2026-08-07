@@ -208,7 +208,90 @@ Deux types de cibles sont possibles dans le format `"±N cible"` :
 
 ---
 
-## Type `restaurer_stat`
+## Type `duel_de`
+
+Lance deux jets de dés séparés — un pour le héros, un pour l'adversaire — et les compare. Utilisé pour les mécaniques de pari.
+
+**Nécessite deux jets de dés séquentiels.**
+
+```json
+"pari_de": {
+  "type": "duel_de",
+  "jet_heros": "2d6",
+  "jet_adversaire": "2d6",
+  "resultats": {
+    "succes": "chanceux",
+    "echec":  "malchanceux"
+  },
+  "conditions": {
+    "succes": "{jet_heros} > {jet_adversaire}"
+  },
+  "cout": {
+    "item_id": "piece-or",
+    "quantite_heros": { "min": 1, "max": 20 }
+  },
+  "gain": "x2",
+  "max_utilisations": {
+    "section_courante": 3
+  }
+}
+```
+
+### Champs
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `jet_heros` | ★ | Formule de dés du héros (ex : `"1d6"`, `"2d6"`) |
+| `jet_adversaire` | ★ | Formule de dés de l'adversaire (ex : `"1d6"`, `"2d6"`) |
+| `resultats.succes` | ★ | Libellé retourné en cas de victoire (ex : `"chanceux"`) |
+| `resultats.echec` | ★ | Libellé retourné en cas de défaite (ex : `"malchanceux"`) |
+| `conditions.succes` | — | Expression de victoire. Défaut : `"{jet_heros} > {jet_adversaire}"` |
+| `cout.item_id` | ★ | ID de l'item monnaie à miser |
+| `cout.quantite_heros` | — | Saisie utilisateur : le héros choisit sa mise entre `min` et `max`. Plafonné à la quantité disponible. |
+| `cout.quantite` | — | Mise fixe (alternative à `quantite_heros`) |
+| `gain` | — | Multiplicateur appliqué à la mise en cas de victoire. Format `"xN"`. Défaut : `"x1"` |
+| `max_utilisations` | — | Même système que les autres règles |
+
+### Expressions dans `conditions.succes`
+
+Les variables `{jet_heros}` et `{jet_adversaire}` représentent les totaux des jets.
+
+| Expression | Victoire si… |
+|-----------|--------------|
+| `"{jet_heros} > {jet_adversaire}"` | Le héros fait strictement plus (défaut) |
+| `"{jet_heros} >= {jet_adversaire}"` | Le héros fait au moins autant (égalité gagnante) |
+
+### Flux d'exécution
+
+1. L'UI affiche un input de mise si `quantite_heros` est défini (borné par `min`/`max` et la quantité disponible)
+2. La mise est débitée immédiatement
+3. L'UI affiche le jet héros puis le jet adversaire séquentiellement
+4. Victoire → crédit de `mise × N` + application de `si_reussi.effets`
+5. Défaite → mise perdue + application de `si_echoue.effets`
+
+### Utilisation dans une section
+
+```json
+{
+  "texte": "Participer au jeu de dés",
+  "local": true,
+  "action": {
+    "name": "pari_de",
+    "si_reussi": {
+      "effets": [
+        { "type": "stat", "stat": { "name": "endurance", "delta": 2, "raison": "Victoire au pari" } }
+      ]
+    }
+  },
+  "condition": {
+    "type": "item_quantite",
+    "item_id": "piece-or",
+    "quantite": 1
+  }
+}
+```
+
+---
 
 Modifie une statistique sans jet de dés. Peut restaurer à la valeur initiale, ajouter un delta fixe, ou cibler une valeur absolue. Supporte une condition d'item, un coût d'item, et des limites d'utilisation par contexte.
 
