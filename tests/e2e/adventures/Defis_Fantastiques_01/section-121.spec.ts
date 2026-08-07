@@ -6,7 +6,7 @@ const SECTION_NUMBER = 121
 const SECTION_TEXT = "Le couloir est orienté vers l'est"
 const SECTION_CHOICES = {
   103: "Examiner le cul-de-sac",
-  259: "Retourner au croisement"
+  359: "Retourner au croisement"
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

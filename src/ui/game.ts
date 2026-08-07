@@ -112,9 +112,9 @@ export class GameView {
       return
     }
     if (gameOver && !victory) {
-      // Affiche brièvement la section courante (avec endurance à 0 visible) puis redirige
       const sectionNum = this.engine.getCurrentSection()
       const section = adventure.sections.find(s => s.numero === sectionNum)
+      const defeatFromSection = section?.end === 'defaite'
 
       container.innerHTML = ''
       container.appendChild(this._buildToolbar(adventure))
@@ -124,14 +124,32 @@ export class GameView {
       }
       updateSectionNotes(null)
 
-      setTimeout(() => {
-        const images = resolveImages(adventure.images_defaite, adventure.images_defaite_ia)
-        if (images && images.length > 0) {
-          this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat(), 'defeat')
-        } else {
-          this.callbacks.onDefeat()
-        }
-      }, 2000)
+      if (defeatFromSection) {
+        // La section elle-même déclare la défaite : afficher un bouton comme pour la victoire
+        const btnDefeat = document.createElement('button')
+        btnDefeat.className = 'btn btn-primary defeat-next-btn'
+        const hasDefeatImages = adventure.images_defaite && adventure.images_defaite.length > 0
+        btnDefeat.textContent = hasDefeatImages ? 'Continuer' : '💀 Défaite'
+        btnDefeat.addEventListener('click', () => {
+          const images = resolveImages(adventure.images_defaite, adventure.images_defaite_ia)
+          if (images && images.length > 0) {
+            this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat(), 'defeat')
+          } else {
+            this.callbacks.onDefeat()
+          }
+        })
+        container.appendChild(btnDefeat)
+      } else {
+        // Défaite par endurance à 0 : affiche brièvement la section puis redirige automatiquement
+        setTimeout(() => {
+          const images = resolveImages(adventure.images_defaite, adventure.images_defaite_ia)
+          if (images && images.length > 0) {
+            this._showVictoryImages(adventure, images, () => this.callbacks.onDefeat(), 'defeat')
+          } else {
+            this.callbacks.onDefeat()
+          }
+        }, 2000)
+      }
       return
     }
 

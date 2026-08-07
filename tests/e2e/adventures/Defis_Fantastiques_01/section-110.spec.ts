@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { testSection, testChoiceButtons, testNavigation, testItem } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testNavigation, testMonnaie } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 110
@@ -30,13 +30,13 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('Navigation vers section 319 + pieces or', async ({ page }) => {
+  test('Navigation vers section 319 avec or', async ({ page }) => {
     await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=2`)
     await page.waitForSelector('.section-text')
 
     await testNavigation(page, SECTION_CHOICES, 0)
 
-    await testItem(page, "piece-or", 12)
+    await testMonnaie(page, 12)
   })
 
 })
