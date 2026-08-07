@@ -48,31 +48,32 @@ export class GameEngineInventaire {
         }
       }
 
-      // ÉTAPE 1 : Appliquer redefine EN PREMIER (si présent)
-      if (rule.redefine !== undefined) {
+      // ÉTAPE 1 : Appliquer valeur_start / delta_start EN PREMIER (si présents)
+      if (rule.valeur_start !== undefined) {
         let newInitialValue: number
-        if (rule.redefine === 'start') {
+        if (rule.valeur_start === 'start') {
           newInitialValue = hero.statistiques_initiales[stat] ?? 0
-        } else if (rule.redefine === 'start+1') {
-          newInitialValue = (hero.statistiques_initiales[stat] ?? 0) + 1
         } else {
-          newInitialValue = rule.redefine
+          newInitialValue = rule.valeur_start
         }
         hero.statistiques_initiales[stat] = newInitialValue
+      } else if (rule.delta_start !== undefined) {
+        hero.statistiques_initiales[stat] = (hero.statistiques_initiales[stat] ?? 0) + rule.delta_start
       }
 
-      // ÉTAPE 2 : Appliquer valeur ENSUITE
+      // ÉTAPE 2 : Appliquer valeur ou delta ENSUITE
       let targetValue: number
-      if (rule.valeur === 'start') {
+      if (rule.delta !== undefined) {
+        // delta : variation relative à la valeur courante
+        targetValue = current + rule.delta
+      } else if (rule.valeur === 'start') {
         targetValue = hero.statistiques_initiales[stat] ?? 0
-      } else if (rule.valeur === 'start+1') {
-        targetValue = (hero.statistiques_initiales[stat] ?? 0) + 1
-      } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
-        // "current+N" : ajoute N à la valeur courante
-        const n = parseInt(rule.valeur.slice('current+'.length), 10)
-        targetValue = current + (isNaN(n) ? 0 : n)
-      } else {
+      } else if (rule.valeur === 'max') {
+        targetValue = hero.statistiques_initiales[stat] ?? 0
+      } else if (typeof rule.valeur === 'number') {
         targetValue = rule.valeur
+      } else {
+        targetValue = current  // rien à faire
       }
 
       const delta = targetValue - current

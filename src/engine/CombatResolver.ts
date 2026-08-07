@@ -70,7 +70,7 @@ export class CombatResolver {
     return {
       enemy: modifiedEnemy,
       roundNumber: 1,
-      heroVie: hero.statistiques[rules.stat_vie] ?? 0,
+      heroVie: hero.statistiques[rules.formule_vie] ?? 0,
       enemyVie: modifiedEnemy.endurance,
       rounds: [],
       phase: { type: 'pending_ennemi' },
@@ -100,7 +100,7 @@ export class CombatResolver {
     if (state.phase.type !== 'pending_hero') throw new Error('Phase invalide')
     if (!state.currentRollEnnemi) throw new Error('Jet ennemi manquant')
 
-    const { statName } = parseAttackFormula(rules.stat_attaque)
+    const { statName } = parseAttackFormula(rules.formule_attaque)
     const heroAttaqueStat = hero.statistiques[statName] ?? 0
     const enemyAttaqueStat = state.enemy.habilete
 

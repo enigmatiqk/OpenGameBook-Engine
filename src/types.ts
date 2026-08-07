@@ -61,11 +61,12 @@ export interface PersonnageTemplate {
 }
 
 export interface CombatRules {
-  stat_attaque: string
-  stat_vie: string
+  formule_attaque: string
+  formule_vie: string
   degats_victoire: number
   degats_defaite: number
   attaque: ">" | ">="
+  stats_combat?: string[]  // propriétés temporaires de combat (ex: ["degats_victoire", "degats_defaite"])
   fuite?: {
     possible: "non" | "livre" | "section"
     cout: string           // ex: "-2 endurance"
@@ -79,21 +80,21 @@ export interface CombatRules {
 
 export interface RegleTestStat {
   type: "test_stat"
-  jet: string              // ex: "2d6"
-  stat: string             // stat comparée
-  condition: "<=" | "<" | ">=" | ">"
-  cout_min?: number        // minimum requis pour utiliser cette règle
+  jet_heros: string        // ex: "2d6"
+  stats: Array<{ stat: string; condition: "<=" | "<" | ">=" | ">" }>
+  operator?: "AND" | "OR"
+  conditions?: Array<{ type: "stat"; stat: string; condition: "<=" | "<" | ">=" | ">"; quantite: number }>
   resultats: Record<string, string>
-  effets: {
-    toujours?: string
-    [resultat: string]: string | undefined
+  effets?: {
+    toujours?: Effet | string
+    [resultat: string]: Effet | string | undefined
   }
 }
 
 export interface RegleComposite {
   type: "composite"
   utilise: string
-  effets: Record<string, string>
+  effets: Record<string, Effet[]>
 }
 
 export interface MaxUtilisations {
@@ -106,8 +107,10 @@ export interface MaxUtilisations {
 export interface RegleRestaurerStat {
   type: "restaurer_stat"
   stat: string
-  redefine?: "start" | "start+1" | number  // redéfinit la valeur initiale EN PREMIER
-  valeur: "start" | "start+1" | number | `current+${number}`  // "current+N" ajoute N à la valeur courante
+  valeur_start?: "start" | number  // redéfinit la valeur de référence de façon absolue EN PREMIER
+  delta_start?: number             // ajuste la valeur de référence de façon relative EN PREMIER
+  valeur?: "start" | "max" | number  // cible absolue de la stat courante
+  delta?: number                   // variation relative de la stat courante (mutuellement exclusif avec valeur)
   ignore_max?: boolean  // si true, ignore le plafond normal
   condition?: {
     item_id?: string       // l'item requis dans l'inventaire
@@ -129,18 +132,22 @@ export interface RegleDuelDe {
     echec: string                // libellé retourné en cas de défaite (ex: "malchanceux")
   }
   conditions?: {
-    succes?: string              // expression de victoire (ex: "{jet_heros} >= {jet_adversaire}")
-                                 // défaut : "{jet_heros} > {jet_adversaire}"
+    succes?: { type: "expr"; expr: string }  // ex: { "type": "expr", "expr": "{jet_heros} >= {jet_adversaire}" }
+                                             // défaut : "{jet_heros} > {jet_adversaire}"
   }
   cout: {
     item_id: string              // id de l'item monnaie à miser
     quantite?: number            // mise fixe
-    quantite_heros?: {           // saisie utilisateur : le héros choisit sa mise
+    quantite_choix?: {           // saisie utilisateur : le héros choisit sa mise
       min: number
       max: number
     }
   }
-  gain?: string                  // multiplicateur de gain : "x2", "x3", etc. Défaut : "x1"
+  gain?: {
+    multiplicateur?: number      // gain proportionnel à la mise (ex: 2 pour x2)
+    item_id?: string             // gain fixe en item
+    quantite?: number            // quantité gagnée (si item_id)
+  }
   max_utilisations?: MaxUtilisations
 }
 
@@ -247,11 +254,18 @@ export interface EffetMonstreStat {
   raison?: string     // affiché au joueur dans l'UI du combat
 }
 
+export interface EffetCombat {
+  stat: string    // nom de la propriété temporaire de combat (ex: "degats_victoire", "degats_defaite")
+  delta: number   // modification à appliquer
+  raison?: string
+}
+
 export interface Effet {
   type: string
   stat?: EffetStat          // pour type "stat" et "stat_total"
   item?: EffetItem          // pour type "item"
   monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
+  combat?: EffetCombat      // pour type "combat"
   condition?: ChoiceCondition
   cout?: CoutEffet[]        // coût appliqué quand l'effet est déclenché (ex: consommer 1 repas)
   trigger?: string          // trigger moteur à activer après exécution (ex: "item_dropped")
@@ -260,9 +274,12 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item'
+  type: 'item_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'stat' | 'expr'
   item_id?: string    // pour item_quantite
-  quantite?: number   // pour item_quantite
+  quantite?: number   // pour item_quantite / stat
+  stat?: string       // pour stat : nom de la stat
+  condition?: "<=" | "<" | ">=" | ">"  // pour stat : opérateur de comparaison
+  expr?: string       // pour expr : expression littérale avec variables (ex: "{jet_heros} > {jet_adversaire}")
   section?: number    // pour retour : section spécifique depuis laquelle on revient (optionnel)
   not?: boolean       // pour retour : inverse la condition (true = "pas un retour")
   action?: string     // pour action_resolved : nom de l'action

@@ -70,7 +70,7 @@ export class CombatView {
     const el = document.createElement('div')
     el.className = 'combat-stats'
     const rules = this.engine.getAdventure()?.regles.combat
-    const statName = rules ? parseAttackFormula(rules.stat_attaque).statName : 'habilete'
+    const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habilete'
     const heroAttaque = this.engine.getHero()?.statistiques[statName] ?? '?'
     el.innerHTML = `
       <div class="combat-stat combat-stat-heros">

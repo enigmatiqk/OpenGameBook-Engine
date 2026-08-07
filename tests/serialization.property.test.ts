@@ -19,9 +19,9 @@ const arbPersonnageTemplate: fc.Arbitrary<PersonnageTemplate> = fc.record({
 })
 
 const arbCombatRules: fc.Arbitrary<CombatRules> = fc.record({
-  type: fc.string({ minLength: 1, maxLength: 20 }),
-  des_attaque: fc.integer({ min: 1, max: 4 }),
-  formule_force_attaque: fc.string({ minLength: 1, maxLength: 30 }),
+  formule_attaque: fc.string({ minLength: 1, maxLength: 30 }),
+  formule_vie: fc.string({ minLength: 1, maxLength: 20 }),
+  attaque: fc.constantFrom('>' as const, '>=' as const),
   degats_victoire: fc.integer({ min: 1, max: 10 }),
   degats_defaite: fc.integer({ min: 1, max: 10 }),
 })

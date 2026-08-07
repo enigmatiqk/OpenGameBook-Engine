@@ -629,7 +629,7 @@ export class GameEngine {
     if (!regle || regle.type !== 'duel_de') return null
     return {
       totalHeros: this.pendingDuelRoll.totalHeros,
-      conditionSucces: regle.conditions?.succes ?? '{jet_heros} > {jet_adversaire}',
+      conditionSucces: regle.conditions?.succes?.expr ?? '{jet_heros} > {jet_adversaire}',
       libelleSucces: regle.resultats.succes,
       libelleEchec: regle.resultats.echec,
     }
@@ -649,8 +649,7 @@ export class GameEngine {
     if (!regle || regle.type !== 'duel_de') throw new Error(`Règle duel_de introuvable : ${actionName}`)
 
     const totalAdversaire = rolls.reduce((a, b) => a + b, 0)
-    const conditionExpr = regle.conditions?.succes ?? '{jet_heros} > {jet_adversaire}'
-    const succes = GameEngineActions.evalDuelCondition(conditionExpr, totalHeros, totalAdversaire)
+    const succes = GameEngineActions.evalDuelCondition(regle.conditions?.succes, totalHeros, totalAdversaire)
 
     // Track résultat de l'action
     const resultat = succes ? regle.resultats.succes : regle.resultats.echec
@@ -707,12 +706,12 @@ export class GameEngine {
   getDuelMiseInfo(actionName: string): { min: number; max: number; disponible: number } | null {
     if (!this.adventure || !this.hero) return null
     const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (!regle || regle.type !== 'duel_de' || !regle.cout.quantite_heros) return null
+    if (!regle || regle.type !== 'duel_de' || !regle.cout.quantite_choix) return null
     const item = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === regle.cout.item_id)
     const disponible = item && typeof item !== 'string' ? (item.quantite ?? 1) : 0
     return {
-      min: regle.cout.quantite_heros.min,
-      max: Math.min(regle.cout.quantite_heros.max, disponible),
+      min: regle.cout.quantite_choix.min,
+      max: Math.min(regle.cout.quantite_choix.max, disponible),
       disponible,
     }
   }
@@ -781,10 +780,8 @@ export class GameEngine {
     }
 
     const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, actionName, rolls,
-      (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
+      (effets, label) => this._applyEffets(effets, label)
     )
-
-    // Track le résultat de l'action pour cette section
     this.navigation.recordActionResult(actionName, resultat)
 
     // Extrait les outcomes (ancien format vs nouveau)
@@ -959,17 +956,28 @@ export class GameEngine {
         }
       }
 
+      // ÉTAPE 1 : Appliquer valeur_start / delta_start EN PREMIER (si présents)
+      if (rule.valeur_start !== undefined) {
+        const newInitial = rule.valeur_start === 'start'
+          ? this.hero.statistiques_initiales[stat] ?? 0
+          : rule.valeur_start
+        this.hero.statistiques_initiales[stat] = newInitial
+      } else if (rule.delta_start !== undefined) {
+        this.hero.statistiques_initiales[stat] = (this.hero.statistiques_initiales[stat] ?? 0) + rule.delta_start
+      }
+
       // Calcule la target value
       let targetValue: number
-      if (rule.valeur === 'start') {
+      if (rule.delta !== undefined) {
+        targetValue = current + rule.delta
+      } else if (rule.valeur === 'start') {
         targetValue = this.hero.statistiques_initiales[stat] ?? 0
-      } else if (rule.valeur === 'start+1') {
-        targetValue = (this.hero.statistiques_initiales[stat] ?? 0) + 1
-      } else if (typeof rule.valeur === 'string' && rule.valeur.startsWith('current+')) {
-        const n = parseInt(rule.valeur.slice('current+'.length), 10)
-        targetValue = current + (isNaN(n) ? 0 : n)
-      } else {
+      } else if (rule.valeur === 'max') {
+        targetValue = this.hero.statistiques_initiales[stat] ?? 0
+      } else if (typeof rule.valeur === 'number') {
         targetValue = rule.valeur
+      } else {
+        targetValue = current
       }
 
       const delta = targetValue - current
@@ -1032,7 +1040,7 @@ export class GameEngine {
     if (!this.combatState || !this.adventure) return null
     const phase = this.combatState.phase
     const rules = this.adventure.regles.combat
-    const { diceCount, diceSides } = parseAttackFormula(rules.stat_attaque)
+    const { diceCount, diceSides } = parseAttackFormula(rules.formule_attaque)
 
     if (phase.type === 'pending_ennemi') {
       return {
@@ -1125,8 +1133,8 @@ export class GameEngine {
     )
     // Synchronise la vie du héros
     if (this.combatState.phase.type === 'round_result') {
-      const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.stat_vie] ?? 0)
-      if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.stat_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
+      const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.formule_vie] ?? 0)
+      if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.formule_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
     }
     
     // Sauvegarde les stats du monstre persistant après chaque round
@@ -1143,8 +1151,8 @@ export class GameEngine {
     )
     // Synchronise la vie du héros
     if (this.combatState.phase.type === 'round_result') {
-      const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.stat_vie] ?? 0)
-      if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.stat_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
+      const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.formule_vie] ?? 0)
+      if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.formule_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
     }
   }
 
@@ -1166,22 +1174,16 @@ export class GameEngine {
     if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
 
     const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, action, rolls,
-      (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
+      (effets, label) => this._applyEffets(effets, label)
     )
     const effets: string[] = []
 
     // Applique les effets sur les stats de combat
     const regle = GameEngineActions.getRegle(this.adventure, action) as RegleComposite | undefined
     if (regle?.type === 'composite' && regle.effets[resultat]) {
-      const effet = regle.effets[resultat]
-      GameEngineActions.applyCombatEffect(
-        this.combatState,
-        this.hero,
-        this.adventure,
-        effet,
-        (stat, delta, raison) => this.applyStatDelta(stat, delta, raison),
-        effets
-      )
+      const effetsResultat = regle.effets[resultat]
+      this._applyEffets(effetsResultat, action)
+      effets.push(`${action}: ${resultat}`)
     }
 
     // Remet la phase en round_result pour que l'UI puisse afficher le bouton "Round suivant"
@@ -1239,7 +1241,7 @@ export class GameEngine {
       }
       // Synchronise l'endurance finale
       if (this.hero && this.adventure) {
-        const statVie = this.adventure.regles.combat.stat_vie
+        const statVie = this.adventure.regles.combat.formule_vie
         const current = this.hero.statistiques[statVie] ?? 0
         const delta = heroEnduranceFinale - current
         if (delta !== 0) this.applyStatDelta(statVie, delta, 'fin de combat')
@@ -1297,6 +1299,15 @@ export class GameEngine {
         const key = ms.monstre_id || '__any__'
         if (!this.pendingMonsterStatMods[key]) this.pendingMonsterStatMods[key] = []
         this.pendingMonsterStatMods[key].push(ms)
+      } else if (effet.type === 'combat' && effet.combat && this.combatState && this.adventure) {
+        GameEngineActions.applyCombatEffet(
+          this.combatState,
+          this.adventure,
+          effet.combat.stat,
+          effet.combat.delta,
+          (stat, delta, raison) => this.applyStatDelta(stat, delta, raison),
+          []
+        )
       }
 
       // Active le trigger si défini
@@ -1406,7 +1417,7 @@ export class GameEngine {
 
     // Vérifie si la stat de vie est tombée sous le seuil de défaite
     if (!this.gameOver) {
-      const statVie = this.adventure.regles.combat?.stat_vie
+      const statVie = this.adventure.regles.combat?.formule_vie
       const enduranceMin = (this.adventure.regles.defaite as any)?.endurance_min ?? 0
       const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero)
       if (statVie && normalizedStat === statVie && this.hero.statistiques[normalizedStat] <= enduranceMin) {
@@ -1537,11 +1548,13 @@ export class GameEngine {
     if (!this.adventure || !this.hero) return
     const fuiteRule = this.adventure.regles.combat.fuite
     if (fuiteRule?.cout) {
-      GameEngineActions.applyStatEffect(
-        fuiteRule.cout,
-        (stat, delta, raison) => this.applyStatDelta(stat, delta, raison),
-        'Fuite'
-      )
+      // Applique le coût de fuite (ex: "-2 endurance")
+      const m = fuiteRule.cout.match(/^([+-]\d+)\s+(\w+)$/)
+      if (m) {
+        const delta = parseInt(m[1], 10)
+        const stat = m[2]
+        this.applyStatDelta(stat, delta, 'Fuite')
+      }
     }
   }
 
@@ -1554,7 +1567,7 @@ export class GameEngine {
       this.adventure,
       this.hero,
       rolls,
-      (stat, delta, raison) => this.applyStatDelta(stat, delta, raison)
+      (effets, label) => this._applyEffets(effets, label)
     )
   }
 }

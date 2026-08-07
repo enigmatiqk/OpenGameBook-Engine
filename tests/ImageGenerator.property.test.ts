@@ -25,9 +25,9 @@ describe('Property 5 : Construction du prompt IA', () => {
         }),
         regles: fc.constant({
           combat: {
-            type: 'fighting-fantasy',
-            des_attaque: 2,
-            formule_force_attaque: 'habilete + roll',
+            formule_attaque: 'habilete+2d6',
+            formule_vie: 'endurance',
+            attaque: '>',
             degats_victoire: 2,
             degats_defaite: 2,
           },
