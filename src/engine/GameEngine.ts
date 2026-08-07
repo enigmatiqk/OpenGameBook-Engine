@@ -933,6 +933,10 @@ export class GameEngine {
     const regle = GameEngineActions.getRegle(this.adventure, actionName)
     if (!regle) throw new Error(`Règle inconnue : "${actionName}"`)
 
+    // Applique la surcharge partielle si définie sur le choix (regle_surcharge)
+    const regleSurcharge = (choice as any).regle_surcharge
+    const rule = regleSurcharge ? { ...regle, ...regleSurcharge } : regle as any
+
     // Vérifie les limites d'utilisation par contexte (max_utilisations)
     const availability = this.isRegleAvailable(actionName)
     if (!availability.ok) {
@@ -940,8 +944,7 @@ export class GameEngine {
     }
 
     // Délègue l'exécution selon le type de règle
-    if (regle.type === 'restaurer_stat') {
-      const rule = regle as any
+    if (rule.type === 'restaurer_stat') {
       const stat = rule.stat
       const current = this.hero.statistiques[stat] ?? 0
 
@@ -1007,7 +1010,7 @@ export class GameEngine {
         }
       }
     } else {
-      throw new Error(`Type de règle "${regle.type}" ne supporte pas l'exécution sans dé`)
+      throw new Error(`Type de règle "${rule.type}" ne supporte pas l'exécution sans dé`)
     }
 
     // Track l'action comme résolue avec succès

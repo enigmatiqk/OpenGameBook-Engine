@@ -349,6 +349,7 @@ export interface Choice {
   libre?: boolean
   end?: "victoire" | "defaite"
   action?: Action | string  // Action object ou string pour backward compatibility
+  regle_surcharge?: Record<string, unknown>  // surcharge partielle des propriétés de la règle référencée par action
   stat_monstre?: string  // ex: "-3 endurance"
 }
 
