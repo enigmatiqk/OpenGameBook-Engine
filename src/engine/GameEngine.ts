@@ -1538,7 +1538,13 @@ export class GameEngine {
       this.hero.inventaire.splice(idx, 1)
     }
 
-    this.navigation.recordItemDrop()
+    // Si l'item est équipable (a un type) et que equipement_drop est actif, déclenche equipement_dropped
+    const itemObj = typeof item !== 'string' ? item : null
+    if (itemObj?.type && this.isEquipementDropAllowed()) {
+      this.navigation.recordEquipementDrop()
+    } else {
+      this.navigation.recordItemDrop()
+    }
     return { success: true, message: `${label} jeté` }
   }
 
