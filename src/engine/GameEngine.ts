@@ -878,12 +878,18 @@ export class GameEngine {
       targetSection = si_echoue?.choix?.section
     }
 
-    // Gère si_echoue avec end
+    // Gère end selon le résultat (succès ou échec)
     if (targetSection === undefined) {
-      if (si_echoue?.end) {
+      const succes = resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)
+      const endValue = succes ? si_reussi?.end : si_echoue?.end
+      if (endValue) {
         this.gameOver = true
-        this.victory = si_echoue.end === 'victoire'
+        this.victory = endValue === 'victoire'
         this.finalTimeMs = this.timer.getElapsedMs()
+        this.timer.pause()
+        if (endValue === 'defaite' && this.adventure) {
+          this.saveModule.deleteSave(this.adventure.titre)
+        }
         return this.adventure.sections.find(s => s.numero === this.currentSection)!
       }
     }

@@ -328,6 +328,7 @@ export interface ChoiceCondition {
   section?: number        // pour retour : section spécifique depuis laquelle on revient (optionnel)
   not?: boolean           // pour retour : inverse la condition (true = "pas un retour")
   action?: string         // pour action_resolved : nom de l'action
+  resultat?: string       // pour action_resolved : résultat attendu (ex: "chanceux", "malchanceux") — absent = tout résultat accepté
   id?: string             // pour combat_degats_monstre/heros : id du monstre persistant (optionnel) ; pour monstre_mort : id du monstre
   degats_min?: number     // pour combat_degats_monstre/heros : dégâts minimum
   degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum

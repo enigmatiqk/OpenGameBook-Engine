@@ -117,10 +117,15 @@ export class GameEngineNavigation {
         conditionOk = false
         raison = 'Condition action_resolved invalide'
       } else {
-        const actionResolved = this.sectionActionResults[cond.action] !== undefined
+        const actionResult = this.sectionActionResults[cond.action]
+        const actionResolved = actionResult !== undefined
         if (!actionResolved) {
           conditionOk = false
           raison = 'Vous devez d\'abord tenter cette action'
+        } else if (cond.resultat !== undefined && actionResult !== cond.resultat) {
+          // Si un résultat attendu est précisé, il doit correspondre
+          conditionOk = false
+          raison = `Résultat attendu : ${cond.resultat} (obtenu : ${actionResult})`
         }
       }
     } else if (cond.type === 'retour') {
