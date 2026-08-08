@@ -354,7 +354,7 @@ export class GameView {
 
     // Si la section courante a un combat, afficher le bouton approprié
     if (section.combat) {
-      // Mode lancer_de : afficher un tableau des monstres avant le bouton
+      // Mode lancer_de : afficher un tableau des phases/monstres avant le bouton
       if (section.combat.lancer_de) {
         const table = document.createElement('table')
         table.className = 'monsters-table'
@@ -371,13 +371,14 @@ export class GameView {
         thead.appendChild(headerRow)
         table.appendChild(thead)
         
-        // Corps du tableau
+        // Corps du tableau : une ligne par phase (chaque phase a une face et 1 monstre principal)
         const tbody = document.createElement('tbody')
-        for (const monstre of section.combat.monstres) {
+        for (const phase of section.combat.phases) {
           const row = document.createElement('tr')
+          const monstre = phase.monstres[0]
           
           const faceCell = document.createElement('td')
-          faceCell.textContent = String(monstre.face ?? '?')
+          faceCell.textContent = String(phase.face ?? '?')
           row.appendChild(faceCell)
           
           const nomCell = document.createElement('td')
@@ -455,7 +456,7 @@ export class GameView {
       if (section.combat.lancer_de) {
         const pending = this.engine.getMonsterSelectionRoll()
         if (pending) {
-          btn.textContent = 'Lancer un dé pour déterminer le monstre'
+          btn.textContent = 'Lancer un dé pour déterminer le combat'
           if (!combatConditionOk) {
             btn.disabled = true
             btn.classList.add('choice-btn--locked')
@@ -472,12 +473,14 @@ export class GameView {
           ul.appendChild(li)
         }
       } else {
-        // Mode par défaut ou sequentiel : afficher un bouton pour combattre directement
+        // Mode phases : afficher un bouton pour combattre directement
+        const allMonstres = section.combat.phases.flatMap(p => p.monstres)
+        const nbPhases = section.combat.phases.length
         let btnText = '⚔️ Combattre'
-        if (section.combat.mode === 'sequentiel') {
-          btnText += ' les monstres'
+        if (nbPhases > 1) {
+          btnText += ` (${nbPhases} combats)`
         } else {
-          btnText += ` ${section.combat.monstres.map(m => m.nom).join(' & ')}`
+          btnText += ` ${allMonstres.map(m => m.nom).join(' & ')}`
         }
         btn.textContent = btnText
         if (!combatConditionOk) {

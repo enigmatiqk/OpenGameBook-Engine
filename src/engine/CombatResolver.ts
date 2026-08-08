@@ -1,4 +1,4 @@
-import type { Hero, Enemy, CombatRules, CombatRound, CombatState, MonstreData } from '../types'
+import type { Hero, Enemy, CombatRules, CombatRound, CombatState, MonstreData, CombatPhaseData, CombatData } from '../types'
 
 /**
  * Parse une formule d'attaque du type "habilete+2d6".
@@ -53,35 +53,145 @@ export function rollDiceAdversaire(count: number, sides: number): number[] {
   return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
 }
 
+/**
+ * Résout la formule de dés depuis un LancerDeData, en supportant les deux noms
+ * (formule = nouveau, choix = ancien format JSON non encore migré).
+ */
+export function resolveLancerDeFormule(data: { formule?: string; choix?: string }): string {
+  const f = data.formule ?? data.choix
+  if (!f) throw new Error('LancerDeData : propriété "formule" manquante')
+  return f
+}
+
+/**
+ * Fusionne les données globales du combat avec les surcharges de la phase courante.
+ * Les clés présentes dans la phase écrasent les valeurs globales.
+ */
+export function resolvePhaseData(combatData: CombatData, phase: CombatPhaseData): any {
+  return {
+    attaque_heros:   phase.attaque_heros   ?? combatData.attaque_heros,
+    attaque_monstre: phase.attaque_monstre ?? combatData.attaque_monstre,
+    degats_heros:    phase.degats_heros    ?? combatData.degats_heros,
+    defense:         phase.defense         ?? combatData.defense,
+    modifier:        phase.modifier        ?? combatData.modifier,
+    victoire:        phase.victoire        ?? combatData.victoire,
+    fuite:           phase.fuite           ?? combatData.fuite,
+    // events : concaténation phase + global (les events phase ont priorité d'index)
+    events: [
+      ...(phase.events ?? []),
+      ...(combatData.events ?? []),
+    ],
+  }
+}
+
+/**
+ * Construit un Enemy depuis un MonstreData, en appliquant les statMods s'il y en a.
+ */
+function buildEnemy(monstre: MonstreData, statMods?: Array<{ name: string; delta: number; raison?: string }>): Enemy {
+  let habilete = monstre.habilete ?? 0
+  let endurance = monstre.endurance ?? 0
+  if (statMods) {
+    for (const mod of statMods) {
+      if (mod.name === 'habilete') habilete = Math.max(0, habilete + mod.delta)
+      if (mod.name === 'endurance') endurance = Math.max(0, endurance + mod.delta)
+    }
+  }
+  return { nom: monstre.nom, habilete, endurance, id: monstre.id, statMods }
+}
+
 export class CombatResolver {
 
   /**
-   * Initialise un état de combat — aucun dé n'est lancé.
+   * Initialise un état de combat à partir de la liste de phases.
+   * Si la phase courante est "escorte", passe en pending_target_choice.
    */
-  initCombat(hero: Hero, enemy: Enemy, rules: CombatRules, mode?: string, monstres?: MonstreData[], combatData?: any): CombatState {
-    let modifiedEnemy = { ...enemy }
-    if (combatData?.modifier?.length > 0) {
-      for (const mod of combatData.modifier) {
+  initCombat(
+    hero: Hero,
+    combatData: CombatData,
+    rules: CombatRules,
+    phaseIndex: number = 0,
+  ): CombatState {
+    const phase = combatData.phases[phaseIndex]
+    const resolved = resolvePhaseData(combatData, phase)
+
+    // Appliquer les modifiers globaux (avant le premier combat)
+    // Les modifiers de phase ne s'appliquent qu'à la phase courante
+    const monstres = phase.monstres
+
+    // Préparer les monstres avec statMods éventuels
+    const monstreInitial = monstres[0]
+    let enemy = buildEnemy(monstreInitial)
+
+    // Appliquer modifier de la phase résolue sur le premier monstre
+    if (resolved.modifier?.length > 0) {
+      for (const mod of resolved.modifier) {
         if (mod.type === 'stat' && mod.stat) {
-          (modifiedEnemy as any)[mod.stat] = Math.max(0, ((modifiedEnemy as any)[mod.stat] ?? 0) + mod.delta)
+          (enemy as any)[mod.stat] = Math.max(0, ((enemy as any)[mod.stat] ?? 0) + mod.delta)
         }
       }
     }
-    return {
-      enemy: modifiedEnemy,
+
+    const phaseType = phase.type ?? (monstres.length > 1 ? (() => { throw new Error(`Phase ${phaseIndex} : type requis si 2+ monstres`) })() : 'simple')
+
+    const baseState: CombatState = {
+      enemy,
       roundNumber: 1,
       heroVie: hero.statistiques[rules.formule_vie] ?? 0,
-      enemyVie: modifiedEnemy.endurance,
+      enemyVie: enemy.endurance,
       rounds: [],
       phase: { type: 'pending_ennemi' },
-      mode: mode as any,
+      phases: combatData.phases,
+      phaseIndex,
+      combatDataGlobal: combatData,
       monstresRestants: monstres,
       monstreIndex: 0,
-      combatData,
+      monstresSecondaires: [],
+      combatData: resolved,
       compteurDegatsHeros: 0,
       compteurDegatsMonster: 0,
       compteurDegats: 0,
       eventsDeclenches: [],
+    }
+
+    // Phase escorte : demander le choix de cible avant de commencer
+    if (phaseType === 'escorte') {
+      return {
+        ...baseState,
+        phase: { type: 'pending_target_choice', monstres },
+      }
+    }
+
+    // Phase groupe : fusionner les stats de tous les monstres
+    if (phaseType === 'groupe') {
+      const fusionHabilete = Math.max(...monstres.map(m => m.habilete ?? 0))
+      const fusionEndurance = monstres.reduce((acc, m) => acc + (m.endurance ?? 0), 0)
+      const fusionEnemy: Enemy = { nom: monstres.map(m => m.nom).join(' + '), habilete: fusionHabilete, endurance: fusionEndurance }
+      return {
+        ...baseState,
+        enemy: fusionEnemy,
+        enemyVie: fusionEndurance,
+      }
+    }
+
+    return baseState
+  }
+
+  /**
+   * Phase escorte : le joueur choisit sa cible (index dans phase.monstres).
+   * Les autres monstres deviennent des secondaires.
+   */
+  chooseEscorteTarget(state: CombatState, targetIndex: number): CombatState {
+    if (state.phase.type !== 'pending_target_choice') throw new Error('Phase invalide')
+    const monstres = state.phase.monstres
+    const target = monstres[targetIndex]
+    const secondaires = monstres.filter((_, i) => i !== targetIndex).map(m => buildEnemy(m))
+    const enemy = buildEnemy(target)
+    return {
+      ...state,
+      enemy,
+      enemyVie: enemy.endurance,
+      monstresSecondaires: secondaires,
+      phase: { type: 'pending_ennemi' },
     }
   }
 
@@ -94,20 +204,22 @@ export class CombatResolver {
   }
 
   /**
-   * Applique le jet du héros. Calcule le round et passe à round_result.
+   * Applique le jet du héros vs l'ennemi principal. Calcule le round partiel.
+   * En phase escorte, passe ensuite à pending_secondaire_ennemi pour le premier secondaire.
+   * Sinon passe directement à round_result (ou pending_defense si applicable).
    */
   applyHeroRoll(state: CombatState, rolls: number[], hero: Hero, rules: CombatRules, combatData?: any): CombatState {
     if (state.phase.type !== 'pending_hero') throw new Error('Phase invalide')
     if (!state.currentRollEnnemi) throw new Error('Jet ennemi manquant')
 
+    const resolved = combatData ?? state.combatData
     const { statName } = parseAttackFormula(rules.formule_attaque)
     const heroAttaqueStat = hero.statistiques[statName] ?? 0
     const enemyAttaqueStat = state.enemy.habilete
 
-    // Applique les bonus d'attaque du héros
     let heroBonus = 0
-    if (combatData?.attaque_heros) {
-      const m = combatData.attaque_heros.match(/^([+-]\d+)$/)
+    if (resolved?.attaque_heros) {
+      const m = resolved.attaque_heros.match(/^([+-]\d+)$/)
       if (m) heroBonus = parseInt(m[1], 10)
     }
 
@@ -117,7 +229,6 @@ export class CombatResolver {
     const heroGagne = rules.attaque === '>='
       ? forceAttaqueHero >= forceAttaqueEnnemi
       : forceAttaqueHero > forceAttaqueEnnemi
-
     const ennemiGagne = rules.attaque === '>='
       ? forceAttaqueEnnemi >= forceAttaqueHero
       : forceAttaqueEnnemi > forceAttaqueHero
@@ -132,34 +243,23 @@ export class CombatResolver {
 
     if (heroGagne && !ennemiGagne) {
       degats = rules.degats_victoire
-      
-      // Applique les bonus de dégâts du héros
-      if (combatData?.degats_heros) {
-        const m = combatData.degats_heros.match(/^([+-]\d+)$/)
-        if (m) {
-          heroBonusDegats = parseInt(m[1], 10)
-          degats += heroBonusDegats
-        }
+      if (resolved?.degats_heros) {
+        const m = resolved.degats_heros.match(/^([+-]\d+)$/)
+        if (m) { heroBonusDegats = parseInt(m[1], 10); degats += heroBonusDegats }
       }
-      
       cible = 'ennemi'
       enemyVie -= degats
     } else if (ennemiGagne && !heroGagne) {
       degats = rules.degats_defaite
-      
-      // Applique le système de défense si présent
-      if (combatData?.defense && combatData.defense.type === 'lancer_de') {
-        // Marque que le héros doit lancer les dés pour la défense
-        // Le modificateur sera appliqué après le lancer
+      if (resolved?.defense && resolved.defense.type === 'lancer_de') {
         defenseRollNeeded = true
-        defenseData = combatData.defense.lancer_de
+        defenseData = resolved.defense.lancer_de
       }
-      
       cible = 'hero'
       heroVie -= degats
     }
 
-    const round: CombatRound = {
+    const roundPartiel: CombatRound & { secondairesRolls: any[] } = {
       numero: state.roundNumber,
       rollHero: rolls,
       rollEnnemi: state.currentRollEnnemi,
@@ -169,78 +269,154 @@ export class CombatResolver {
       cible,
       heroStatValue: heroAttaqueStat,
       heroBonusAttaque: heroBonus,
-      heroBonusDegats: heroBonusDegats,
+      heroBonusDegats,
       enemyStatValue: enemyAttaqueStat,
+      secondairesRolls: [],
     }
 
-    // Ajoute les données de défense si nécessaire
-    if (defenseRollNeeded) {
-      const roundWithDefense = round as any
-      roundWithDefense.defenseRollNeeded = true
-      roundWithDefense.defenseData = defenseData
-    }
-
-    // Vérifier les actions de combat
-    let newState: CombatState = {
+    const newState: CombatState = {
       ...state,
       currentRollHero: rolls,
       heroVie,
       enemyVie,
-      rounds: [...state.rounds, round],
+      pendingRound: roundPartiel,
     }
 
-    // Déterminer les dégâts pour chaque cible
-    const degatsHeros = cible === 'hero' ? degats : 0
-    const degatsMonster = cible === 'ennemi' ? degats : 0
-
-    // Tracker les dégâts totaux
-    newState.totalDegatsHeros = (state.totalDegatsHeros ?? 0) + degatsHeros
-    newState.totalDegatsMonster = (state.totalDegatsMonster ?? 0) + degatsMonster
-    if (state.enemy.id && degatsMonster > 0) {
-      newState.totalDegatsMonsterById = { ...(state.totalDegatsMonsterById ?? {}), [state.enemy.id]: ((state.totalDegatsMonsterById?.[state.enemy.id] ?? 0) + degatsMonster) }
-    }
-
-    // Vérifier et déclencher les actions de combat
-    const { eventTriggered, newState: stateAfterEvent } = this.checkCombatEvents(newState, degatsHeros, degatsMonster)
-    newState = stateAfterEvent
-
-    // Si un event est déclenché, le stocker dans l'état
-    if (eventTriggered) {
-      newState.eventDeclenche = eventTriggered
-    }
-
-    // Actions disponibles selon le résultat du round (pas en cas d'égalité)
-    const availableActions: string[] = []
-    if (rules.events && degats > 0) {
-      if (cible === 'ennemi' && rules.events.attaque) availableActions.push(rules.events.attaque)
-      if (cible === 'hero' && rules.events.defense) availableActions.push(rules.events.defense)
-    }
-
-    // Si défense avec lancer_de, passe à la phase pending_defense
-    if (defenseRollNeeded) {
+    // ── Phase escorte : enchaîner les jets secondaires ──────────────────────
+    if (state.monstresSecondaires && state.monstresSecondaires.length > 0) {
       return {
         ...newState,
-        phase: { type: 'pending_defense', defenseData },
+        phase: {
+          type: 'pending_secondaire_ennemi',
+          secondaireIndex: 0,
+          secondaire: state.monstresSecondaires[0],
+        },
       }
     }
 
+    // ── Pas de secondaires : finaliser le round directement ─────────────────
+    return this._finalizeRound(newState, rules, defenseRollNeeded, defenseData)
+  }
+
+  /**
+   * Enregistre le jet du monstre secondaire. Passe à pending_secondaire_hero.
+   */
+  applySecondaireEnnemiRoll(state: CombatState, rolls: number[]): CombatState {
+    if (state.phase.type !== 'pending_secondaire_ennemi') throw new Error('Phase invalide')
+    const { secondaireIndex, secondaire } = state.phase
     return {
-      ...newState,
-      phase: { type: 'round_result', round, availableActions },
+      ...state,
+      phase: { type: 'pending_secondaire_hero', secondaireIndex, secondaire, rollSecondaire: rolls },
     }
   }
 
   /**
-   * Passe au round suivant (ou termine le combat si une vie <= 0).
-   * En mode sequentiel, passe au monstre suivant si l'ennemi est mort.
-   * Si une action est déclenchée sans texte ou action, la navigation se fait ici.
+   * Applique le jet héros vs le secondaire. Calcule l'esquive ou les dégâts.
+   * Passe au secondaire suivant ou finalise le round.
+   */
+  applySecondaireHeroRoll(state: CombatState, rolls: number[], hero: Hero, rules: CombatRules): CombatState {
+    if (state.phase.type !== 'pending_secondaire_hero') throw new Error('Phase invalide')
+    if (!state.pendingRound) throw new Error('Round partiel manquant')
+
+    const { secondaireIndex, secondaire, rollSecondaire } = state.phase
+    const resolved = state.combatData
+    const { statName } = parseAttackFormula(rules.formule_attaque)
+    const heroAttaqueStat = hero.statistiques[statName] ?? 0
+
+    let heroBonus = 0
+    if (resolved?.attaque_heros) {
+      const m = resolved.attaque_heros.match(/^([+-]\d+)$/)
+      if (m) heroBonus = parseInt(m[1], 10)
+    }
+
+    const faSecondaire = secondaire.habilete + rollSecondaire.reduce((a, b) => a + b, 0)
+    const faHero = heroAttaqueStat + rolls.reduce((a, b) => a + b, 0) + heroBonus
+
+    // Escorte : FA secondaire > FA héros → dégâts ; sinon esquive (jamais de dégâts au secondaire)
+    let degatsS = 0
+    let heroVie = state.heroVie
+    if (faSecondaire > faHero) {
+      degatsS = rules.degats_defaite
+      heroVie -= degatsS
+    }
+
+    const secondaireResult = { monstre: secondaire, rollEnnemi: rollSecondaire, fa: faSecondaire, heroRoll: rolls, heroFa: faHero, degats: degatsS }
+    const updatedRound = {
+      ...state.pendingRound!,
+      secondairesRolls: [...state.pendingRound!.secondairesRolls, secondaireResult],
+    }
+
+    const newState: CombatState = { ...state, heroVie, pendingRound: updatedRound }
+
+    // Secondaire suivant ?
+    const nextIndex = secondaireIndex + 1
+    if (state.monstresSecondaires && nextIndex < state.monstresSecondaires.length) {
+      return {
+        ...newState,
+        phase: {
+          type: 'pending_secondaire_ennemi',
+          secondaireIndex: nextIndex,
+          secondaire: state.monstresSecondaires[nextIndex],
+        },
+      }
+    }
+
+    // Tous les secondaires traités → finaliser le round
+    // Récupérer les infos de défense du round partiel
+    const defenseRollNeeded = !!(updatedRound as any).defenseRollNeeded
+    const defenseData = (updatedRound as any).defenseData ?? null
+    return this._finalizeRound({ ...newState, pendingRound: updatedRound }, rules, defenseRollNeeded, defenseData)
+  }
+
+  /**
+   * Finalise le round : ajoute le round aux logs, déclenche les events, retourne le nouvel état.
+   */
+  private _finalizeRound(state: CombatState, rules: CombatRules, defenseRollNeeded: boolean, defenseData: any): CombatState {
+    const round = state.pendingRound!
+    const degatsHeros = (round.cible === 'hero' ? round.degats : 0)
+      + (round.secondairesRolls?.reduce((acc: number, s: any) => acc + s.degats, 0) ?? 0)
+    const degatsMonster = round.cible === 'ennemi' ? round.degats : 0
+
+    let newState: CombatState = {
+      ...state,
+      rounds: [...state.rounds, round],
+      pendingRound: undefined,
+      totalDegatsHeros: (state.totalDegatsHeros ?? 0) + degatsHeros,
+      totalDegatsMonster: (state.totalDegatsMonster ?? 0) + degatsMonster,
+    }
+
+    if (state.enemy.id && degatsMonster > 0) {
+      newState.totalDegatsMonsterById = {
+        ...(state.totalDegatsMonsterById ?? {}),
+        [state.enemy.id]: ((state.totalDegatsMonsterById?.[state.enemy.id] ?? 0) + degatsMonster),
+      }
+    }
+
+    const { eventTriggered, newState: stateAfterEvent } = this.checkCombatEvents(newState, degatsHeros, degatsMonster)
+    newState = stateAfterEvent
+    if (eventTriggered) newState.eventDeclenche = eventTriggered
+
+    const availableActions: string[] = []
+    if (rules.events && round.degats > 0) {
+      if (round.cible === 'ennemi' && rules.events.attaque) availableActions.push(rules.events.attaque)
+      if (round.cible === 'hero' && rules.events.defense) availableActions.push(rules.events.defense)
+    }
+
+    if (defenseRollNeeded) {
+      return { ...newState, phase: { type: 'pending_defense', defenseData } }
+    }
+
+    return { ...newState, phase: { type: 'round_result', round, availableActions } }
+  }
+
+  /**
+   * Passe au round suivant, au monstre suivant, ou à la phase suivante.
    */
   nextRound(state: CombatState): CombatState {
     if (state.phase.type !== 'round_result') throw new Error('Phase invalide')
 
-    // Si un event est déclenché sans texte ou action, l'appliquer maintenant
+    // Event sans texte ni action → navigation immédiate
     if (state.eventDeclenche && !state.eventDeclenche.texte && !state.eventDeclenche.action) {
-      // Retourner un état spécial pour indiquer qu'on doit naviguer vers la section de l'event
       return {
         ...state,
         phase: { type: 'pending_navigation', section: state.eventDeclenche.section },
@@ -248,46 +424,54 @@ export class CombatResolver {
     }
 
     if (state.heroVie <= 0) {
-      // Héros mort, combat terminé
       return {
         ...state,
-        phase: {
-          type: 'termine',
-          victoire: false,
-          heroEnduranceFinale: Math.max(0, state.heroVie),
-        },
+        phase: { type: 'termine', victoire: false, heroEnduranceFinale: Math.max(0, state.heroVie) },
       }
     }
 
     if (state.enemyVie <= 0) {
-      // Ennemi mort
-      if (state.mode === 'sequentiel' && state.monstresRestants && state.monstreIndex !== undefined) {
-        // Passe au monstre suivant
-        const nextIndex = state.monstreIndex + 1
-        if (nextIndex < state.monstresRestants.length) {
-          const nextMonstre = state.monstresRestants[nextIndex]
+      // Déterminer le type de la phase courante
+      const phases = state.phases
+      const phaseIndex = state.phaseIndex ?? 0
+      const phase = phases?.[phaseIndex]
+      const phaseType = phase?.type ?? 'simple'
+
+      // Phase séquentielle : passer au monstre suivant dans la phase
+      if (phaseType === 'sequentiel' && state.monstresRestants && state.monstreIndex !== undefined) {
+        const nextMonstreIndex = state.monstreIndex + 1
+        if (nextMonstreIndex < state.monstresRestants.length) {
+          const nextMonstre = state.monstresRestants[nextMonstreIndex]
           return {
             ...state,
-            enemy: { nom: nextMonstre.nom, habilete: nextMonstre.habilete ?? 0, endurance: nextMonstre.endurance ?? 0 },
+            enemy: buildEnemy(nextMonstre),
             enemyVie: nextMonstre.endurance ?? 0,
-            monstreIndex: nextIndex,
+            monstreIndex: nextMonstreIndex,
             currentRollEnnemi: undefined,
             currentRollHero: undefined,
             roundNumber: 1,
             rounds: [],
+            compteurDegatsHeros: 0,
+            compteurDegatsMonster: 0,
+            compteurDegats: 0,
+            eventsDeclenches: [],
             phase: { type: 'pending_ennemi' },
           }
         }
       }
-      
-      // Pas de monstre suivant, combat terminé
+
+      // Fin de la phase courante → passer à la phase suivante
+      if (phases) {
+        const nextPhaseIndex = phaseIndex + 1
+        if (nextPhaseIndex < phases.length) {
+          return this.transitionToPhase(state, nextPhaseIndex)
+        }
+      }
+
+      // Plus de phase → victoire
       return {
         ...state,
-        phase: {
-          type: 'termine',
-          victoire: true,
-          heroEnduranceFinale: Math.max(0, state.heroVie),
-        },
+        phase: { type: 'termine', victoire: true, heroEnduranceFinale: Math.max(0, state.heroVie) },
       }
     }
 
@@ -304,8 +488,81 @@ export class CombatResolver {
   }
 
   /**
-   * Applique une action (ex: attaque_chance) après un round_result.
-   * Retourne le nouvel état avec la phase pending_action.
+   * Transition vers une nouvelle phase du combat.
+   * Réinitialise les compteurs, applique les données de la nouvelle phase.
+   */
+  private transitionToPhase(state: CombatState, nextPhaseIndex: number): CombatState {
+    const phases = state.phases!
+    const nextPhase = phases[nextPhaseIndex]
+
+    const resolvedPhase = resolvePhaseData(state.combatDataGlobal, nextPhase)
+
+    const monstres = nextPhase.monstres
+    const phaseType = nextPhase.type ?? (monstres.length > 1
+      ? (() => { throw new Error(`Phase ${nextPhaseIndex} : type requis si 2+ monstres`) })()
+      : 'simple')
+
+    let enemy = buildEnemy(monstres[0])
+
+    // Appliquer les modifiers de la nouvelle phase
+    if (resolvedPhase.modifier?.length > 0) {
+      for (const mod of resolvedPhase.modifier) {
+        if (mod.type === 'stat' && mod.stat) {
+          (enemy as any)[mod.stat] = Math.max(0, ((enemy as any)[mod.stat] ?? 0) + mod.delta)
+        }
+      }
+    }
+
+    const baseNextState: CombatState = {
+      ...state,
+      enemy,
+      enemyVie: enemy.endurance,
+      phaseIndex: nextPhaseIndex,
+      monstresRestants: monstres,
+      monstreIndex: 0,
+      monstresSecondaires: [],
+      combatData: resolvedPhase,
+      currentRollEnnemi: undefined,
+      currentRollHero: undefined,
+      roundNumber: 1,
+      rounds: [],
+      compteurDegatsHeros: 0,
+      compteurDegatsMonster: 0,
+      compteurDegats: 0,
+      eventsDeclenches: [],
+      eventDeclenche: undefined,
+      eventsDeclenchesCourant: undefined,
+      actionLancee: undefined,
+    }
+
+    if (phaseType === 'escorte') {
+      return {
+        ...baseNextState,
+        phase: { type: 'pending_target_choice', monstres },
+      }
+    }
+
+    if (phaseType === 'groupe') {
+      const fusionHabilete = Math.max(...monstres.map(m => m.habilete ?? 0))
+      const fusionEndurance = monstres.reduce((acc, m) => acc + (m.endurance ?? 0), 0)
+      const fusionEnemy: Enemy = {
+        nom: monstres.map(m => m.nom).join(' + '),
+        habilete: fusionHabilete,
+        endurance: fusionEndurance,
+      }
+      return {
+        ...baseNextState,
+        enemy: fusionEnemy,
+        enemyVie: fusionEndurance,
+        phase: { type: 'pending_ennemi' },
+      }
+    }
+
+    return { ...baseNextState, phase: { type: 'pending_ennemi' } }
+  }
+
+  /**
+   * Démarre une action optionnelle (ex: attaque_chance).
    */
   startAction(state: CombatState, action: string): CombatState {
     if (state.phase.type !== 'round_result') throw new Error('Phase invalide')
@@ -313,17 +570,16 @@ export class CombatResolver {
   }
 
   /**
-   * Vérifie et déclenche les events de combat basés sur les dégâts ou les rounds
-   * Retourne { eventTriggered: CombatEvent | null, newState: CombatState }
+   * Vérifie et déclenche les events de combat basés sur les dégâts ou les rounds.
    */
   checkCombatEvents(state: CombatState, degatsHeros: number, degatsMonster: number): { eventTriggered: any | null; newState: CombatState } {
-    if (!state.combatData?.events || state.combatData.events.length === 0) {
+    const events = state.combatData?.events
+    if (!events || events.length === 0) {
       return { eventTriggered: null, newState: state }
     }
 
     let newState = { ...state }
 
-    // Incrémenter les compteurs
     if (degatsHeros > 0) {
       newState.compteurDegatsHeros = (newState.compteurDegatsHeros ?? 0) + 1
       newState.compteurDegats = (newState.compteurDegats ?? 0) + 1
@@ -333,64 +589,47 @@ export class CombatResolver {
       newState.compteurDegats = (newState.compteurDegats ?? 0) + 1
     }
 
-    // Chercher TOUS les events qui se déclenchent
     const triggeredEvents: any[] = []
     
-    for (let i = 0; i < state.combatData.events.length; i++) {
-      const event = state.combatData.events[i]
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i]
       
-      // Vérifier si l'event a déjà été déclenché
-      if (newState.eventsDeclenches?.includes(i)) {
-        continue
-      }
+      if (newState.eventsDeclenches?.includes(i)) continue
 
       let shouldTrigger = false
 
       if (event.declencheur === 'degats_heros' && degatsHeros > 0) {
-        if (newState.compteurDegatsHeros === event.round) {
-          shouldTrigger = true
-        }
+        if (newState.compteurDegatsHeros === event.round) shouldTrigger = true
       } else if (event.declencheur === 'degats_monstre' && degatsMonster > 0) {
-        if (newState.compteurDegatsMonster === event.round) {
-          shouldTrigger = true
-        }
+        if (newState.compteurDegatsMonster === event.round) shouldTrigger = true
       } else if (event.declencheur === 'degats' && (degatsHeros > 0 || degatsMonster > 0)) {
-        if (newState.compteurDegats === event.round) {
-          shouldTrigger = true
-        }
+        if (newState.compteurDegats === event.round) shouldTrigger = true
       } else if (event.declencheur === 'round') {
-        // Déclenche au round spécifié, indépendamment des dégâts
-        if (state.roundNumber === event.round) {
-          shouldTrigger = true
-        }
+        if (state.roundNumber === event.round) shouldTrigger = true
       }
 
       if (shouldTrigger) {
-        // Marquer l'event comme déclenché
         newState.eventsDeclenches = [...(newState.eventsDeclenches ?? []), i]
-
-        // Si ignorerDegats est true, annuler les dégâts du coup
         if (event.ignorerDegats) {
           newState.heroVie += degatsHeros
           newState.enemyVie += degatsMonster
         }
-
         triggeredEvents.push(event)
       }
     }
 
-    // Retourner le premier event (ou null si aucun)
-    // Les autres events seront stockés dans eventsDeclenchesCourant
     if (triggeredEvents.length > 0) {
-      return { eventTriggered: triggeredEvents[0], newState: { ...newState, eventsDeclenchesCourant: triggeredEvents } }
+      return {
+        eventTriggered: triggeredEvents[0],
+        newState: { ...newState, eventsDeclenchesCourant: triggeredEvents },
+      }
     }
 
     return { eventTriggered: null, newState }
   }
 
   /**
-   * Applique le modificateur de défense après un lancer de dés
-   * Passe ensuite à la phase round_result
+   * Applique le modificateur de défense après un lancer de dés.
    */
   applyDefenseRoll(state: CombatState, rolls: number[], rules: CombatRules): CombatState {
     if (state.phase.type !== 'pending_defense') throw new Error('Phase invalide')
@@ -398,38 +637,27 @@ export class CombatResolver {
     const lastRound = state.rounds[state.rounds.length - 1]
     const defenseData = state.phase.defenseData
     
-    if (!defenseData || !defenseData.choix) {
-      return state
-    }
+    if (!defenseData) return state
 
-    // Lance les dés selon la formule
-    const diceFormula = parseDiceFormula(defenseData.choix)
+    const diceFormula = parseDiceFormula(resolveLancerDeFormule(defenseData))
     const diceRolls = rolls.slice(0, diceFormula.count)
     const diceResult = diceRolls.reduce((a, b) => a + b, 0)
 
-    // Cherche le modificateur dans les résultats
-    const modifier = defenseData.resultats[diceResult.toString()]
+    const modifier = defenseData.resultats?.[diceResult.toString()]
     
     let deltaModifier = 0
     if (modifier) {
       const m = modifier.match(/^([+-]\d+)$/)
-      if (m) {
-        deltaModifier = parseInt(m[1], 10)
-      }
+      if (m) deltaModifier = parseInt(m[1], 10)
     }
 
-    // Applique le modificateur aux dégâts
     const newDegats = Math.max(0, lastRound.degats + deltaModifier)
     lastRound.degats = newDegats
-    
-    // Ajoute les informations de défense au round
     lastRound.defenseRoll = diceRolls
     lastRound.defenseModifier = deltaModifier
     
-    // Met à jour la vie du héros
     const heroVie = state.heroVie + deltaModifier
 
-    // Actions disponibles selon le résultat du round
     const availableActions: string[] = []
     if (rules.events && newDegats > 0) {
       if (rules.events.defense) availableActions.push(rules.events.defense)
@@ -443,3 +671,4 @@ export class CombatResolver {
     }
   }
 }
+

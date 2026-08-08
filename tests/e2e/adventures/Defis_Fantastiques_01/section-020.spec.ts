@@ -5,7 +5,7 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 20
 const SECTION_TEXT = "La bagarre commence. Vous avez votre épée, ils ont leurs haches."
 const SECTION_CHOICES = {
-  0: 'Combattre les monstres',
+  0: 'Combattre (4 combats)',
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

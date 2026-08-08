@@ -5,7 +5,7 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 19
 const SECTION_TEXT = "Ces deux créatures malfaisantes sont des LUTINS"
 const SECTION_CHOICES = {
-  0: 'Combattre les monstres',
+  0: 'Combattre (2 combats)',
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

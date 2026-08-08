@@ -323,56 +323,51 @@ export class GameEngine {
 
     // Si la section a un combat, on l'initialise (sans lancer de dés)
     if (section.combat && this.hero) {
-      // Mode lancer_de : ne pas initialiser le combat, attendre la sélection du monstre
+      // Mode lancer_de : ne pas initialiser le combat, attendre la sélection de phase
       if (section.combat.lancer_de) {
         this.combatState = null
       } else {
-        // Mode par défaut ou sequentiel : initialiser avec le premier monstre
-        let monstres = section.combat.monstres
-        
-        // En mode sequentiel, numéroter les monstres avec le même nom
-        if (section.combat.mode === 'sequentiel') {
-          monstres = this.combatModule.numberDuplicateMonsters(monstres)
-        }
-        
-        let monstre = monstres[0]
-        
-        // Applique les modifications de stats du monstre (ancien format string — rétrocompat)
-        if (this.nextCombatMonsterStatMods) {
-          monstre = this.combatModule.applyMonsterStatMods(monstre, this.nextCombatMonsterStatMods)
-          this.nextCombatMonsterStatMods = ''
-        }
+        // Initialise avec la première phase
+        const combatData = section.combat
 
-        // Applique les mods structurés (type "monstre_stat") en cherchant par id puis par __any__
-        monstre = this._applyPendingMonsterStatMods(monstre)
-        
-        // Charge les stats sauvegardées du monstre persistant s'il existe
-        if (monstre.id && monstre.persistant && this.hero.monstres_stats?.[monstre.id]) {
-          const savedStats = this.hero.monstres_stats[monstre.id]
-          monstre = { ...monstre, habilete: savedStats.habilete, endurance: savedStats.endurance }
-        } else if (monstre.id && !monstre.habilete && !monstre.endurance) {
-          // Si le monstre n'a pas de stats, chercher les stats initiales dans une autre section
-          const initialMonstre = this._findMonsterInitialStats(monstre.id)
-          if (initialMonstre) {
-            monstre = { ...monstre, habilete: initialMonstre.habilete, endurance: initialMonstre.endurance }
+        // Applique les mods sur le premier monstre de la première phase
+        let premiereMonstre = combatData.phases[0]?.monstres[0]
+        if (premiereMonstre) {
+          // Applique les modifications de stats du monstre (ancien format string — rétrocompat)
+          if (this.nextCombatMonsterStatMods) {
+            premiereMonstre = this.combatModule.applyMonsterStatMods(premiereMonstre, this.nextCombatMonsterStatMods)
+            this.nextCombatMonsterStatMods = ''
           }
+
+          // Applique les mods structurés (type "monstre_stat") en cherchant par id puis par __any__
+          premiereMonstre = this._applyPendingMonsterStatMods(premiereMonstre)
+
+          // Charge les stats sauvegardées du monstre persistant s'il existe
+          if (premiereMonstre.id && premiereMonstre.persistant && this.hero.monstres_stats?.[premiereMonstre.id]) {
+            const savedStats = this.hero.monstres_stats[premiereMonstre.id]
+            premiereMonstre = { ...premiereMonstre, habilete: savedStats.habilete, endurance: savedStats.endurance }
+          } else if (premiereMonstre.id && !premiereMonstre.habilete && !premiereMonstre.endurance) {
+            const initialMonstre = this._findMonsterInitialStats(premiereMonstre.id)
+            if (initialMonstre) {
+              premiereMonstre = { ...premiereMonstre, habilete: initialMonstre.habilete, endurance: initialMonstre.endurance }
+            }
+          }
+
+          // Reconstruire le combatData avec le monstre modifié
+          const phasesModifiees = [...combatData.phases]
+          phasesModifiees[0] = {
+            ...phasesModifiees[0],
+            monstres: [premiereMonstre, ...phasesModifiees[0].monstres.slice(1)],
+          }
+          const combatDataModifie = { ...combatData, phases: phasesModifiees }
+
+          this.combatState = this.combatModule.initCombat(
+            this.hero,
+            combatDataModifie,
+            this.adventure.regles.combat,
+            0,
+          )
         }
-        
-        const enemy = { 
-          nom: monstre.nom, 
-          habilete: monstre.habilete ?? 0, 
-          endurance: monstre.endurance ?? 0,
-          id: monstre.id,
-          statMods: (monstre as any)._statMods as Array<{ name: string; delta: number; raison?: string }> | undefined
-        }
-        this.combatState = this.combatResolver.initCombat(
-          this.hero, 
-          enemy, 
-          this.adventure.regles.combat,
-          section.combat.mode,
-          monstres,
-          section.combat
-        )
       }
     }
 
@@ -1061,6 +1056,22 @@ export class GameEngine {
         context: 'combat:hero',
       }
     }
+    if (phase.type === 'pending_secondaire_ennemi') {
+      return {
+        id: newRollId(),
+        label: `Lancer les dés — ${phase.secondaire.nom} (escorte)`,
+        formula: `${diceCount}d${diceSides}`,
+        context: 'combat:secondaire_ennemi',
+      }
+    }
+    if (phase.type === 'pending_secondaire_hero') {
+      return {
+        id: newRollId(),
+        label: `Lancer mes dés contre ${phase.secondaire.nom} (escorte)`,
+        formula: `${diceCount}d${diceSides}`,
+        context: 'combat:secondaire_hero',
+      }
+    }
     if (phase.type === 'pending_action') {
       const regle = GameEngineActions.getRegle(this.adventure, phase.action)
       if (regle?.type === 'test_stat' || regle?.type === 'composite') {
@@ -1077,8 +1088,7 @@ export class GameEngine {
   }
 
   /**
-   * Retourne le PendingRoll pour la sélection du monstre en mode "lancer_de".
-   * Appelé avant le premier combat si la section a mode: "lancer_de".
+   * Retourne le PendingRoll pour la sélection de phase via lancer_de.
    */
   getMonsterSelectionRoll(): PendingRoll | null {
     if (!this.adventure) return null
@@ -1090,15 +1100,15 @@ export class GameEngine {
     
     return {
       id: newRollId(),
-      label: 'Lancer un dé pour déterminer le monstre',
-      formula: combat.lancer_de.choix,
+      label: 'Lancer un dé pour déterminer le combat',
+      formula: combat.lancer_de.formule,
       context: 'monster_selection',
     }
   }
 
   /**
-   * Résout la sélection du monstre après le lancer de dés.
-   * Initialise le combat avec le monstre sélectionné.
+   * Résout la sélection de phase après le lancer de dés.
+   * Initialise le combat avec la phase dont la face correspond au résultat.
    */
   resolveMonsterSelection(rolls: number[]): void {
     if (!this.adventure || !this.hero) throw new Error('Pas de jeu en cours.')
@@ -1109,13 +1119,49 @@ export class GameEngine {
     if (!combat.lancer_de) throw new Error('Mode de combat invalide.')
     
     const diceResult = rolls.reduce((a, b) => a + b, 0)
-    const monstre = combat.monstres.find(m => m.face === diceResult)
+    const phaseIndex = combat.phases.findIndex(p => p.face === diceResult)
     
-    if (!monstre) throw new Error(`Aucun monstre pour le résultat ${diceResult}`)
+    if (phaseIndex === -1) throw new Error(`Aucune phase pour le résultat ${diceResult}`)
     
-    // Initialise le combat avec le monstre sélectionné
-    const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
-    this.combatState = this.combatResolver.initCombat(this.hero, enemy, this.adventure.regles.combat)
+    this.combatState = this.combatModule.initCombat(
+      this.hero,
+      combat,
+      this.adventure.regles.combat,
+      phaseIndex,
+    )
+  }
+
+  /**
+   * Phase escorte : le joueur choisit sa cible (index dans phase.monstres).
+   */
+  chooseEscorteTarget(targetIndex: number): void {
+    if (!this.combatState) throw new Error('Pas de combat en cours.')
+    this.combatState = this.combatModule.chooseEscorteTarget(this.combatState, targetIndex)
+  }
+
+  /**
+   * Phase escorte : jet du monstre secondaire N
+   */
+  resolveCombatSecondaireEnnemiRoll(rolls: number[]): void {
+    if (!this.combatState) throw new Error('Pas de combat en cours.')
+    this.combatState = this.combatModule.applySecondaireEnnemiRoll(this.combatState, rolls)
+  }
+
+  /**
+   * Phase escorte : jet héros vs le monstre secondaire N
+   */
+  resolveCombatSecondaireHeroRoll(rolls: number[]): void {
+    if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
+    this.combatState = this.combatModule.applySecondaireHeroRoll(
+      this.combatState, rolls, this.hero, this.adventure.regles.combat
+    )
+    // Synchronise la vie du héros si le round est finalisé
+    if (this.combatState.phase.type === 'round_result') {
+      const statVie = this.adventure.regles.combat.formule_vie
+      const current = this.hero.statistiques[statVie] ?? 0
+      const delta = this.combatState.heroVie - current
+      if (delta !== 0) this.applyStatDelta(statVie, delta, `combat escorte vs ${this.combatState.phase.round.enemyStatValue}`)
+    }
   }
 
   /**
@@ -1134,10 +1180,14 @@ export class GameEngine {
     this.combatState = this.combatResolver.applyHeroRoll(
       this.combatState, rolls, this.hero, this.adventure.regles.combat, this.combatState.combatData
     )
-    // Synchronise la vie du héros
-    if (this.combatState.phase.type === 'round_result') {
-      const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.formule_vie] ?? 0)
-      if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.formule_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
+    // Synchronise la vie du héros dès que le round principal est résolu
+    // (phase round_result, pending_defense, ou pending_secondaire_ennemi)
+    const phaseType = this.combatState.phase.type
+    if (phaseType === 'round_result' || phaseType === 'pending_defense' || phaseType === 'pending_secondaire_ennemi') {
+      const statVie = this.adventure.regles.combat.formule_vie
+      const current = this.hero.statistiques[statVie] ?? 0
+      const delta = this.combatState.heroVie - current
+      if (delta !== 0) this.applyStatDelta(statVie, delta, `combat vs ${this.combatState.enemy.nom}`)
     }
     
     // Sauvegarde les stats du monstre persistant après chaque round
@@ -1227,7 +1277,8 @@ export class GameEngine {
         this.victory = false
       } else if (this.adventure) {
         const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-        const sectionVictoire = section?.combat?.victoire
+        // Utilise la victoire résolue de la phase courante (surcharge possible par phase)
+        const sectionVictoire = this.combatState.combatData?.victoire ?? section?.combat?.victoire
         
         // Applique les effets de victoire
         if (sectionVictoire?.effets && this.hero) {
@@ -1378,10 +1429,12 @@ export class GameEngine {
     if (!this.adventure) return null
     
     for (const section of this.adventure.sections) {
-      if (section.combat?.monstres) {
-        for (const monstre of section.combat.monstres) {
-          if (monstre.id === monsterId && monstre.habilete !== undefined && monstre.endurance !== undefined) {
-            return { habilete: monstre.habilete, endurance: monstre.endurance }
+      if (section.combat?.phases) {
+        for (const phase of section.combat.phases) {
+          for (const monstre of phase.monstres) {
+            if (monstre.id === monsterId && monstre.habilete !== undefined && monstre.endurance !== undefined) {
+              return { habilete: monstre.habilete, endurance: monstre.endurance }
+            }
           }
         }
       }
@@ -1397,16 +1450,18 @@ export class GameEngine {
     if (!this.combatState || !this.hero || !this.adventure) return
     
     const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-    if (!section?.combat?.monstres) return
+    if (!section?.combat?.phases) return
     
-    for (const monstre of section.combat.monstres) {
-      if (monstre.id && monstre.persistant) {
-        if (!this.hero.monstres_stats) {
-          this.hero.monstres_stats = {}
-        }
-        this.hero.monstres_stats[monstre.id] = {
-          habilete: this.combatState.enemy.habilete,
-          endurance: Math.max(0, this.combatState.enemyVie)
+    for (const phase of section.combat.phases) {
+      for (const monstre of phase.monstres) {
+        if (monstre.id && monstre.persistant) {
+          if (!this.hero.monstres_stats) {
+            this.hero.monstres_stats = {}
+          }
+          this.hero.monstres_stats[monstre.id] = {
+            habilete: this.combatState.enemy.habilete,
+            endurance: Math.max(0, this.combatState.enemyVie)
+          }
         }
       }
     }

@@ -5,7 +5,7 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 39
 const SECTION_TEXT = "Votre adversaire est surpris que vous ayez disparu"
 const SECTION_CHOICES = {
-  0: 'Combattre'
+  0: 'Combattre SORCIER'
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

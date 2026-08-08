@@ -173,7 +173,6 @@ export interface MonstreData {
   nom: string
   habilete?: number          // optionnel si monstre persistant réutilisé
   endurance?: number         // optionnel si monstre persistant réutilisé
-  face?: number              // numéro du dé (pour mode "lancer_de")
   persistant?: boolean       // true si le monstre persiste entre les sections
 }
 
@@ -201,23 +200,56 @@ export interface CombatModifier {
 }
 
 export interface LancerDeData {
-  choix: string                              // formule de dés (ex: "1d6")
+  formule: string                            // formule de dés (ex: "1d6")
   resultats?: Record<string, string>         // pour defense : ex: {"2": "-1", "4": "-1", "6": "-2"}
-  formule?: string                           // pour action : alias de choix (rétrocompat)
+}
+
+/**
+ * Champs surchargeables au niveau d'une phase (écrasent les valeurs globales du combat).
+ * Tous optionnels — seuls les champs présents surchargent le global.
+ */
+export interface CombatPhaseOverrides {
+  attaque_heros?: string      // ex: "+1", "-1"
+  attaque_monstre?: string    // ex: "+2", "-1"
+  degats_heros?: string       // ex: "+1", "-1"
+  events?: CombatEvent[]
+  modifier?: CombatModifier[]
+  victoire?: {
+    section: number
+    effets?: Effet[]
+  }
+  fuite?: {
+    section: number
+    avant?: boolean
+  }
+  defense?: {
+    type: "lancer_de"
+    lancer_de: LancerDeData
+  }
+}
+
+/**
+ * Une phase de combat. Chaque combat est une liste ordonnée de phases.
+ * Les phases sont jouées dans l'ordre sauf si combat.lancer_de est défini
+ * (dans ce cas une seule phase est sélectionnée par tirage).
+ */
+export interface CombatPhaseData extends CombatPhaseOverrides {
+  face?: number               // face de dé pour sélection (uniquement si combat.lancer_de défini)
+  type?: "simple" | "sequentiel" | "groupe" | "escorte"  // optionnel si 1 monstre (défaut: "simple"), obligatoire si 2+
+  monstres: MonstreData[]
 }
 
 export interface CombatData {
-  monstres: MonstreData[]
-  mode?: "sequentiel" | "fusion"
-  lancer_de?: LancerDeData                  // mode lancer_de : sélection du monstre par dé
+  phases: CombatPhaseData[]
+  lancer_de?: LancerDeData                  // sélection de phase par lancer de dé
   attaque_heros?: string      // ex: "+1", "-1"
   attaque_monstre?: string    // ex: "+2", "-1"
   degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
-  events?: CombatEvent[]     // événements déclenchés pendant le combat
+  events?: CombatEvent[]      // événements déclenchés pendant tout le combat
   modifier?: CombatModifier[] // modifications à appliquer avant le combat
   victoire?: { 
     section: number
-    effets?: Effet[]         // effets appliqués après la victoire
+    effets?: Effet[]           // effets appliqués après la victoire
   }
   fuite?: { 
     section: number
@@ -549,11 +581,14 @@ export interface CombatResult {
 // ─── Machine à états du combat ────────────────────────────────────────────────
 
 export type CombatPhase =
-  | { type: 'pending_ennemi' }                          // attente jet ennemi
-  | { type: 'pending_hero' }                            // attente jet héros
+  | { type: 'pending_ennemi' }                          // attente jet ennemi principal
+  | { type: 'pending_hero' }                            // attente jet héros vs ennemi principal
+  | { type: 'pending_secondaire_ennemi'; secondaireIndex: number; secondaire: Enemy }  // attente jet secondaire N
+  | { type: 'pending_secondaire_hero'; secondaireIndex: number; secondaire: Enemy; rollSecondaire: number[] }  // attente jet héros vs secondaire N
   | { type: 'pending_defense'; defenseData: any }       // attente jet de défense
   | { type: 'pending_action'; action: string }          // attente jet d'une action (chance...)
   | { type: 'pending_navigation'; section: number }     // navigation vers une section (action déclenchée)
+  | { type: 'pending_target_choice'; monstres: MonstreData[] }  // attente choix de cible (phase escorte)
   | { type: 'round_result'; round: CombatRound; availableActions: string[] }  // résultat, actions dispo
   | { type: 'termine'; victoire: boolean; heroEnduranceFinale: number }
 
@@ -567,13 +602,22 @@ export interface CombatState {
   // dés du round courant (remplis au fur et à mesure)
   currentRollEnnemi?: number[]
   currentRollHero?: number[]
+  // Round en cours de construction pour la phase escorte
+  // (le round principal est résolu, on accumule les résultats secondaires)
+  pendingRound?: CombatRound & { secondairesRolls: Array<{ monstre: Enemy; rollEnnemi: number[]; fa: number; degats: number }> }
   // fuite en cours (section vers laquelle fuir après le résultat de l'action)
   fuiteEnCours?: number
-  // Mode sequentiel : liste des monstres restants
-  mode?: 'sequentiel' | 'fusion'
+  // Phases du combat
+  phases?: CombatPhaseData[]   // toutes les phases du combat
+  phaseIndex?: number           // index de la phase courante
+  // Données globales du combat (non surchargées) — pour recalculer resolvePhaseData à chaque transition
+  combatDataGlobal?: any
+  // Monstres dans la phase courante (pour mode sequentiel)
   monstresRestants?: MonstreData[]
   monstreIndex?: number
-  // Données de combat (bonus d'attaque, dégâts, défense)
+  // Phase escorte : monstres secondaires (ne peuvent pas être tués)
+  monstresSecondaires?: Enemy[]
+  // Données de combat résolues (fusion global + surcharges de la phase courante)
   combatData?: any
   // Tracking des events de combat
   compteurDegatsHeros?: number    // nombre de fois que le héros a subi des dégâts

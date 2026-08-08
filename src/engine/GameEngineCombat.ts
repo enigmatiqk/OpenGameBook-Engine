@@ -1,4 +1,4 @@
-import type { Hero, CombatState, MonstreData, CombatRules } from '../types'
+import type { Hero, CombatState, MonstreData, CombatRules, CombatData } from '../types'
 import { CombatResolver } from './CombatResolver'
 
 /**
@@ -12,17 +12,23 @@ export class GameEngineCombat {
   }
 
   /**
-   * Initialise un combat avec le premier monstre
+   * Initialise un combat à partir des données de combat (phases[]).
+   * phaseIndex permet de démarrer directement sur une phase donnée (ex: après tirage).
    */
   initCombat(
     hero: Hero,
-    monstres: MonstreData[],
+    combatData: CombatData,
     rules: CombatRules,
-    mode?: string
+    phaseIndex: number = 0,
   ): CombatState {
-    const monstre = monstres[0]
-    const enemy = { nom: monstre.nom, habilete: monstre.habilete ?? 0, endurance: monstre.endurance ?? 0 }
-    return this.combatResolver.initCombat(hero, enemy, rules, mode, monstres)
+    return this.combatResolver.initCombat(hero, combatData, rules, phaseIndex)
+  }
+
+  /**
+   * Phase escorte : le joueur choisit sa cible (index dans phase.monstres).
+   */
+  chooseEscorteTarget(state: CombatState, targetIndex: number): CombatState {
+    return this.combatResolver.chooseEscorteTarget(state, targetIndex)
   }
 
   /**
@@ -40,7 +46,7 @@ export class GameEngineCombat {
   }
 
   /**
-   * Passe au round suivant ou termine le combat
+   * Passe au round suivant, au monstre suivant, ou à la phase suivante
    */
   nextRound(state: CombatState): CombatState {
     return this.combatResolver.nextRound(state)
@@ -51,6 +57,20 @@ export class GameEngineCombat {
    */
   startAction(state: CombatState, action: string): CombatState {
     return this.combatResolver.startAction(state, action)
+  }
+
+  /**
+   * Phase escorte : enregistre le jet du monstre secondaire
+   */
+  applySecondaireEnnemiRoll(state: CombatState, rolls: number[]): CombatState {
+    return this.combatResolver.applySecondaireEnnemiRoll(state, rolls)
+  }
+
+  /**
+   * Phase escorte : applique le jet héros vs le secondaire
+   */
+  applySecondaireHeroRoll(state: CombatState, rolls: number[], hero: Hero, rules: CombatRules): CombatState {
+    return this.combatResolver.applySecondaireHeroRoll(state, rolls, hero, rules)
   }
 
   /**
@@ -79,7 +99,7 @@ export class GameEngineCombat {
   }
 
   /**
-   * Numéroté les monstres avec le même nom en mode sequentiel
+   * Numérote les monstres avec le même nom pour les distinguer à l'affichage
    */
   numberDuplicateMonsters(monstres: MonstreData[]): MonstreData[] {
     const counts: Record<string, number> = {}
@@ -88,7 +108,6 @@ export class GameEngineCombat {
       const nom = monstre.nom
       counts[nom] = (counts[nom] ?? 0) + 1
       
-      // Si ce nom apparaît plus d'une fois, ajouter le numéro
       const totalCount = monstres.filter(m => m.nom === nom).length
       if (totalCount > 1) {
         return { ...monstre, nom: `${nom} N°${counts[nom]}` }
@@ -99,7 +118,7 @@ export class GameEngineCombat {
   }
 
   /**
-   * Applique les modifications de stats du monstre
+   * Applique les modifications de stats du monstre (format "-3 endurance")
    */
   applyMonsterStatMods(monstre: MonstreData, mods: string): MonstreData {
     const m = mods.match(/^([+-]\d+)\s+(\w+)$/)

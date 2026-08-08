@@ -4,6 +4,9 @@ import { testSection, testChoiceButtons, testCombatStart, testCombatRound, testR
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 116
 const SECTION_TEXT = "Les deux FARFADETS ivres"
+const SECTION_CHOICES = {
+  0: 'Combattre (2 combats)',
+}
 
 // Premier FARFADET  : HABILETÉ 5, ENDURANCE 5
 // Deuxième FARFADET : HABILETÉ 4, ENDURANCE 5

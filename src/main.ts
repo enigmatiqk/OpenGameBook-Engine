@@ -364,22 +364,68 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params.has('monstre_endurance')) {
           const endurance = parseInt(params.get('monstre_endurance')!, 10)
           combatState.enemyVie = endurance
-          // Applique aussi à tous les monstres restants (combat séquentiel)
+          // Applique aussi à tous les monstres restants de la phase courante
           if (combatState.monstresRestants) {
             combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, endurance }))
+          }
+          // Applique aussi à toutes les phases suivantes
+          if (combatState.phases) {
+            combatState.phases = combatState.phases.map(p => ({
+              ...p,
+              monstres: p.monstres.map(m => ({ ...m, endurance }))
+            }))
+          }
+          // Met à jour aussi combatDataGlobal pour que les transitions de phase reconstruisent correctement
+          if (combatState.combatDataGlobal?.phases) {
+            combatState.combatDataGlobal = {
+              ...combatState.combatDataGlobal,
+              phases: combatState.combatDataGlobal.phases.map((p: any) => ({
+                ...p,
+                monstres: p.monstres.map((m: any) => ({ ...m, endurance }))
+              }))
+            }
           }
         }
         if (params.has('monstre_habilete')) {
           const habilete = parseInt(params.get('monstre_habilete')!, 10)
           combatState.enemy.habilete = habilete
-          // Applique aussi à tous les monstres restants (combat séquentiel)
+          // Applique aussi à tous les monstres restants de la phase courante
           if (combatState.monstresRestants) {
             combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, habilete }))
+          }
+          // Applique aussi à toutes les phases suivantes
+          if (combatState.phases) {
+            combatState.phases = combatState.phases.map(p => ({
+              ...p,
+              monstres: p.monstres.map(m => ({ ...m, habilete }))
+            }))
+          }
+          // Met à jour aussi combatDataGlobal
+          if (combatState.combatDataGlobal?.phases) {
+            combatState.combatDataGlobal = {
+              ...combatState.combatDataGlobal,
+              phases: combatState.combatDataGlobal.phases.map((p: any) => ({
+                ...p,
+                monstres: p.monstres.map((m: any) => ({ ...m, habilete }))
+              }))
+            }
           }
         }
       }
 
       launchGameView(engine)
+
+      // Affiche le numéro de section en overlay si ?show_section est présent
+      if (params.has('show_section')) {
+        const badge = document.createElement('div')
+        badge.id = 'debug-section-badge'
+        badge.style.cssText = 'position:fixed;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;z-index:9999;pointer-events:none;font-family:monospace;'
+        document.body.appendChild(badge)
+        const updateBadge = () => { badge.textContent = `§ ${engine.getCurrentSection()}` }
+        updateBadge()
+        const observer = new MutationObserver(updateBadge)
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-section'] })
+      }
     })()
   }
 
