@@ -527,7 +527,8 @@ export class CombatResolver {
       }
 
       // Fin de la phase courante → passer à la phase suivante
-      if (phases) {
+      // Sauf si le combat vient d'un tirage (lancer_de) : la phase tirée est la seule à jouer
+      if (phases && !state.combatDataGlobal?.lancer_de) {
         const nextPhaseIndex = phaseIndex + 1
         if (nextPhaseIndex < phases.length) {
           return this.transitionToPhase(state, nextPhaseIndex)

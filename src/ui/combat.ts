@@ -104,8 +104,8 @@ export class CombatView {
     const el = document.createElement('div')
     el.className = 'combat-phase'
 
-    // ── Indicateur de phase (si plusieurs phases) ────────────────────────────
-    if (state.phases && state.phases.length > 1) {
+    // ── Indicateur de phase (si plusieurs phases ET pas de tirage) ──────────
+    if (state.phases && state.phases.length > 1 && !state.combatDataGlobal?.lancer_de) {
       const phaseIdx = state.phaseIndex ?? 0
       const phaseIndicator = document.createElement('div')
       phaseIndicator.className = 'combat-phase-indicator'
