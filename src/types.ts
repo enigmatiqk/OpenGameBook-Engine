@@ -158,12 +158,18 @@ export interface ItemDropRules {
   section?: boolean   // si true, le bouton Jeter n'est visible que sur les sections avec item_dropable: true
 }
 
+export interface EquipementDropRules {
+  aventure?: boolean  // si true, le bouton Jeter équipement est toujours visible
+  section?: boolean   // si true, uniquement sur les sections avec equipement_dropable: true
+}
+
 export interface Regles {
   combat: CombatRules
   victoire: { sections: number[] }
   defaite: { endurance_min: number }
   item_drop?: ItemDropRules
-  [key: string]: Regle | CombatRules | { sections: number[] } | { endurance_min: number } | ItemDropRules | undefined
+  equipement_drop?: EquipementDropRules
+  [key: string]: Regle | CombatRules | { sections: number[] } | { endurance_min: number } | ItemDropRules | EquipementDropRules | undefined
 }
 
 // ─── Adventure content ────────────────────────────────────────────────────────
@@ -292,12 +298,18 @@ export interface EffetCombat {
   raison?: string
 }
 
+export interface EffetCombatDefense {
+  lancer_de: LancerDeData                          // formule de dés (ex: "1d6")
+  resultats: Record<string, { delta: number }>     // clé: valeur exacte ("6") ou plage ("1-3"), valeur: delta dégâts
+}
+
 export interface Effet {
   type: string
   stat?: EffetStat          // pour type "stat" et "stat_total"
   item?: EffetItem          // pour type "item"
   monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
   combat?: EffetCombat      // pour type "combat"
+  combat_defense?: EffetCombatDefense  // pour type "combat_defense" (sur item équipé)
   condition?: ChoiceCondition
   cout?: CoutEffet[]        // coût appliqué quand l'effet est déclenché (ex: consommer 1 repas)
   trigger?: string          // trigger moteur à activer après exécution (ex: "item_dropped")
@@ -306,7 +318,7 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'stat' | 'expr'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'stat' | 'expr'
   item_id?: string        // pour item_quantite
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -403,7 +415,8 @@ export interface Section {
   effets?: Effet[]
   choix: Choice[]
   end?: "victoire" | "defaite"
-  item_dropable?: boolean   // si true, le bouton Jeter est visible sur cette section (quand regles.item_drop.section: true)
+  item_dropable?: boolean          // si true, le bouton Jeter est visible sur les items d'inventaire
+  equipement_dropable?: boolean    // si true, le bouton Jeter est visible sur les items équipés (type équipable)
   /** Questions en suspens sur cette section (conversion/traduction du livre) */
   questions?: string[]
   /** Notes diverses sur cette section */

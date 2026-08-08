@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 8
@@ -26,7 +26,7 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -52,9 +52,7 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await page.click('button.combat-next-btn')
 
     // Vérifier qu'on a gagné et qu'on est à la section 273
-    await page.waitForSelector('[data-section="273"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="273"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 273)
   })
 
   test('Combat perdu avec habilete=5 et lance_de=6', async ({ page }) => {
@@ -101,9 +99,7 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await page.click('button.combat-fuite-direct-btn')
 
     // Vérifier qu'on a fuit et qu'on est à la section 189
-    await page.waitForSelector('[data-section="189"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="189"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 189)
   })
 
   test('Possibilité de fuir avec chance vers section 189', async ({ page }) => {
@@ -120,9 +116,7 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await page.click('button.combat-fuite-chance-btn')
 
     // Vérifier qu'on a fuit et qu'on est à la section 189
-    await page.waitForSelector('[data-section="189"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="189"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 189)
   })
 
   test('tester attaque_chance chanceux', async ({ page }) => {
@@ -147,8 +141,6 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await expect(EnemyEnduranceValue).toBe('2 ❤️')
 
     await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
-    // const sectionText = page.locator('.section-text')
-    // await expect(sectionText).toContainText(expectedText)
 
   })
 
@@ -174,8 +166,6 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await expect(EnemyEnduranceValue).toBe('5 ❤️')
 
     await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
-    // const sectionText = page.locator('.section-text')
-    // await expect(sectionText).toContainText(expectedText)
   })
 
   test('tester defense_chance chanceux', async ({ page }) => {
@@ -226,7 +216,5 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
     await expect(EnemyEnduranceValue).toBe('7 ❤️')
 
     await page.waitForSelector('.combat-next-btn', { timeout: 10000 })
-    // const sectionText = page.locator('.section-text')
-    // await expect(sectionText).toContainText(expectedText)
   })
 })

@@ -232,9 +232,15 @@ export class CombatView {
       // Contexte : round complet déjà résolu (on sait déjà qu'on a perdu)
       el.appendChild(this._buildCurrentRoundContext(state))
 
+      // Label : distingue défense globale vs combat_defense d'item équipé
       const formule = resolveLancerDeFormule(defenseData)
+      const isItemDefense = !defenseData.type  // defense globale a type:"lancer_de", item n'en a pas
+      const label = isItemDefense
+        ? `🛡️ Utiliser le bouclier — lancer ${formule}`
+        : `🎲 Lancer les dés de défense (${formule})`
+
       const { count, sides } = parseDiceFormula(formule)
-      el.appendChild(this._rollBtn(`🎲 Lancer les dés de défense (${formule})`, () => {
+      el.appendChild(this._rollBtn(label, () => {
         const rolls = rollDice(count, sides)
         this.engine.resolveCombatDefenseRoll(rolls)
         this._render()

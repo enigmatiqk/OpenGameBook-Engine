@@ -99,6 +99,7 @@ export class InventaireView {
 
       const inventoryItems = getInventaireItems(adventure, currentHero)
       const dropAllowed = engine.isDropAllowed()
+      const equipDropAllowed = engine.isEquipementDropAllowed()
 
       for (let i = 0; i < inventoryItems.length; i++) {
         const item = inventoryItems[i]
@@ -148,7 +149,9 @@ export class InventaireView {
           }
 
           // Bouton Jeter (icône seulement)
-          if (dropAllowed) {
+          // Visible si : drop inventaire autorisé, OU drop équipement autorisé ET item équipable (a un type)
+          const showDrop = dropAllowed || (equipDropAllowed && !!item.type)
+          if (showDrop) {
             const dropBtn = document.createElement('button')
             dropBtn.className = 'inv-drop-btn'
             dropBtn.type = 'button'
@@ -208,7 +211,8 @@ export class InventaireView {
     
     const inventoryItems = getInventaireItems(adventure, hero)
     const dropAllowed = _engine.isDropAllowed()
-    
+    const equipDropAllowed = _engine.isEquipementDropAllowed()
+
     if (inventoryItems.length > 0) {
       content += '<ul class="inventory-list">'
       for (const item of inventoryItems) {
@@ -217,7 +221,8 @@ export class InventaireView {
         } else {
           const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
           const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${escAttr(item.id)}">⚔️</button>` : ''
-          const dropBtn = dropAllowed ? `<button class="btn-drop-modal" data-item-id="${escAttr(item.id)}">🗑️ Jeter</button>` : ''
+          const showDrop = dropAllowed || (equipDropAllowed && !!item.type)
+          const dropBtn = showDrop ? `<button class="btn-drop-modal" data-item-id="${escAttr(item.id)}">🗑️ Jeter</button>` : ''
           content += `<li>${escHtml(item.label)}${qty} ${equipBtn}${dropBtn}</li>`
         }
       }

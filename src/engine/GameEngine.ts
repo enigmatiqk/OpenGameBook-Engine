@@ -1347,7 +1347,13 @@ export class GameEngine {
           this._applyStatDeltaWithDebug(statName, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
         }
       } else if (effet.type === 'item' && effet.item) {
-        applyItemEffect(effet.item, this.hero)
+        // Si l'effet item ressemble à un ItemGain (a label, type, effets...), utiliser addItemGain
+        const effetItem = effet.item as any
+        if (effetItem.label && this.hero && this.adventure) {
+          GameEngineHero.addItemGain(this.hero, effetItem, this.adventure.personnage.emplacements_equipement ?? {})
+        } else {
+          applyItemEffect(effet.item, this.hero)
+        }
       } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
         const ms = effet.monstre_stat
         const key = ms.monstre_id || '__any__'
@@ -1548,6 +1554,45 @@ export class GameEngine {
     if (itemDrop.section) {
       const section = this.adventure.sections.find(s => s.numero === this.currentSection)
       return section?.item_dropable === true
+    }
+    return false
+  }
+
+  /**
+   * Déséquipe un item équipé et le supprime (drop équipement).
+   * Déclenche le trigger "equipement_dropped".
+   */
+  dropEquippedItem(slotName: string): { success: boolean; message: string } {
+    if (!this.hero || !this.adventure) return { success: false, message: 'Pas de héros actif' }
+
+    const item = this.hero.equipement[slotName]
+    if (!item) return { success: false, message: 'Aucun item dans ce slot' }
+
+    // Déséquipe et supprime sans remettre en inventaire
+    const label = item.label
+    GameEngineHero.unequipItem(this.hero, slotName)
+
+    // Retirer l'item de l'inventaire s'il y a été remis par unequipItem
+    const idx = this.hero.inventaire.findIndex(i => typeof i !== 'string' && i.id === item.id && !i.equipe)
+    if (idx !== -1) {
+      this.hero.inventaire.splice(idx, 1)
+    }
+
+    this.navigation.recordEquipementDrop()
+    return { success: true, message: `${label} jeté` }
+  }
+
+  /**
+   * Indique si le bouton Jeter équipement doit être affiché pour la section courante.
+   */
+  isEquipementDropAllowed(): boolean {
+    if (!this.adventure) return false
+    const equipDrop = this.adventure.regles.equipement_drop as { aventure?: boolean; section?: boolean } | undefined
+    if (!equipDrop) return false
+    if (equipDrop.aventure) return true
+    if (equipDrop.section) {
+      const section = this.adventure.sections.find(s => s.numero === this.currentSection)
+      return section?.equipement_dropable === true
     }
     return false
   }

@@ -63,6 +63,13 @@ export class GameEngineNavigation {
   }
 
   /**
+   * Active le trigger "equipement_dropped"
+   */
+  recordEquipementDrop(): void {
+    this.recordTrigger('equipement_dropped')
+  }
+
+  /**
    * Enregistre le résultat d'une action
    */
   recordActionResult(action: string, resultat: string): void {
@@ -234,6 +241,13 @@ export class GameEngineNavigation {
       if (hasDroppableInInv || hasEquipped) {
         conditionOk = false
         raison = 'Le héros a encore des items à jeter'
+      }
+    } else if (cond.type === 'no_droppable_equip') {
+      // Vrai si le héros n'a aucun item équipé (rien à abandonner)
+      const hasEquipped = Object.keys(hero.equipement).length > 0
+      if (hasEquipped) {
+        conditionOk = false
+        raison = 'Le héros a encore des équipements à abandonner'
       }
     }
 

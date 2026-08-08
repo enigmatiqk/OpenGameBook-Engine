@@ -582,7 +582,7 @@ export class GameView {
     content += InventaireView.buildInventorySection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s), this.engine)
 
     // Section Équipement (droite)
-    content += EquipementView.buildEquipmentSection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s))
+    content += EquipementView.buildEquipmentSection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s), this.engine.isEquipementDropAllowed())
 
     content += '</div>' // ferme hero-layout
 
@@ -636,9 +636,14 @@ export class GameView {
     EquipementView.attachUnequipmentListeners(overlay, this.engine, () => {
       close()
       this._showHeroModal() // Rouvrir la modal rafraîchie
+    })
+
+    EquipementView.attachEquipmentDropListeners(overlay, this.engine, () => {
+      close()
+      this._showHeroModal() // Rouvrir la modal rafraîchie
       this._render() // Rafraîchir la page principale
     })
-    
+
     document.body.appendChild(overlay)
   }
 

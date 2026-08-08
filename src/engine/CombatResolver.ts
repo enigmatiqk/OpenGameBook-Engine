@@ -64,6 +64,41 @@ export function resolveLancerDeFormule(data: { formule?: string; choix?: string 
 }
 
 /**
+ * Résout la valeur dans un tableau de résultats indexé par valeur exacte ou plage ("1-3").
+ * Retourne l'entrée dont la clé correspond au résultat du dé.
+ */
+export function resolveResultatDe<T>(resultats: Record<string, T>, diceResult: number): T | undefined {
+  // Cherche d'abord la valeur exacte
+  if (resultats[diceResult.toString()] !== undefined) {
+    return resultats[diceResult.toString()]
+  }
+  // Cherche dans les plages "min-max"
+  for (const key of Object.keys(resultats)) {
+    const m = key.match(/^(\d+)-(\d+)$/)
+    if (m) {
+      const min = parseInt(m[1], 10)
+      const max = parseInt(m[2], 10)
+      if (diceResult >= min && diceResult <= max) return resultats[key]
+    }
+  }
+  return undefined
+}
+
+/**
+ * Résout la valeur dans un LancerDeData.resultats (format string delta "-1" ou objet { delta }).
+ * Retourne le delta numérique, ou 0 si pas de résultat.
+ */
+export function resolveDeltaResultat(resultats: Record<string, string | { delta: number }>, diceResult: number): number {
+  const entry = resolveResultatDe(resultats, diceResult)
+  if (entry === undefined) return 0
+  if (typeof entry === 'string') {
+    const m = entry.match(/^([+-]\d+)$/)
+    return m ? parseInt(m[1], 10) : 0
+  }
+  return entry.delta ?? 0
+}
+
+/**
  * Fusionne les données globales du combat avec les surcharges de la phase courante.
  * Les clés présentes dans la phase écrasent les valeurs globales.
  */
@@ -97,6 +132,25 @@ function buildEnemy(monstre: MonstreData, statMods?: Array<{ name: string; delta
     }
   }
   return { nom: monstre.nom, habilete, endurance, id: monstre.id, statMods }
+}
+
+/**
+ * Cherche dans les items équipés du héros un effet de type "combat_defense".
+ * Retourne les données du lancer_de de l'effet, ou null si aucun item n'en a.
+ */
+function findItemCombatDefense(hero: Hero): { formule?: string; choix?: string; resultats: Record<string, any> } | null {
+  for (const item of Object.values(hero.equipement)) {
+    if (!item.effets) continue
+    for (const effet of item.effets) {
+      if (effet.type === 'combat_defense' && effet.combat_defense) {
+        return {
+          ...effet.combat_defense.lancer_de,
+          resultats: effet.combat_defense.resultats,
+        }
+      }
+    }
+  }
+  return null
 }
 
 export class CombatResolver {
@@ -295,6 +349,14 @@ export class CombatResolver {
     }
 
     // ── Pas de secondaires : finaliser le round directement ─────────────────
+    // Priorité défense : 1) defense globale du combat, 2) combat_defense sur item équipé
+    if (!defenseRollNeeded && cible === 'hero') {
+      const itemDefense = findItemCombatDefense(hero)
+      if (itemDefense) {
+        defenseRollNeeded = true
+        defenseData = itemDefense
+      }
+    }
     return this._finalizeRound(newState, rules, defenseRollNeeded, defenseData)
   }
 
@@ -362,10 +424,14 @@ export class CombatResolver {
     }
 
     // Tous les secondaires traités → finaliser le round
-    // Récupérer les infos de défense du round partiel
-    const defenseRollNeeded = !!(updatedRound as any).defenseRollNeeded
-    const defenseData = (updatedRound as any).defenseData ?? null
-    return this._finalizeRound({ ...newState, pendingRound: updatedRound }, rules, defenseRollNeeded, defenseData)
+    // Vérifier aussi combat_defense sur item équipé
+    let finalDefenseRollNeeded = !!(updatedRound as any).defenseRollNeeded
+    let finalDefenseData = (updatedRound as any).defenseData ?? null
+    if (!finalDefenseRollNeeded) {
+      const itemDefense = findItemCombatDefense(hero)
+      if (itemDefense) { finalDefenseRollNeeded = true; finalDefenseData = itemDefense }
+    }
+    return this._finalizeRound({ ...newState, pendingRound: updatedRound }, rules, finalDefenseRollNeeded, finalDefenseData)
   }
 
   /**
@@ -630,6 +696,8 @@ export class CombatResolver {
 
   /**
    * Applique le modificateur de défense après un lancer de dés.
+   * Supporte le format string ("-1") et le format objet ({ delta: -1 }),
+   * ainsi que les plages de résultats ("1-3").
    */
   applyDefenseRoll(state: CombatState, rolls: number[], rules: CombatRules): CombatState {
     if (state.phase.type !== 'pending_defense') throw new Error('Phase invalide')
@@ -643,13 +711,7 @@ export class CombatResolver {
     const diceRolls = rolls.slice(0, diceFormula.count)
     const diceResult = diceRolls.reduce((a, b) => a + b, 0)
 
-    const modifier = defenseData.resultats?.[diceResult.toString()]
-    
-    let deltaModifier = 0
-    if (modifier) {
-      const m = modifier.match(/^([+-]\d+)$/)
-      if (m) deltaModifier = parseInt(m[1], 10)
-    }
+    const deltaModifier = resolveDeltaResultat(defenseData.resultats ?? {}, diceResult)
 
     const newDegats = Math.max(0, lastRound.degats + deltaModifier)
     lastRound.degats = newDegats
