@@ -249,6 +249,19 @@ export class GameEngineNavigation {
         conditionOk = false
         raison = 'Le héros a encore des équipements à abandonner'
       }
+    } else if (cond.type === 'monstre_mort') {
+      // Vrai si le monstre persistant identifié par id a endurance <= 0 dans monstres_stats
+      const monstreId = cond.id
+      if (!monstreId) {
+        conditionOk = false
+        raison = 'Condition monstre_mort invalide : propriété "id" manquante'
+      } else {
+        const savedStats = hero.monstres_stats?.[monstreId]
+        if (!savedStats || savedStats.endurance > 0) {
+          conditionOk = false
+          raison = 'Ce monstre est encore en vie'
+        }
+      }
     }
 
     // Applique la négation si `not` est true

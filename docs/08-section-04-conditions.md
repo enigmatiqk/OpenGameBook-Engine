@@ -218,6 +218,83 @@ Un trigger peut être activé de trois façons :
 
 ---
 
+## `monstre_mort` — monstre persistant tué
+
+Vérifie qu'un monstre persistant (identifié par son `id`) a déjà été tué lors d'un combat précédent dans cette aventure. Un monstre est considéré mort si son endurance sauvegardée est ≤ 0 dans `hero.monstres_stats`.
+
+**Requiert que le monstre soit déclaré avec `persistant: true` et un `id`.**
+
+```json
+{
+  "type": "monstre_mort",
+  "id":   "minotaure"
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `id` | ★ | ID du monstre persistant à vérifier |
+| `not` | — | Si `true`, inverse la condition (vrai si le monstre est **encore en vie**) |
+
+**Exemple — masquer le combat si le monstre est déjà mort :**
+```json
+"combat": {
+  "condition": { "type": "monstre_mort", "id": "minotaure", "not": true },
+  ...
+}
+```
+
+**Exemple — proposer un raccourci si le monstre est mort :**
+```json
+{
+  "texte":     "La pièce est vide, sortez et allez au 54",
+  "section":   54,
+  "condition": { "type": "monstre_mort", "id": "minotaure" }
+}
+```
+
+**Exemple complet — section 179 (Défis Fantastiques) :**
+
+Le Minotaure est persistant. À la deuxième visite, le combat est masqué et un choix direct vers la section 54 est disponible.
+
+```json
+{
+  "numero": 179,
+  "combat": {
+    "phases": [
+      {
+        "monstres": [
+          { "id": "minotaure", "nom": "MINOTAURE", "habilete": 9, "endurance": 9, "persistant": true }
+        ]
+      }
+    ],
+    "condition": { "type": "monstre_mort", "id": "minotaure", "not": true },
+    "victoire": { "section": 258 }
+  },
+  "choix": [
+    {
+      "texte":     "Le monstre est déjà mort, sortez et rendez-vous au 54",
+      "section":   54,
+      "condition": { "type": "monstre_mort", "id": "minotaure" }
+    }
+  ]
+}
+```
+
+---
+
+## `no_droppable_equip` — aucun équipement à jeter
+
+Vérifie que le héros n'a **aucun item équipé**. Utilisé comme fallback quand aucun équipement n'est disponible à jeter (section avec `equipement_dropable: true`).
+
+```json
+{ "type": "no_droppable_equip" }
+```
+
+Aucun champ supplémentaire.
+
+---
+
 ## `no_droppable_item` — aucun item dropable
 
 Vérifie que le héros n'a **aucun item qu'il pourrait jeter** :
@@ -306,3 +383,5 @@ Illustre l'utilisation combinée de `item_dropped`, `no_droppable_item`, et du `
 | `combat_degats_heros` | choix | Dégâts reçus par le héros dans une plage |
 | `trigger` | choix | Un trigger nommé a été activé dans la section courante |
 | `no_droppable_item` | effet | Le héros n'a aucun item à jeter |
+| `no_droppable_equip` | effet | Le héros n'a aucun équipement à jeter |
+| `monstre_mort` | choix, combat | Un monstre persistant a déjà été tué |

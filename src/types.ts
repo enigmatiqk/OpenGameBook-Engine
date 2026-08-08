@@ -318,7 +318,7 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'stat' | 'expr'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr'
   item_id?: string        // pour item_quantite
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -328,7 +328,7 @@ export interface ChoiceCondition {
   section?: number        // pour retour : section spécifique depuis laquelle on revient (optionnel)
   not?: boolean           // pour retour : inverse la condition (true = "pas un retour")
   action?: string         // pour action_resolved : nom de l'action
-  id?: string             // pour combat_degats_monstre/heros : id du monstre persistant (optionnel)
+  id?: string             // pour combat_degats_monstre/heros : id du monstre persistant (optionnel) ; pour monstre_mort : id du monstre
   degats_min?: number     // pour combat_degats_monstre/heros : dégâts minimum
   degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum
   trigger?: string        // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
