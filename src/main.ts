@@ -415,16 +415,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       launchGameView(engine)
 
-      // Affiche le numéro de section en overlay si ?show_section est présent
+      // Affiche le numéro de section en badge (haut droite) si ?show_section est présent
       if (params.has('show_section')) {
         const badge = document.createElement('div')
         badge.id = 'debug-section-badge'
-        badge.style.cssText = 'position:fixed;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;z-index:9999;pointer-events:none;font-family:monospace;'
+        badge.style.cssText = 'position:fixed;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;z-index:9999;pointer-events:none;font-family:monospace;'
         document.body.appendChild(badge)
-        const updateBadge = () => { badge.textContent = `§ ${engine.getCurrentSection()}` }
-        updateBadge()
-        const observer = new MutationObserver(updateBadge)
-        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-section'] })
+        // Mise à jour légère via setInterval — pas de MutationObserver
+        badge.textContent = `§ ${engine.getCurrentSection()}`
+        setInterval(() => {
+          const s = engine.getCurrentSection()
+          if (badge.textContent !== `§ ${s}`) badge.textContent = `§ ${s}`
+        }, 300)
       }
     })()
   }

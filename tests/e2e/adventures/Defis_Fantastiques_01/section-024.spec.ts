@@ -68,8 +68,8 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('tester condition combat_victoire', async ({ page }) => {
-    // Avec combat_victoire=1, seul "J'ai vaincu la créature" est disponible
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&combat_victoire=1`)
+    // Avec combat_victoire, seul "J'ai vaincu la créature" est disponible
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&combat_victoire`)
     await page.waitForSelector('.section-text')
 
     // Les boutons conditionnels "non victoire" doivent être masqués/désactivés

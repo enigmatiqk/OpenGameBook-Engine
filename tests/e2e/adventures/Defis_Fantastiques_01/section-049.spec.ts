@@ -33,7 +33,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('perte d\'endurance', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
 
     const enduranceValue = await page.locator('#stat-endurance').textContent()

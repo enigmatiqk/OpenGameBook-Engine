@@ -35,7 +35,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   // ── Manger un repas ───────────────────────────────────────────────────────
 
   test('Manger un repas augmente l\'endurance de 4', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=repas&item_count=1&endurance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=repas&item_count=1&endurance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)

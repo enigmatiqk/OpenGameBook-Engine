@@ -33,7 +33,7 @@ test.describe('Section 011 - Les Outils Magiques', () => {
 
   test('Vérifier l\'augmentation de stat', async ({ page }) => {
     // Charger avec endurance initiale de 10 et ignore_stat_limit pour dépasser le max
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&endurance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&endurance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
     
     // Vérifier que l'endurance a augmenté de 2 (10 + 2 = 12)

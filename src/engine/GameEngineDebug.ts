@@ -75,9 +75,9 @@ export function initDebugConditions(): DebugConditions {
   const params = new URLSearchParams(window.location.search)
   const conditions: DebugConditions = {}
   
-  // combat_victoire=1
+  // combat_victoire (présence seule)
   if (params.has('combat_victoire')) {
-    conditions.combat_victoire = params.get('combat_victoire') === '1'
+    conditions.combat_victoire = true
   }
   
   // action_resolved=tenter_chance
@@ -96,9 +96,9 @@ export function initDebugConditions(): DebugConditions {
     }
   }
   
-  // ignore_stat_limit=1
+  // ignore_stat_limit (présence seule)
   if (params.has('ignore_stat_limit')) {
-    conditions.ignore_stat_limit = params.get('ignore_stat_limit') === '1'
+    conditions.ignore_stat_limit = true
   }
   
   return conditions

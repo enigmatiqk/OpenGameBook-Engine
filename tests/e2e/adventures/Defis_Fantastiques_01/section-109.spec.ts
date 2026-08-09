@@ -19,7 +19,7 @@ const SECTION_CHOICES = {
 const STATS_PARAMS =
   'habilete=5&endurance=6&chance=7' +
   '&habilete_start=20&endurance_start=20&chance_start=20' +
-  '&ignore_stat_limit=1'
+  '&ignore_stat_limit'
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
@@ -76,7 +76,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.goto(
       `/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}` +
       `&habilete=5&endurance=25&chance=7` +
-      `&habilete_start=20&endurance_start=20&chance_start=20&ignore_stat_limit=1`
+      `&habilete_start=20&endurance_start=20&chance_start=20&ignore_stat_limit`
     )
     await page.waitForSelector('.section-text')
 

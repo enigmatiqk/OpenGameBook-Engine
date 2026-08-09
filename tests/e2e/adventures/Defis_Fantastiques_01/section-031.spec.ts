@@ -31,7 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('gain d\'habileté avec pierre précieuse', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit=1&item_id=pierre_oeil_cyclope&item_count=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit&item_id=pierre_oeil_cyclope&item_count=1`)
     await page.waitForSelector('.section-text')
 
     const habileValue = await page.locator('#stat-habilete').textContent()
@@ -39,7 +39,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('pas de gain d\'habileté sans pierre précieuse', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit=1&item_id=pierre_oeil_cyclope&item_count=0`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit&item_id=pierre_oeil_cyclope&item_count=0`)
     await page.waitForSelector('.section-text')
 
     const habileValue = await page.locator('#stat-habilete').textContent()

@@ -115,7 +115,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   test.describe('Victoire — lance_de=6, lance_de2=1', () => {
 
     test.beforeEach(async ({ page }) => {
-      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&habilete=5&endurance=5&chance=5&ignore_stat_limit=1&lance_de=6&lance_de2=1`)
+      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&habilete=5&endurance=5&chance=5&ignore_stat_limit&lance_de=6&lance_de2=1`)
       await page.waitForSelector('.section-text')
     })
 

@@ -32,7 +32,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Si réussi - section 155', async ({ page }) => {
     // habilete=10, lance_de=4 → total dés = 8 ≤ 10 → succès → section 155
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&habilete=10&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&habilete=10&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click('.choices-list button:has-text("Enfoncer la porte")')
@@ -46,7 +46,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Si échoué - section 300 avec -1 endurance', async ({ page }) => {
     // habilete=5, endurance=10, lance_de=4 → total dés = 8 > 5 → échec → section 300, endurance passe à 9
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&habilete=5&endurance=10&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&habilete=5&endurance=10&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click('.choices-list button:has-text("Enfoncer la porte")')

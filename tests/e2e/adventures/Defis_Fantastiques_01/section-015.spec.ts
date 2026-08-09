@@ -32,7 +32,7 @@ test.describe('Section 015', () => {
 
   test('Vérifier l\'augmentation de la stat habileté', async ({ page }) => {
     // Charger avec endurance initiale de 10 et ignore_stat_limit pour dépasser le max
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
 
     // Vérifier que l'habilete a augmenté de 1 (10 + 1 = 11)
@@ -42,7 +42,7 @@ test.describe('Section 015', () => {
 
   test('manger repas', async ({ page }) => {
     // Charger avec endurance initiale de 10 et ignore_stat_limit pour dépasser le max
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=repas&item_count=1&endurance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=repas&item_count=1&endurance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
     
     // Vérifier que l'endurance a augmenté de 4

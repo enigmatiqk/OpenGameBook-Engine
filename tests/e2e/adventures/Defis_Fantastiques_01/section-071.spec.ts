@@ -31,7 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Si réussi - section 301', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&chance=10&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&chance=10&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
@@ -43,7 +43,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Si échoué - section 248', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&chance=5&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&chance=5&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)

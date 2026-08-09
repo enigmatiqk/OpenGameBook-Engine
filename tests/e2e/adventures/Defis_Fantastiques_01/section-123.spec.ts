@@ -31,7 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
     // dé=1 à 3
   test('lance de 1', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&lance_de=1&chance=10&ignore_stat_limit=1`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&lance_de=1&chance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)

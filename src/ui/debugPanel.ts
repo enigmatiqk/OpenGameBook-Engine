@@ -72,6 +72,7 @@ interface DebugParams {
   action_resolved:    string
   item_quantite:      string
   ignore_stat_limit:  boolean
+  show_section:       boolean
 }
 
 function parseCurrentParams(): DebugParams {
@@ -104,10 +105,11 @@ function parseCurrentParams(): DebugParams {
     equip3:            p.get('equip3')             ?? '',
     lance_de:          p.get('lance_de')           ?? '',
     lance_de2:         p.get('lance_de2')          ?? '',
-    combat_victoire:   p.get('combat_victoire')   === '1',
+    combat_victoire:   p.has('combat_victoire'),
     action_resolved:   p.get('action_resolved')   ?? '',
     item_quantite:     p.get('item_quantite')     ?? '',
-    ignore_stat_limit: p.get('ignore_stat_limit') === '1',
+    ignore_stat_limit: p.has('ignore_stat_limit'),
+    show_section:      p.has('show_section'),
   }
 }
 
@@ -142,12 +144,14 @@ function buildUrl(params: DebugParams): string {
   set('equip3',             params.equip3)
   set('lance_de',           params.lance_de)
   set('lance_de2',          params.lance_de2)
-  if (params.combat_victoire)   p.set('combat_victoire',   '1')
+  if (params.combat_victoire)   p.set('combat_victoire',   '__FLAG__')
   if (params.action_resolved.trim()) p.set('action_resolved', params.action_resolved.trim())
   set('item_quantite',      params.item_quantite)
-  if (params.ignore_stat_limit) p.set('ignore_stat_limit', '1')
+  if (params.ignore_stat_limit) p.set('ignore_stat_limit', '__FLAG__')
+  if (params.show_section)      p.set('show_section',      '__FLAG__')
 
   const qs = p.toString()
+    .replace(/=__FLAG__/g, '')  // flags sans valeur : &param au lieu de &param=__FLAG__
   return qs ? `${window.location.pathname}?${qs}` : window.location.pathname
 }
 
@@ -496,6 +500,19 @@ export function showDebugPanel(): void {
   islHint.textContent = 'ignore les limites de stats'
   islRow.append(islLabel, islCb, islHint)
   secDev.appendChild(islRow)
+
+  // show_section checkbox
+  const ssRow = document.createElement('div')
+  ssRow.setAttribute('style', S.row)
+  const ssLabel = document.createElement('span')
+  ssLabel.setAttribute('style', S.label)
+  ssLabel.textContent = 'show_section'
+  const ssCb = makeCheckbox(params, 'show_section', updatePreview)
+  const ssHint = document.createElement('span')
+  ssHint.setAttribute('style', S.hint)
+  ssHint.textContent = 'affiche le n° de section en haut à droite'
+  ssRow.append(ssLabel, ssCb, ssHint)
+  secDev.appendChild(ssRow)
 
   panel.appendChild(secDev)
 

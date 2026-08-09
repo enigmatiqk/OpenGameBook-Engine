@@ -39,7 +39,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   // ── Chance réussie → section 131 ─────────────────────────────────────────
   test('Chance réussie → section 131', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&chance=50&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&chance=50&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
@@ -58,7 +58,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   // ── Chance échouée → section 20 ──────────────────────────────────────────
   test('Chance échouée → section 20', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&chance=1&lance_de=4`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&chance=1&lance_de=4`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
@@ -73,7 +73,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   // ── Gain pièces d'or (2d6 forcé lance_de=3 → 3+3=6) ─────────────────────
   test('Chance réussie → gain 6 pièces d\'or (lance_de=3)', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit=1&chance=50&lance_de=3`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&chance=50&lance_de=3`)
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[0]}")`)
