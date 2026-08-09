@@ -55,6 +55,9 @@ export class GameEngine {
   // Mise courante saisie par le joueur pour un duel_de (avant débit)
   private currentMiseDuel: number = 0
 
+  // Paramètres transmis à la section courante via section_params du choix entrant
+  private currentSectionParams: Record<string, number> = {}
+
   readonly timer: PlayTimer
   private combatResolver: CombatResolver
   private saveStore: SaveStore
@@ -283,10 +286,29 @@ export class GameEngine {
     if (save.pendingMonsterStatMods) {
       this.pendingMonsterStatMods = { ...save.pendingMonsterStatMods }
     }
+    // Restaurer les paramètres de section
+    this.currentSectionParams = save.currentSectionParams ? { ...save.currentSectionParams } : {}
   }
 
-  navigateTo(sectionNumber: number): Section {
+  /**
+   * Résout une référence de section vers un numéro effectif.
+   * - number : retourné tel quel (sauf -1 = section précédente)
+   * - { param: "nom" } : lit la valeur dans currentSectionParams
+   */
+  resolveSection(ref: import('../types').SectionRef): number {
+    if (typeof ref === 'number') return ref
+    const val = this.currentSectionParams[ref.param]
+    if (val === undefined) throw new Error(`section_param "${ref.param}" non défini pour cette section`)
+    return val
+  }
+
+  navigateTo(sectionRef: import('../types').SectionRef, sectionParams?: Record<string, number>): Section {
     if (!this.adventure) throw new Error('No adventure loaded.')
+
+    const sectionNumber = this.resolveSection(sectionRef)
+
+    // Stocke les paramètres transmis à la section de destination (écrase les anciens)
+    this.currentSectionParams = sectionParams ?? {}
 
     // section: -1 = retour à la section précédente
     const target = sectionNumber === -1
@@ -459,7 +481,7 @@ export class GameEngine {
     if (validChoice.local) {
       return section
     } else if (choice.section !== undefined) {
-      return this.navigateTo(choice.section)
+      return this.navigateTo(choice.section, choice.section_params)
     } else {
       throw new Error(`Choix "${choice.texte}" n'a pas de section définie`)
     }
@@ -676,9 +698,10 @@ export class GameEngine {
     }
 
     // Navigation
-    const targetSection = succes
+    const rawTargetSection = succes
       ? (choice as any).si_reussi?.choix?.section
       : (choice as any).si_echoue?.choix?.section
+    const targetSection = rawTargetSection !== undefined ? this.resolveSection(rawTargetSection) : undefined
 
     if (targetSection !== undefined) {
       return this.navigateTo(targetSection)
@@ -732,14 +755,14 @@ export class GameEngine {
           // Plage (ex: "1-5")
           const [min, max] = key.split('-').map(Number)
           if (total >= min && total <= max) {
-            targetSection = (value as any).section
+            targetSection = (value as any).section !== undefined ? this.resolveSection((value as any).section) : undefined
             targetEffets = (value as any).effets
             break
           }
         } else {
           // Valeur unique
           if (total === Number(key)) {
-            targetSection = (value as any).section
+            targetSection = (value as any).section !== undefined ? this.resolveSection((value as any).section) : undefined
             targetEffets = (value as any).effets
             break
           }
@@ -800,7 +823,7 @@ export class GameEngine {
             GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
           }
         }
-        const targetSection = si_reussi?.choix?.section
+        const targetSection = si_reussi?.choix?.section !== undefined ? this.resolveSection(si_reussi.choix.section) : undefined
         if (!targetSection) throw new Error('si_reussi avec delta_de doit avoir choix.section')
         return {
           pendingGainRoll: {
@@ -840,7 +863,7 @@ export class GameEngine {
             GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
           }
         }
-        const targetSection = si_echoue?.choix?.section
+        const targetSection = si_echoue?.choix?.section !== undefined ? this.resolveSection(si_echoue.choix.section) : undefined
         if (!targetSection) throw new Error('si_echoue avec delta_de doit avoir choix.section')
         return {
           pendingGainRoll: {
@@ -873,9 +896,11 @@ export class GameEngine {
     // Navigue selon le résultat
     let targetSection: number | undefined
     if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
-      targetSection = si_reussi?.choix?.section
+      const raw = si_reussi?.choix?.section
+      targetSection = raw !== undefined ? this.resolveSection(raw) : undefined
     } else {
-      targetSection = si_echoue?.choix?.section
+      const raw = si_echoue?.choix?.section
+      targetSection = raw !== undefined ? this.resolveSection(raw) : undefined
     }
 
     // Gère end selon le résultat (succès ou échec)
@@ -1295,8 +1320,8 @@ export class GameEngine {
           }
         }
         
-        if (sectionVictoire?.section) {
-          this.navigateTo(sectionVictoire.section)
+        if (sectionVictoire?.section !== undefined) {
+          this.navigateTo(this.resolveSection(sectionVictoire.section))
         }
       }
       // Synchronise l'endurance finale
@@ -1633,6 +1658,10 @@ export class GameEngine {
       // Ajouter les mods de monstres en attente
       if (Object.keys(this.pendingMonsterStatMods).length > 0) {
         state.pendingMonsterStatMods = { ...this.pendingMonsterStatMods }
+      }
+      // Sauvegarder les paramètres de section courants
+      if (Object.keys(this.currentSectionParams).length > 0) {
+        state.currentSectionParams = { ...this.currentSectionParams }
       }
       this.saveState = state
     }

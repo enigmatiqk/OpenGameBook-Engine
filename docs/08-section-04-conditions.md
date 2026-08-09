@@ -370,6 +370,100 @@ Illustre l'utilisation combinée de `item_dropped`, `no_droppable_item`, et du `
 
 ---
 
+## `item_equipe_name` — item équipé par nom
+
+Vérifie qu'un item **équipé** (slot d'équipement) correspond à un critère sur son `label` ou son `id`.
+
+```json
+{
+  "type":     "item_equipe_name",
+  "texte":    "argent",
+  "contains": true
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `texte` | ★ | Texte à rechercher dans le label ou l'id de l'item équipé |
+| `contains` | — | `true` = recherche par inclusion (défaut), `false` = égalité stricte |
+| `not` | — | Si `true`, inverse le résultat — vrai si **aucun** item équipé ne correspond |
+
+**Exemple — dégâts à 0 si le héros n'a pas d'arme contenant "argent" équipée :**
+
+Sur le monstre dans `sections.json` :
+```json
+{
+  "effets": [
+    {
+      "type": "combat",
+      "combat": { "stat": "degats_victoire", "valeur": 0 },
+      "condition": {
+        "type": "item_equipe_name",
+        "texte": "argent",
+        "contains": true,
+        "not": true
+      }
+    }
+  ]
+}
+```
+
+Lecture : la condition est vraie si aucun item équipé ne contient "argent" → `valeur: 0` est appliqué → le héros touche mais ne blesse pas.
+
+---
+
+## `and` / `or` — conditions composées
+
+Permet de combiner plusieurs conditions avec un opérateur logique.
+
+### `and` — toutes les conditions doivent être vraies
+
+```json
+{
+  "type": "and",
+  "conditions": [
+    { "type": "trigger", "trigger": "item_dropped" },
+    { "type": "trigger", "trigger": "outil_pris", "not": true }
+  ]
+}
+```
+
+### `or` — au moins une condition doit être vraie
+
+```json
+{
+  "type": "or",
+  "conditions": [
+    { "type": "combat_victoire" },
+    { "type": "monstre_mort", "id": "gardien" }
+  ]
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `conditions` | ★ | Tableau de sous-conditions (objets `ChoiceCondition`) |
+| `not` | — | Si `true`, inverse le résultat global |
+
+Les sous-conditions peuvent elles-mêmes être des `and`/`or`, permettant des combinaisons imbriquées.
+
+**Exemple — choix disponible uniquement si un item a été jeté ET qu'aucun outil n'a encore été pris :**
+```json
+{
+  "texte": "Prendre le maillet en bois",
+  "local": true,
+  "condition": {
+    "type": "and",
+    "conditions": [
+      { "type": "trigger", "trigger": "item_dropped" },
+      { "type": "trigger", "trigger": "outil_pris", "not": true }
+    ]
+  }
+}
+```
+
+---
+
 ## Référence rapide
 
 | Type | Contexte | Description courte |
@@ -385,3 +479,6 @@ Illustre l'utilisation combinée de `item_dropped`, `no_droppable_item`, et du `
 | `no_droppable_item` | effet | Le héros n'a aucun item à jeter |
 | `no_droppable_equip` | effet | Le héros n'a aucun équipement à jeter |
 | `monstre_mort` | choix, combat | Un monstre persistant a déjà été tué |
+| `and` | choix, effet, combat | Toutes les sous-conditions doivent être vraies |
+| `or` | choix, effet, combat | Au moins une sous-condition doit être vraie |
+| `item_equipe_name` | effet monstre | Un item équipé correspond à un critère sur son nom |

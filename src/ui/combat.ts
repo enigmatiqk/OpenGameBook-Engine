@@ -316,7 +316,7 @@ export class CombatView {
       const fuiteAction = adventure?.regles.combat.events?.fuite
       
       // Déterminer la section de fuite : soit depuis combat.fuite, soit depuis l'action déclenchée AU ROUND COURANT
-      let sectionFuiteDestination = sectionFuite?.section
+      let sectionFuiteDestination: import('../types').SectionRef | undefined = sectionFuite?.section
       if (!sectionFuiteDestination && state.eventDeclenche?.action === 'btn_fuite') {
         sectionFuiteDestination = state.eventDeclenche.section
       }

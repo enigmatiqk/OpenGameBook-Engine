@@ -66,7 +66,7 @@ export function resolveChoice(
   
   // Format classique
   if (choice.section !== undefined) {
-    section = choice.section
+    section = typeof choice.section === 'number' ? choice.section : undefined  // { param } résolu au runtime
   }
   // Format action avec si_reussi/si_echoue (ancien format)
   else if ((choice as any).si_reussi?.choix?.section) {

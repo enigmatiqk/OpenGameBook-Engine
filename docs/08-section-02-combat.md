@@ -50,6 +50,43 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 | `id` | — | Identifiant unique (requis pour `monstre_stat` ciblé depuis les choix) |
 | `face` | — | Numéro de face du dé (mode `lancer_de` uniquement) |
 | `persistant` | — | `true` si le monstre persiste entre les sections (son endurance est sauvegardée) |
+| `effets` | — | Effets appliqués à chaque round (voir [Effets sur un monstre](#effets-sur-un-monstre)) |
+
+---
+
+## Effets sur un monstre (`effets`)
+
+Un monstre peut avoir des effets qui modifient le déroulement du combat à chaque round où le héros le touche. L'usage principal est l'**immunité conditionnelle** : forcer les dégâts à 0 si le héros ne satisfait pas une condition.
+
+```json
+{
+  "effets": [
+    {
+      "type": "combat",
+      "combat": {
+        "stat": "degats_victoire",
+        "valeur": 0
+      },
+      "condition": {
+        "type": "item_equipe_name",
+        "texte": "argent",
+        "contains": true,
+        "not": true
+      }
+    }
+  ]
+}
+```
+
+| Champ de l'effet | Description |
+|-----------------|-------------|
+| `type` | Toujours `"combat"` pour les effets de combat |
+| `combat.stat` | Stat de combat à modifier : `"degats_victoire"` ou `"degats_defaite"` |
+| `combat.valeur` | Valeur absolue à forcer (prioritaire sur `delta`) |
+| `combat.delta` | Modification relative (ex : `-1`) |
+| `condition` | Condition évaluée contre le héros — l'effet ne s'applique que si elle est vraie |
+
+> L'effet est évalué **après** le calcul normal des dégâts, juste avant de décrémenter l'endurance du monstre.
 
 ---
 
@@ -95,7 +132,7 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 
 | Champ | Description |
 |-------|-------------|
-| `section` | Section vers laquelle naviguer après victoire |
+| `section` | Section vers laquelle naviguer après victoire. Peut être un numéro fixe, `-1` (section précédente), ou `{ "param": "nom" }` pour utiliser un paramètre reçu (voir [section_params](08-section-01-choix.md#paramètres-de-section-section_params)) |
 | `effets` | Effets appliqués après victoire (voir [08-section-03-effets.md](08-section-03-effets.md)) |
 
 ---
@@ -111,7 +148,7 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 
 | Champ | Description |
 |-------|-------------|
-| `section` | Section vers laquelle fuir |
+| `section` | Section vers laquelle fuir. Peut être un numéro fixe, `-1`, ou `{ "param": "nom" }` |
 | `avant` | Si `true`, la fuite est possible avant même de commencer le combat |
 
 > Le bouton fuite s'affiche pendant le combat uniquement si `combat.fuite` est défini **ou** si un event de type `"btn_fuite"` est déclenché au round courant. Dans les deux cas, le héros doit être encore en vie.

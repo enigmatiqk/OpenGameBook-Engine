@@ -310,16 +310,40 @@ document.addEventListener('DOMContentLoaded', () => {
         hero.inventaire.push(entry)
       }
 
-      // Injection d'items équipés via ?equip=<type>_<label> (ex: equip=armure_Armure de cuir)
-      // Format : <type>_<label> — poids=1, quantite=1, remplace=false par défaut
+      // Injection d'items équipés via ?equip=<type>_<label> (ex: equip=arme_1main_Épée en argent)
+      // Format : <type>_<label> — le type est résolu en cherchant le type le plus long
+      // qui correspond au début de la chaîne ET existe dans emplacements_equipement.
+      // Fallback : coupe au premier underscore (comportement historique).
       for (let n = 1; n <= 9; n++) {
         const paramKey = n === 1 ? 'equip' : `equip${n}`
         const raw = params.get(paramKey)
         if (!raw) break
-        const sep = raw.indexOf('_')
-        if (sep === -1) continue
-        const itemType = raw.slice(0, sep)
-        const itemLabel = raw.slice(sep + 1)
+
+        // Collecte tous les types acceptés dans les emplacements de l'aventure
+        const emplacements = adventure.personnage.emplacements_equipement ?? {}
+        const allTypes = Array.from(
+          new Set(Object.values(emplacements).flatMap(s => s.types_acceptes))
+        )
+
+        // Cherche le type connu le plus long qui correspond au début de "raw_"
+        let itemType = ''
+        let itemLabel = ''
+        const sortedTypes = allTypes.sort((a, b) => b.length - a.length)
+        for (const t of sortedTypes) {
+          if (raw.startsWith(t + '_')) {
+            itemType = t
+            itemLabel = raw.slice(t.length + 1)
+            break
+          }
+        }
+        // Fallback : coupe au premier underscore
+        if (!itemType) {
+          const sep = raw.indexOf('_')
+          if (sep === -1) continue
+          itemType = raw.slice(0, sep)
+          itemLabel = raw.slice(sep + 1)
+        }
+
         const itemId = `debug_equip_${itemType}_${n}`
         const equipItem: import('./types').InventaireItem = {
           id: itemId,
@@ -330,7 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
           equipe: false,
         }
         // Cherche le slot correspondant au type dans emplacements_equipement
-        const emplacements = adventure.personnage.emplacements_equipement ?? {}
         let targetSlot: string | null = null
         for (const [slotName, slotDef] of Object.entries(emplacements)) {
           if (slotDef.types_acceptes.includes(itemType)) {

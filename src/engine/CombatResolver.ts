@@ -1,6 +1,56 @@
 import type { Hero, Enemy, CombatRules, CombatRound, CombatState, MonstreData, CombatPhaseData, CombatData } from '../types'
 
 /**
+ * Évalue les effets de type "combat" d'un monstre et retourne les dégâts effectifs.
+ * Supporte valeur absolue (valeur: 0) et delta relatif.
+ * La condition est évaluée contre l'équipement du héros.
+ */
+function applyMonstreEffets(degats: number, enemy: Enemy & { effets?: import('../types').Effet[] }, hero: Hero): number {
+  if (!enemy.effets || enemy.effets.length === 0) return degats
+
+  let result = degats
+  for (const effet of enemy.effets) {
+    if (effet.type !== 'combat' || !effet.combat) continue
+    if (effet.combat.stat !== 'degats_victoire') continue
+
+    // Évalue la condition si présente
+    if (effet.condition) {
+      const condOk = evaluateMonstreCondition(effet.condition, hero)
+      if (!condOk) continue
+    }
+
+    // Applique valeur absolue ou delta
+    if (effet.combat.valeur !== undefined) {
+      result = effet.combat.valeur
+    } else if (effet.combat.delta !== undefined) {
+      result = Math.max(0, result + effet.combat.delta)
+    }
+  }
+  return result
+}
+
+/**
+ * Évalue une condition d'effet de monstre contre le héros.
+ * Pour l'instant supporte uniquement item_equipe_name (avec not).
+ */
+function evaluateMonstreCondition(cond: import('../types').ChoiceCondition, hero: Hero): boolean {
+  if (cond.type === 'item_equipe_name') {
+    const texte = cond.texte ?? ''
+    const useContains = cond.contains !== false
+    const equippedItems = Object.values(hero.equipement)
+    const match = equippedItems.some(item => {
+      const haystack = `${item.label ?? ''} ${item.id ?? ''}`.toLowerCase()
+      const needle = texte.toLowerCase()
+      return useContains
+        ? haystack.includes(needle)
+        : (item.label?.toLowerCase() === needle || item.id?.toLowerCase() === needle)
+    })
+    return cond.not ? !match : match
+  }
+  return true
+}
+
+/**
  * Parse une formule d'attaque du type "habilete+2d6".
  */
 export function parseAttackFormula(formula: string): { statName: string; diceCount: number; diceSides: number } {
@@ -131,7 +181,7 @@ function buildEnemy(monstre: MonstreData, statMods?: Array<{ name: string; delta
       if (mod.name === 'endurance') endurance = Math.max(0, endurance + mod.delta)
     }
   }
-  return { nom: monstre.nom, habilete, endurance, id: monstre.id, statMods }
+  return { nom: monstre.nom, habilete, endurance, id: monstre.id, statMods, effets: monstre.effets }
 }
 
 /**
@@ -302,6 +352,10 @@ export class CombatResolver {
         if (m) { heroBonusDegats = parseInt(m[1], 10); degats += heroBonusDegats }
       }
       cible = 'ennemi'
+
+      // Applique les effets du monstre (ex: immunité conditionnelle)
+      degats = applyMonstreEffets(degats, state.enemy, hero)
+
       enemyVie -= degats
     } else if (ennemiGagne && !heroGagne) {
       degats = rules.degats_defaite

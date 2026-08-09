@@ -180,17 +180,18 @@ export interface MonstreData {
   habilete?: number          // optionnel si monstre persistant réutilisé
   endurance?: number         // optionnel si monstre persistant réutilisé
   persistant?: boolean       // true si le monstre persiste entre les sections
+  effets?: Effet[]           // effets appliqués à chaque round (ex: immunité conditionnelle)
 }
 
 export interface CombatEventChoix {
   texte: string              // libellé du bouton de choix
-  section: number            // section vers laquelle naviguer
+  section: SectionRef        // section vers laquelle naviguer
 }
 
 export interface CombatEvent {
   declencheur: "degats_heros" | "degats_monstre" | "degats" | "round"
   round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
-  section?: number           // section vers laquelle aller (optionnel si choix[] est fourni)
+  section?: SectionRef       // section vers laquelle aller (optionnel si choix[] est fourni)
   action?: string            // type d'action ('btn_fuite', 'fuite_chance', 'attaque', 'defense', etc.)
   choix?: string | CombatEventChoix[]  // string = libellé bouton simple, array = boutons de choix multiples
   texte?: string             // libellé personnalisé du bouton (alias de choix string)
@@ -221,11 +222,11 @@ export interface CombatPhaseOverrides {
   events?: CombatEvent[]
   modifier?: CombatModifier[]
   victoire?: {
-    section: number
+    section: SectionRef
     effets?: Effet[]
   }
   fuite?: {
-    section: number
+    section: SectionRef
     avant?: boolean
   }
   defense?: {
@@ -254,11 +255,11 @@ export interface CombatData {
   events?: CombatEvent[]      // événements déclenchés pendant tout le combat
   modifier?: CombatModifier[] // modifications à appliquer avant le combat
   victoire?: { 
-    section: number
+    section: SectionRef
     effets?: Effet[]           // effets appliqués après la victoire
   }
   fuite?: { 
-    section: number
+    section: SectionRef
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
   }
   defense?: {
@@ -294,7 +295,8 @@ export interface EffetMonstreStat {
 
 export interface EffetCombat {
   stat: string    // nom de la propriété temporaire de combat (ex: "degats_victoire", "degats_defaite")
-  delta: number   // modification à appliquer
+  delta?: number  // modification relative à appliquer
+  valeur?: number // valeur absolue à forcer (prioritaire sur delta)
   raison?: string
 }
 
@@ -315,10 +317,20 @@ export interface Effet {
   trigger?: string          // trigger moteur à activer après exécution (ex: "item_dropped")
 }
 
+// ─── Section référence (numéro fixe, param dynamique, ou retour -1) ──────────
+
+/**
+ * Une destination de section peut être :
+ * - un nombre positif : section explicite
+ * - -1 : retour à la section précédente
+ * - { param: "nom" } : valeur issue des section_params reçus en arrivant sur cette section
+ */
+export type SectionRef = number | { param: string }
+
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name'
   item_id?: string        // pour item_quantite
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -334,6 +346,8 @@ export interface ChoiceCondition {
   degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum
   trigger?: string        // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
   conditions?: ChoiceCondition[]  // pour and/or : liste de sous-conditions
+  texte?: string          // pour item_equipe_name : texte à chercher dans le nom de l'item équipé
+  contains?: boolean      // pour item_equipe_name : true = contient (pas égalité stricte), false = égalité stricte
 }
 
 export interface CoutEffet {
@@ -365,13 +379,14 @@ export interface ActionOutcome {
   choix?: Choice
   end?: "victoire" | "defaite"
   trigger?: string    // trigger à activer si cet outcome est atteint (ex: "corde_coupe")
+  section_params?: Record<string, number>  // paramètres transmis à la section de destination
 }
 
 export interface ActionLancerDe {
   type: "lancer_de"
   lancer_de: {
     formule: string
-    resultats: Record<string, { section?: number; effets?: Effet[] }>
+    resultats: Record<string, { section?: SectionRef; effets?: Effet[] }>
   }
 }
 
@@ -393,7 +408,7 @@ export interface SectionSaisie {
 
 export interface Choice {
   texte: string
-  section?: number
+  section?: SectionRef
   local?: boolean           // true = reste sur la même section, false/absent = change de section
   utilisations?: number     // nombre de fois utilisable (absent = infini)
   condition?: ChoiceCondition
@@ -402,6 +417,7 @@ export interface Choice {
   items?: ItemGain[]  // items gagnés en prenant ce choix
   libre?: boolean           // @deprecated — remplacé par section_saisie
   section_saisie?: SectionSaisie  // saisie utilisateur du numéro de section cible
+  section_params?: Record<string, number>  // paramètres transmis à la section de destination
   end?: "victoire" | "defaite"
   action?: Action | string  // Action object ou string pour backward compatibility
   regle_surcharge?: Record<string, unknown>  // surcharge partielle des propriétés de la règle référencée par action
@@ -491,6 +507,7 @@ export interface SaveState {
   choixUtilisations?: Record<string, number>  // Track des utilisations par choix (clé: "section_numero-choix_index")
   regleUtilisations?: Record<string, number>  // Track des utilisations des règles (clé: "section-N-règle", "section_courante-règle", "combat-règle", "aventure-règle")
   pendingMonsterStatMods?: Record<string, EffetMonstreStat[]>  // Mods en attente pour les monstres (clé: monstre_id ou "__any__")
+  currentSectionParams?: Record<string, number>  // Paramètres transmis à la section courante via section_params
 }
 
 export interface LeaderboardEntry {
@@ -566,6 +583,7 @@ export interface Enemy {
   endurance: number
   id?: string          // id du monstre persistant
   statMods?: Array<{ name: string; delta: number; raison?: string }>  // mods appliqués avant le combat
+  effets?: Effet[]     // effets du monstre (ex: immunité conditionnelle)
 }
 
 export interface CombatRound {

@@ -505,7 +505,7 @@ export class GameView {
     return wrap
   }
 
-  private _showFuiteRoll(fuiteAction: string, sectionFuite: number): void {
+  private _showFuiteRoll(fuiteAction: string, sectionFuite: import('../types').SectionRef): void {
     const pending = this.engine.getActionPendingRoll({ 
       texte: '', 
       section: 0, 

@@ -267,8 +267,21 @@ export class GameEngineNavigation {
           raison = 'Ce monstre est encore en vie'
         }
       }
-    } else if (cond.type === 'and') {
-      // Toutes les sous-conditions doivent être vraies (ET logique)
+    } else if (cond.type === 'item_equipe_name') {
+      // Vrai si un item équipé correspond au critère sur son label ou id
+      const texte = cond.texte ?? ''
+      const useContains = cond.contains !== false  // true par défaut
+      const equippedItems = Object.values(hero.equipement)
+      const match = equippedItems.some(item => {
+        const haystack = `${item.label ?? ''} ${item.id ?? ''}`.toLowerCase()
+        const needle = texte.toLowerCase()
+        return useContains ? haystack.includes(needle) : (item.label?.toLowerCase() === needle || item.id?.toLowerCase() === needle)
+      })
+      if (!match) {
+        conditionOk = false
+        raison = `Aucun item équipé ne correspond à "${texte}"`
+      }
+    } else if (cond.type === 'and') {      // Toutes les sous-conditions doivent être vraies (ET logique)
       if (!cond.conditions || cond.conditions.length === 0) {
         conditionOk = true
       } else {

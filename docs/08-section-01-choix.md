@@ -18,7 +18,7 @@ Les choix sont la liste des options proposées au joueur dans une section. Chaqu
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
 | `texte` | ★ | Texte du bouton affiché au joueur |
-| `section` | — | Numéro de la section cible |
+| `section` | — | Numéro de la section cible, ou `{ "param": "nom" }` pour utiliser un paramètre reçu (voir [Paramètres de section](#paramètres-de-section-section_params)) |
 | `condition` | — | Condition requise (bouton grisé si non remplie) |
 | `cout` | — | Effets appliqués au clic, avant la navigation |
 | `effets` | — | Effets appliqués après le choix (voir [effets.md](effets.md)) |
@@ -27,6 +27,7 @@ Les choix sont la liste des options proposées au joueur dans une section. Chaqu
 | `libre` | — | `true` = le moteur ne valide pas ce choix (voir [Choix libre](#choix-libre-libre)) |
 | `local` | — | `true` = reste sur la section courante sans naviguer (voir [Choix local](#choix-local-local)) |
 | `utilisations` | — | Nombre max de fois que le choix peut être activé (uniquement avec `local: true`) |
+| `section_params` | — | Paramètres transmis à la section de destination (voir [Paramètres de section](#paramètres-de-section-section_params)) |
 | `end` | — | `"victoire"` ou `"defaite"` directement sur le choix |
 
 > Les effets de type `monstre_stat` peuvent apparaître dans `effets` d'un choix **ou** dans `si_reussi`/`si_echoue` d'une action — le moteur les traite de façon identique dans les deux cas.
@@ -276,6 +277,79 @@ Associé à `utilisations`, le choix se désactive automatiquement une fois le q
 ```
 
 Le compteur est persisté en sauvegarde : le joueur ne peut pas recharger pour récupérer les utilisations consommées.
+
+---
+
+## Paramètres de section (`section_params`)
+
+Certains passages du livre demandent au joueur de "noter un numéro" pour y revenir plus tard après un combat ou une épreuve. `section_params` permet de transmettre une valeur numérique à la section de destination, sans que cette valeur soit connue à l'avance dans le JSON de la section cible.
+
+### Déclaration côté section d'origine
+
+```json
+{
+  "texte": "Livrer le combat",
+  "section": 161,
+  "section_params": { "section_victoire": 12 }
+}
+```
+
+La clé (`"section_victoire"`) est un nom libre. La valeur est le numéro de section à mémoriser.
+
+### Utilisation côté section de destination
+
+```json
+"victoire": {
+  "section": { "param": "section_victoire" }
+}
+```
+
+Au lieu d'un numéro fixe, `"section"` accepte un objet `{ "param": "nom" }` qui est résolu dynamiquement avec la valeur transmise.
+
+### Exemple complet — section 161 (monstres errants)
+
+Plusieurs sections renvoient vers le hub de combat 161, chacune avec sa propre section de retour :
+
+```json
+{
+  "texte": "Livrer le combat",
+  "section": 161,
+  "section_params": { "section_victoire": 12 }
+}
+```
+
+Section 161 :
+```json
+"combat": {
+  "lancer_de": { "formule": "1d6" },
+  "phases": [ ... ],
+  "victoire": {
+    "section": { "param": "section_victoire" }
+  }
+}
+```
+
+Après la victoire, le joueur est renvoyé vers la section qui avait transmis le paramètre (12, 14, 48, etc.).
+
+### Portée et persistance
+
+- Les paramètres sont **propres à la navigation courante** : ils sont écrasés à chaque appel à `navigateTo`.
+- Ils sont **persistés en sauvegarde** : recharger une partie en cours de section 161 ne perd pas la valeur de retour.
+- `section: -1` (retour à la section précédente via l'historique) reste disponible et indépendant de `section_params`.
+
+### Où `{ "param": "..." }` peut apparaître
+
+Partout où un numéro de section peut être défini :
+
+| Emplacement | Exemple |
+|-------------|---------|
+| `choix.section` | `"section": { "param": "retour" }` |
+| `combat.victoire.section` | `"victoire": { "section": { "param": "retour" } }` |
+| `combat.fuite.section` | `"fuite": { "section": { "param": "retour" } }` |
+| `combat.events[].section` | `"section": { "param": "retour" }` |
+| `combat.events[].choix[].section` | `"section": { "param": "retour" }` |
+| `action.lancer_de.resultats[].section` | `"section": { "param": "retour" }` |
+| `si_reussi.choix.section` | `"choix": { "section": { "param": "retour" } }` |
 
 ---
 

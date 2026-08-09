@@ -113,6 +113,42 @@ describe('GameEngine', () => {
       expect(section.numero).toBe(2)
       expect(engine.getCurrentSection()).toBe(2)
     })
+
+    it('stores section_params for the destination', () => {
+      engine.loadAdventure(makeAdventure())
+      engine.resumeGame(makeSave())
+      engine.navigateTo(2, { retour: 42 })
+      expect(engine.resolveSection({ param: 'retour' })).toBe(42)
+    })
+
+    it('resets section_params when navigating without params', () => {
+      engine.loadAdventure(makeAdventure())
+      engine.resumeGame(makeSave())
+      engine.navigateTo(2, { retour: 42 })
+      engine.navigateTo(1)
+      expect(() => engine.resolveSection({ param: 'retour' })).toThrow('section_param "retour" non défini')
+    })
+  })
+
+  describe('resolveSection', () => {
+    it('resolves a plain number as-is', () => {
+      expect(engine.resolveSection(42)).toBe(42)
+    })
+
+    it('resolves -1 as a plain number (handled by navigateTo)', () => {
+      expect(engine.resolveSection(-1)).toBe(-1)
+    })
+
+    it('resolves { param } from currentSectionParams', () => {
+      engine.loadAdventure(makeAdventure())
+      engine.resumeGame(makeSave())
+      engine.navigateTo(2, { retour: 12 })
+      expect(engine.resolveSection({ param: 'retour' })).toBe(12)
+    })
+
+    it('throws if param not defined', () => {
+      expect(() => engine.resolveSection({ param: 'retour' })).toThrow('section_param "retour" non défini')
+    })
   })
 
   describe('applyChoice', () => {
