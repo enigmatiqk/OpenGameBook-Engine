@@ -318,7 +318,7 @@ export interface Effet {
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or'
   item_id?: string        // pour item_quantite
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -326,13 +326,14 @@ export interface ChoiceCondition {
   condition?: "<=" | "<" | ">=" | ">"  // pour stat : opérateur de comparaison
   expr?: string           // pour expr : expression littérale avec variables (ex: "{jet_heros} > {jet_adversaire}")
   section?: number        // pour retour : section spécifique depuis laquelle on revient (optionnel)
-  not?: boolean           // pour retour : inverse la condition (true = "pas un retour")
+  not?: boolean           // inverse la condition résultante
   action?: string         // pour action_resolved : nom de l'action
   resultat?: string       // pour action_resolved : résultat attendu (ex: "chanceux", "malchanceux") — absent = tout résultat accepté
   id?: string             // pour combat_degats_monstre/heros : id du monstre persistant (optionnel) ; pour monstre_mort : id du monstre
   degats_min?: number     // pour combat_degats_monstre/heros : dégâts minimum
   degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum
   trigger?: string        // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
+  conditions?: ChoiceCondition[]  // pour and/or : liste de sous-conditions
 }
 
 export interface CoutEffet {

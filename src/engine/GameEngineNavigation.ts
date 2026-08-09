@@ -267,6 +267,40 @@ export class GameEngineNavigation {
           raison = 'Ce monstre est encore en vie'
         }
       }
+    } else if (cond.type === 'and') {
+      // Toutes les sous-conditions doivent être vraies (ET logique)
+      if (!cond.conditions || cond.conditions.length === 0) {
+        conditionOk = true
+      } else {
+        for (const subCond of cond.conditions) {
+          const subResult = this.checkChoiceCondition({ condition: subCond } as any, hero, currentSection)
+          if (!subResult.ok) {
+            conditionOk = false
+            raison = subResult.raison ?? 'Condition non remplie'
+            break
+          }
+        }
+      }
+    } else if (cond.type === 'or') {
+      // Au moins une sous-condition doit être vraie (OU logique)
+      if (!cond.conditions || cond.conditions.length === 0) {
+        conditionOk = false
+        raison = 'Aucune sous-condition définie'
+      } else {
+        conditionOk = false
+        const reasons: string[] = []
+        for (const subCond of cond.conditions) {
+          const subResult = this.checkChoiceCondition({ condition: subCond } as any, hero, currentSection)
+          if (subResult.ok) {
+            conditionOk = true
+            break
+          }
+          if (subResult.raison) reasons.push(subResult.raison)
+        }
+        if (!conditionOk) {
+          raison = reasons.join(' ; ') || 'Aucune condition remplie'
+        }
+      }
     }
 
     // Applique la négation si `not` est true
