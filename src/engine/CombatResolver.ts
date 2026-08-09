@@ -181,7 +181,7 @@ function buildEnemy(monstre: MonstreData, statMods?: Array<{ name: string; delta
       if (mod.name === 'endurance') endurance = Math.max(0, endurance + mod.delta)
     }
   }
-  return { nom: monstre.nom, habilete, endurance, id: monstre.id, statMods, effets: monstre.effets }
+  return { nom: monstre.nom ?? `monstre_${monstre.id ?? 'inconnu'}`, habilete, endurance, id: monstre.id, statMods, effets: monstre.effets }
 }
 
 /**
@@ -254,6 +254,8 @@ export class CombatResolver {
       compteurDegatsHeros: 0,
       compteurDegatsMonster: 0,
       compteurDegats: 0,
+      compteurAttaqueHeros: 0,
+      compteurAttaqueMonstre: 0,
       eventsDeclenches: [],
     }
 
@@ -512,7 +514,7 @@ export class CombatResolver {
       }
     }
 
-    const { eventTriggered, newState: stateAfterEvent } = this.checkCombatEvents(newState, degatsHeros, degatsMonster)
+    const { eventTriggered, newState: stateAfterEvent } = this.checkCombatEvents(newState, degatsHeros, degatsMonster, round.cible)
     newState = stateAfterEvent
     if (eventTriggered) newState.eventDeclenche = eventTriggered
 
@@ -574,6 +576,8 @@ export class CombatResolver {
             compteurDegatsHeros: 0,
             compteurDegatsMonster: 0,
             compteurDegats: 0,
+            compteurAttaqueHeros: 0,
+            compteurAttaqueMonstre: 0,
             eventsDeclenches: [],
             phase: { type: 'pending_ennemi' },
           }
@@ -650,6 +654,8 @@ export class CombatResolver {
       compteurDegatsHeros: 0,
       compteurDegatsMonster: 0,
       compteurDegats: 0,
+      compteurAttaqueHeros: 0,
+      compteurAttaqueMonstre: 0,
       eventsDeclenches: [],
       eventDeclenche: undefined,
       eventsDeclenchesCourant: undefined,
@@ -693,7 +699,7 @@ export class CombatResolver {
   /**
    * Vérifie et déclenche les events de combat basés sur les dégâts ou les rounds.
    */
-  checkCombatEvents(state: CombatState, degatsHeros: number, degatsMonster: number): { eventTriggered: any | null; newState: CombatState } {
+  checkCombatEvents(state: CombatState, degatsHeros: number, degatsMonster: number, cibleRound?: 'hero' | 'ennemi'): { eventTriggered: any | null; newState: CombatState } {
     const events = state.combatData?.events
     if (!events || events.length === 0) {
       return { eventTriggered: null, newState: state }
@@ -708,6 +714,17 @@ export class CombatResolver {
     if (degatsMonster > 0) {
       newState.compteurDegatsMonster = (newState.compteurDegatsMonster ?? 0) + 1
       newState.compteurDegats = (newState.compteurDegats ?? 0) + 1
+    }
+
+    // attaque_heros : héros gagne le round (cible = ennemi), même si dégâts = 0
+    // attaque_monstre : monstre gagne le round (cible = hero), même si dégâts = 0
+    const heroARempoteLround = cibleRound === 'ennemi'
+    const monstreARempoteLround = cibleRound === 'hero'
+    if (heroARempoteLround) {
+      newState.compteurAttaqueHeros = (newState.compteurAttaqueHeros ?? 0) + 1
+    }
+    if (monstreARempoteLround) {
+      newState.compteurAttaqueMonstre = (newState.compteurAttaqueMonstre ?? 0) + 1
     }
 
     const triggeredEvents: any[] = []
@@ -727,8 +744,11 @@ export class CombatResolver {
         if (newState.compteurDegats === event.round) shouldTrigger = true
       } else if (event.declencheur === 'round') {
         if (state.roundNumber === event.round) shouldTrigger = true
+      } else if (event.declencheur === 'attaque_heros' && heroARempoteLround) {
+        if (newState.compteurAttaqueHeros === event.round) shouldTrigger = true
+      } else if (event.declencheur === 'attaque_monstre' && monstreARempoteLround) {
+        if (newState.compteurAttaqueMonstre === event.round) shouldTrigger = true
       }
-
       if (shouldTrigger) {
         newState.eventsDeclenches = [...(newState.eventsDeclenches ?? []), i]
         if (event.ignorerDegats) {

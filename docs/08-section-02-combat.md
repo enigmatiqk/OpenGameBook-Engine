@@ -204,24 +204,40 @@ Les events déclenchent des actions ou des boutons de choix à des moments préc
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
 | `declencheur` | ★ | Quand l'event se déclenche — voir tableau ci-dessous |
-| `round` | ★ | Numéro du round (ou Nème occurrence de dégâts) qui déclenche l'event |
+| `round` | ★ | Numéro du round (ou Nème occurrence) qui déclenche l'event |
 | `section` | — | Section cible si l'event est une navigation simple |
 | `action` | — | Type d'action : `"btn_fuite"`, `"tenter_chance"`, `"attaque"`, `"defense"`, … |
 | `texte` | — | Libellé personnalisé du bouton |
 | `choix` | — | Tableau de boutons de choix multiples — voir [Choix multiples](#choix-multiples) |
 | `ignorerDegats` | — | Si `true`, annule les dégâts du coup qui a déclenché l'event |
 | `condition` | — | Condition supplémentaire pour que l'event se déclenche |
+| `fin_combat` | — | Si `true`, cache le bouton "Round suivant" — le joueur doit choisir une option ou fuir, il ne peut pas continuer le combat |
 
 ### Types de déclencheur (`declencheur`)
 
-| Valeur | Déclenchement |
-|--------|---------------|
-| `"round"` | Au round dont le numéro correspond à `round` (indépendamment des dégâts) |
-| `"degats_heros"` | Quand le héros a subi des dégâts pour la Nème fois (`round` = N) |
-| `"degats_monstre"` | Quand le monstre a subi des dégâts pour la Nème fois (`round` = N) |
-| `"degats"` | Quand l'un ou l'autre a subi des dégâts pour la Nème fois (`round` = N) |
+| Valeur | Déclenchement | Compte les égalités ? |
+|--------|---------------|-----------------------|
+| `"round"` | Au round dont le numéro correspond à `round` (indépendamment des dégâts) | — |
+| `"degats_heros"` | Quand le héros a subi des **dégâts > 0** pour la Nème fois | Non |
+| `"degats_monstre"` | Quand le monstre a subi des **dégâts > 0** pour la Nème fois | Non |
+| `"degats"` | Quand l'un ou l'autre a subi des **dégâts > 0** pour la Nème fois | Non |
+| `"attaque_heros"` | Quand le héros a **gagné** un round pour la Nème fois (dégâts = 0 inclus) | Non |
+| `"attaque_monstre"` | Quand le monstre a **gagné** un round pour la Nème fois (dégâts = 0 inclus) | Non |
+
+**Différence clé entre `degats_*` et `attaque_*` :**
+- `degats_monstre` : compte uniquement les rounds où le monstre perd des points de vie réels. Si le monstre a une immunité qui force les dégâts à 0, ce compteur ne monte pas.
+- `attaque_monstre` : compte tous les rounds remportés par le monstre, même si l'immunité a annulé les dégâts. Utile quand la mécanique dépend de "toucher" l'adversaire plutôt que de lui infliger des dégâts.
 
 > Chaque event ne se déclenche **qu'une seule fois** — il est marqué comme déclenché dès sa première activation.
+
+**Exemple — naviguer vers une section dès que le héros touche le monstre (même avec 0 dégâts) :**
+```json
+{
+  "declencheur": "attaque_monstre",
+  "round": 1,
+  "section": 310
+}
+```
 
 ---
 

@@ -365,13 +365,32 @@ export class GameEngine {
           premiereMonstre = this._applyPendingMonsterStatMods(premiereMonstre)
 
           // Charge les stats sauvegardées du monstre persistant s'il existe
-          if (premiereMonstre.id && premiereMonstre.persistant && this.hero.monstres_stats?.[premiereMonstre.id]) {
-            const savedStats = this.hero.monstres_stats[premiereMonstre.id]
-            premiereMonstre = { ...premiereMonstre, habilete: savedStats.habilete, endurance: savedStats.endurance }
-          } else if (premiereMonstre.id && !premiereMonstre.habilete && !premiereMonstre.endurance) {
-            const initialMonstre = this._findMonsterInitialStats(premiereMonstre.id)
-            if (initialMonstre) {
-              premiereMonstre = { ...premiereMonstre, habilete: initialMonstre.habilete, endurance: initialMonstre.endurance }
+          if (premiereMonstre.id && premiereMonstre.persistant) {
+            // Récupère la définition initiale pour les champs non redéfinis localement
+            const initial = this._findMonsterInitialStats(premiereMonstre.id)
+
+            // habilete/endurance : priorité aux stats sauvegardées, sinon définition initiale, sinon local
+            let habilete = premiereMonstre.habilete
+            let endurance = premiereMonstre.endurance
+            if (this.hero.monstres_stats?.[premiereMonstre.id]) {
+              const savedStats = this.hero.monstres_stats[premiereMonstre.id]
+              habilete = savedStats.habilete
+              endurance = savedStats.endurance
+            } else if (initial) {
+              habilete = habilete ?? initial.habilete
+              endurance = endurance ?? initial.endurance
+            }
+
+            // nom et effets : local en priorité, sinon définition initiale
+            const nom = premiereMonstre.nom ?? initial?.nom
+            const effets = premiereMonstre.effets ?? initial?.effets
+
+            premiereMonstre = {
+              ...premiereMonstre,
+              ...(habilete !== undefined ? { habilete } : {}),
+              ...(endurance !== undefined ? { endurance } : {}),
+              ...(nom ? { nom } : {}),
+              ...(effets ? { effets } : {}),
             }
           }
 
@@ -1460,9 +1479,10 @@ export class GameEngine {
   }
 
   /**
-   * Cherche les stats initiales d'un monstre par son id dans toutes les sections
+   * Cherche les données initiales d'un monstre par son id dans toutes les sections.
+   * Retourne nom, habilete, endurance et effets depuis la section qui le définit complètement.
    */
-  private _findMonsterInitialStats(monsterId: string): { habilete: number; endurance: number } | null {
+  private _findMonsterInitialStats(monsterId: string): { habilete: number; endurance: number; nom?: string; effets?: import('../types').Effet[] } | null {
     if (!this.adventure) return null
     
     for (const section of this.adventure.sections) {
@@ -1470,7 +1490,7 @@ export class GameEngine {
         for (const phase of section.combat.phases) {
           for (const monstre of phase.monstres) {
             if (monstre.id === monsterId && monstre.habilete !== undefined && monstre.endurance !== undefined) {
-              return { habilete: monstre.habilete, endurance: monstre.endurance }
+              return { habilete: monstre.habilete, endurance: monstre.endurance, nom: monstre.nom, effets: monstre.effets }
             }
           }
         }

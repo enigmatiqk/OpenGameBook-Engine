@@ -430,7 +430,10 @@ export class CombatView {
         this.engine.advanceCombat()
         if (!this.engine.getCombatState()) { this.onCombatEnd() } else { this._render() }
       })
-      actionsEl.appendChild(nextBtn)
+      // Cache le bouton si l'event courant a fin_combat: true
+      if (!state.eventDeclenche?.fin_combat) {
+        actionsEl.appendChild(nextBtn)
+      }
       el.appendChild(actionsEl)
     }
 

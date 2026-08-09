@@ -176,7 +176,7 @@ export interface Regles {
 
 export interface MonstreData {
   id?: string                // identifiant unique pour les monstres persistants
-  nom: string
+  nom?: string               // absent si monstre persistant réutilisé (nom récupéré depuis la définition initiale)
   habilete?: number          // optionnel si monstre persistant réutilisé
   endurance?: number         // optionnel si monstre persistant réutilisé
   persistant?: boolean       // true si le monstre persiste entre les sections
@@ -189,7 +189,7 @@ export interface CombatEventChoix {
 }
 
 export interface CombatEvent {
-  declencheur: "degats_heros" | "degats_monstre" | "degats" | "round"
+  declencheur: "degats_heros" | "degats_monstre" | "degats" | "round" | "attaque_heros" | "attaque_monstre"
   round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
   section?: SectionRef       // section vers laquelle aller (optionnel si choix[] est fourni)
   action?: string            // type d'action ('btn_fuite', 'fuite_chance', 'attaque', 'defense', etc.)
@@ -197,6 +197,7 @@ export interface CombatEvent {
   texte?: string             // libellé personnalisé du bouton (alias de choix string)
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
   condition?: ChoiceCondition // condition pour déclencher l'action
+  fin_combat?: boolean       // true = cache le bouton "Round suivant", le joueur doit choisir une option ou fuir
 }
 
 export interface CombatModifier {
@@ -653,9 +654,11 @@ export interface CombatState {
   // Données de combat résolues (fusion global + surcharges de la phase courante)
   combatData?: any
   // Tracking des events de combat
-  compteurDegatsHeros?: number    // nombre de fois que le héros a subi des dégâts
-  compteurDegatsMonster?: number  // nombre de fois que le monstre a subi des dégâts
-  compteurDegats?: number         // nombre total de fois que quelqu'un a subi des dégâts
+  compteurDegatsHeros?: number    // nombre de fois que le héros a subi des dégâts (> 0)
+  compteurDegatsMonster?: number  // nombre de fois que le monstre a subi des dégâts (> 0)
+  compteurDegats?: number         // nombre total de fois que quelqu'un a subi des dégâts (> 0)
+  compteurAttaqueHeros?: number   // nombre de rounds gagnés par le héros (même si dégâts = 0)
+  compteurAttaqueMonstre?: number // nombre de rounds gagnés par le monstre (même si dégâts = 0)
   eventsDeclenches?: number[]     // indices des events déjà déclenchés
   eventDeclenche?: any            // event déclenché au dernier round
   eventsDeclenchesCourant?: any[] // tous les events déclenchés au dernier round
