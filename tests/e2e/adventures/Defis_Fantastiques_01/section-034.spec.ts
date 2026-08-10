@@ -5,6 +5,8 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 34
 const SECTION_TEXT = 'En examinant les outils'
 const SECTION_CHOICES = {
+  0: "Prendre le maillet en bois",
+  1: "Prendre le ciseau avec lame en argent",
   96: 'Aller voir de quoi il s\'agit'
 }
 
@@ -31,6 +33,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Navigation vers section 96', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0)
+    await testNavigation(page, SECTION_CHOICES, 2)
   })
 })

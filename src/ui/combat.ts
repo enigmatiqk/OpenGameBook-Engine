@@ -235,9 +235,11 @@ export class CombatView {
       // Label : distingue défense globale vs combat_defense d'item équipé
       const formule = resolveLancerDeFormule(defenseData)
       const isItemDefense = !defenseData.type  // defense globale a type:"lancer_de", item n'en a pas
-      const label = isItemDefense
-        ? `🛡️ Utiliser le bouclier — lancer ${formule}`
-        : `🎲 Lancer les dés de défense (${formule})`
+      const label = defenseData.texte
+        ? `🎲 ${defenseData.texte} — lancer ${formule}`
+        : isItemDefense
+          ? `🛡️ Utiliser le bouclier — lancer ${formule}`
+          : `🎲 Lancer les dés de défense (${formule})`
 
       const { count, sides } = parseDiceFormula(formule)
       el.appendChild(this._rollBtn(label, () => {
@@ -523,8 +525,8 @@ export class CombatView {
       secHeroLine += ` → ${s.heroFa}`
 
       secondairesHtml += `
-        <div class="round-roll round-roll--secondaire">${secEnemyLine}</div>
-        <div class="round-roll round-roll--secondaire">${secHeroLine}</div>
+        <div class="round-roll round-roll--ennemi round-roll--secondaire">${secEnemyLine}</div>
+        <div class="round-roll round-roll--heros round-roll--secondaire">${secHeroLine}</div>
       `
     }
 
@@ -534,7 +536,7 @@ export class CombatView {
     // Résultat vs principal
     if (round.cible === 'ennemi') {
       outcomeHtml += `<div class="round-outcome round-outcome--ennemi">${_esc(enemyName)} → −${round.degats}</div>`
-    } else if (round.cible === 'hero' && round.degats > 0) {
+    } else if (round.cible === 'hero' && round.forceAttaqueHero !== round.forceAttaqueEnnemi) {
       outcomeHtml += `<div class="round-outcome round-outcome--hero">Héros (${_esc(enemyName)}) → −${round.degats}</div>`
     } else {
       outcomeHtml += `<div class="round-outcome round-outcome--egal">Égalité</div>`
@@ -556,8 +558,8 @@ export class CombatView {
 
     el.innerHTML = `
       <div class="round-header">Round ${round.numero}</div>
-      <div class="round-roll">${enemyLine}</div>
-      <div class="round-roll">${heroLine}</div>
+      <div class="round-roll round-roll--ennemi">${enemyLine}</div>
+      <div class="round-roll round-roll--heros">${heroLine}</div>
       ${secondairesHtml}
       ${defenseHtml}
       ${outcomeHtml}
@@ -578,34 +580,34 @@ export class CombatView {
 
     // Ennemi principal
     const enemyLine = `${_esc(state.enemy.nom)} ${r.enemyStatValue ?? ''} + [${r.rollEnnemi.join(', ')}] → ${r.forceAttaqueEnnemi}`
-    ctx.appendChild(this._ctxLine(enemyLine))
+    ctx.appendChild(this._ctxLine(enemyLine, 'round-roll--ennemi'))
 
     // Héros vs principal
     let heroLine = `Héros ${r.heroStatValue}`
     if (r.rollHero.length > 0) heroLine += ` + [${r.rollHero.join(', ')}]`
     if (r.heroBonusAttaque && r.heroBonusAttaque !== 0) heroLine += ` + ${r.heroBonusAttaque}`
     heroLine += ` → ${r.forceAttaqueHero}`
-    ctx.appendChild(this._ctxLine(heroLine))
+    ctx.appendChild(this._ctxLine(heroLine, 'round-roll--heros'))
 
     // Secondaires déjà traités
     for (const s of r.secondairesRolls) {
       const secEnemyLine = `${_esc(s.monstre.nom)} ${s.monstre.habilete} + [${s.rollEnnemi.join(', ')}] → ${s.fa}`
-      ctx.appendChild(this._ctxLine(secEnemyLine))
+      ctx.appendChild(this._ctxLine(secEnemyLine, 'round-roll--ennemi round-roll--secondaire'))
 
       let secHeroLine = `Héros ${r.heroStatValue}`
       if (s.heroRoll?.length > 0) secHeroLine += ` + [${s.heroRoll.join(', ')}]`
       if (r.heroBonusAttaque && r.heroBonusAttaque !== 0) secHeroLine += ` + ${r.heroBonusAttaque}`
       secHeroLine += ` → ${s.heroFa}`
-      ctx.appendChild(this._ctxLine(secHeroLine))
+      ctx.appendChild(this._ctxLine(secHeroLine, 'round-roll--heros round-roll--secondaire'))
     }
 
     return ctx
   }
 
   /** Ligne de contexte (info non interactive, affichée pendant un round en cours) */
-  private _ctxLine(text: string): HTMLElement {
+  private _ctxLine(text: string, extraClass?: string): HTMLElement {
     const div = document.createElement('div')
-    div.className = 'combat-ctx-line'
+    div.className = `combat-ctx-line${extraClass ? ' ' + extraClass : ''}`
     div.textContent = text
     return div
   }

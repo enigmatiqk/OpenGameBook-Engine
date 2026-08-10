@@ -41,7 +41,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testCombatRound(page)
 
     // Le log de round doit afficher le bonus +1 dans la ligne de la force d'attaque héros
-    const roundRoll = page.locator('.round-roll').first()
+    const roundRoll = page.locator('.round-roll.round-roll--heros').first()
     await expect(roundRoll).toContainText('+ 1')
   })
 

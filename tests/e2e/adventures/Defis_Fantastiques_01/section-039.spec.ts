@@ -106,10 +106,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     // endurance=10, dégâts=2-1=1 → round-defense affiche le modificateur
     const roundDefense = page.locator('.round-defense')
     await expect(roundDefense).toContainText('DÉFENSE [4] → -1')
-    await expect(roundDefense).toContainText('Dégâts: 1')
+    await expect(roundDefense).toContainText('DÉFENSE [4] → -1 (dégâts : 1)')
     // round-outcome affiche les dégâts finaux
     const roundOutcome = page.locator('.round-outcome')
-    await expect(roundOutcome).toContainText('Héros → −1')
+    await expect(roundOutcome).toContainText('Héros (SORCIER) → −1')
   })
 
   // Défense lancer_de=6 : clé "6" → "-2" → dégâts = 2-2 = 0
@@ -130,10 +130,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     // endurance=10, dégâts=2-2=0 → round-defense affiche le modificateur
     const roundDefense = page.locator('.round-defense')
     await expect(roundDefense).toContainText('DÉFENSE [6] → -2')
-    await expect(roundDefense).toContainText('Dégâts: 0')
+    await expect(roundDefense).toContainText('DÉFENSE [6] → -2 (dégâts : 0)')
     // round-outcome affiche les dégâts finaux
     const roundOutcome = page.locator('.round-outcome')
-    await expect(roundOutcome).toContainText('Héros → −0')
+    await expect(roundOutcome).toContainText('Héros (SORCIER) → −0')
   })
 
   // Victoire : habilete=50 + monstre_endurance=1 → tué en 1 round → navigation vers 396

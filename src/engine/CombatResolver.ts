@@ -363,7 +363,7 @@ export class CombatResolver {
       degats = rules.degats_defaite
       if (resolved?.defense && resolved.defense.type === 'lancer_de') {
         defenseRollNeeded = true
-        defenseData = resolved.defense.lancer_de
+        defenseData = { ...resolved.defense.lancer_de, texte: resolved.defense.texte }
       }
       cible = 'hero'
       heroVie -= degats

@@ -231,6 +231,7 @@ export interface CombatPhaseOverrides {
     avant?: boolean
   }
   defense?: {
+    texte?: string            // libellé personnalisé du bouton de défense (ex: "Esquiver")
     type: "lancer_de"
     lancer_de: LancerDeData
   }
@@ -264,6 +265,7 @@ export interface CombatData {
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
   }
   defense?: {
+    texte?: string            // libellé personnalisé du bouton de défense (ex: "Esquiver")
     type: "lancer_de"
     lancer_de: LancerDeData   // données du lancer de dé de défense
   }
