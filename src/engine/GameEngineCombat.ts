@@ -105,10 +105,10 @@ export class GameEngineCombat {
     const counts: Record<string, number> = {}
     
     return monstres.map(monstre => {
-      const nom = monstre.nom
+      const nom = monstre.nom ?? 'Monstre'
       counts[nom] = (counts[nom] ?? 0) + 1
       
-      const totalCount = monstres.filter(m => m.nom === nom).length
+      const totalCount = monstres.filter(m => (m.nom ?? 'Monstre') === nom).length
       if (totalCount > 1) {
         return { ...monstre, nom: `${nom} N°${counts[nom]}` }
       }

@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons } from '../../helpers/commonTests'
+﻿import { test, expect } from '@playwright/test'
+import { testSection, testChoiceButtons, screenshotOnFailure } from '../../helpers/commonTests'
+
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 53
@@ -11,10 +12,7 @@ const SECTION_CHOICES = {
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      const screenshotPath = `test-results/${testInfo.title.replace(/\s+/g, '-')}-failed.png`
-      await page.screenshot({ path: screenshotPath })
-    }
+    await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
   })
 
   test.beforeEach(async ({ page }) => {
@@ -23,7 +21,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Bouton de choix', async ({ page }) => {
@@ -36,12 +34,13 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
 
     await page.click('.choices-list button:has-text("Enfoncer la porte")')
-    await page.waitForSelector('.section-text', { timeout: 5000 })
+    await page.waitForSelector('.action-roll-btn', { timeout: 5000 })
 
     await page.click('.action-roll-btn') // lancer dé
-
-    const sectionContent = page.locator('[data-section="155"]')
-    await expect(sectionContent).toBeVisible()
+    await page.waitForSelector('.action-roll-total', { timeout: 5000 })
+    await page.waitForSelector('.action-roll-box', { state: 'detached', timeout: 5000 })
+    
+    await testSection(page, 155)
   })
 
   test('Si échoué - section 300 avec -1 endurance', async ({ page }) => {
@@ -54,8 +53,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
     await page.click('.action-roll-btn') // lancer dé
 
-    const sectionContent = page.locator('[data-section="300"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 300)
 
     const enduranceValue = await page.locator('#stat-endurance').textContent()
     expect(enduranceValue).toBe('9')

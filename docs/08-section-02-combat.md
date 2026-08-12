@@ -163,9 +163,10 @@ Quand le héros perd un round, il peut lancer un dé pour réduire les dégâts 
 
 ```json
 "defense": {
+  "texte": "Esquiver",
   "type": "lancer_de",
   "lancer_de": {
-    "choix": "1d6",
+    "formule": "1d6",
     "resultats": {
       "2": "-1",
       "4": "-1",
@@ -177,9 +178,12 @@ Quand le héros perd un round, il peut lancer un dé pour réduire les dégâts 
 
 | Champ | Description |
 |-------|-------------|
+| `texte` | Libellé personnalisé du bouton affiché au joueur (ex : `"Esquiver"`, `"Parer"`) — si absent, le libellé par défaut est utilisé |
 | `type` | Toujours `"lancer_de"` |
-| `lancer_de.choix` | Formule de dés (ex : `"1d6"`) |
+| `lancer_de.formule` | Formule de dés (ex : `"1d6"`) |
 | `lancer_de.resultats` | Modificateurs indexés par valeur de dé. Les clés non présentes = 0 (pas de réduction) |
+
+> Sans `texte`, le bouton affiche `🛡️ Utiliser le bouclier — lancer 1d6` pour une défense liée à un item équipé, ou `🎲 Lancer les dés de défense (1d6)` pour une défense globale. Avec `texte`, le label devient `🎲 <texte> — lancer 1d6`.
 
 ---
 

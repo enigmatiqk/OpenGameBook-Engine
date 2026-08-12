@@ -1,21 +1,19 @@
-import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation, testCombatStart, testCombatRound, testRoundSuivant } from '../../helpers/commonTests'
+﻿import { test, expect } from '@playwright/test'
+import { testSection, testChoiceButtons, testNavigation, screenshotOnFailure } from '../../helpers/commonTests'
+
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 25
 const SECTION_TEXT = "Les peintures sont des portraits d'homme"
 const SECTION_CHOICES = {
-  90: 'Sortir par la porte nord',
+  90: 'Fuir par la porte nord',
   340: 'Combattre le pouvoir du Sorcier'
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      const screenshotPath = `test-results/section-${String(SECTION_NUMBER).padStart(3, '0')}-${testInfo.title.replace(/\s+/g, '-')}-failed.png`
-      await page.screenshot({ path: screenshotPath })
-    }
+    await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
   })
 
   test.beforeEach(async ({ page }) => {
@@ -24,7 +22,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -44,8 +42,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
 
     await page.click(`.choices-list button:has-text("${SECTION_CHOICES[90]}")`)
-    await page.waitForSelector('[data-section="90"]', { timeout: 5000 })
-    await expect(page.locator('[data-section="90"]')).toBeVisible()
+    await testSection(page, 90)
 
     // -2 endurance à la fuite
     const enduranceValue = await page.locator('#stat-endurance').textContent()

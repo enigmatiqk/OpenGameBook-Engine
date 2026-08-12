@@ -382,7 +382,7 @@ export class GameView {
           row.appendChild(faceCell)
           
           const nomCell = document.createElement('td')
-          nomCell.textContent = monstre.nom
+          nomCell.textContent = monstre.nom ?? ''
           row.appendChild(nomCell)
           
           const habCell = document.createElement('td')
@@ -740,7 +740,7 @@ export class GameView {
 
       setTimeout(() => {
         const succes = duelState
-          ? GameEngineActions.evalDuelCondition(duelState.conditionSucces, totalHeros, totalAdv)
+          ? GameEngineActions.evalDuelCondition({ type: 'expr', expr: duelState.conditionSucces }, totalHeros, totalAdv)
           : totalHeros > totalAdv
         const libelle = duelState
           ? (succes ? duelState.libelleSucces : duelState.libelleEchec)

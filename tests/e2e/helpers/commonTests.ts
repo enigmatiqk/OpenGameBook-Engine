@@ -1,4 +1,34 @@
-import { expect, Page } from '@playwright/test'
+import { expect, Page, TestInfo } from '@playwright/test'
+
+/**
+ * Sanitize un titre de test pour l'utiliser dans un nom de fichier.
+ * Remplace tous les caractères non alphanumériques par des tirets,
+ * et réduit les tirets consécutifs à un seul.
+ */
+function sanitizeTitle(title: string): string {
+  return title
+    .replace(/[^a-zA-Z0-9À-ÿ]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+/**
+ * À appeler dans test.afterEach pour capturer un screenshot en cas d'échec.
+ * Le nom de fichier est sanitizé pour éviter les erreurs liées aux caractères spéciaux.
+ *
+ * @example
+ * test.afterEach(async ({ page }, testInfo) => {
+ *   await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
+ * })
+ */
+export async function screenshotOnFailure(page: Page, testInfo: TestInfo, sectionNumber: number): Promise<void> {
+  if (testInfo.status !== 'passed') {
+    const sectionPadded = String(sectionNumber).padStart(3, '0')
+    const safeTitle = sanitizeTitle(testInfo.title)
+    const screenshotPath = `test-results/section-${sectionPadded}-${safeTitle}-failed.png`
+    await page.screenshot({ path: screenshotPath })
+  }
+}
 
 /**
  * Teste que la bonne section est affichée

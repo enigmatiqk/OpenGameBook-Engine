@@ -117,7 +117,15 @@ Force les stats initiales du héros.
 
 Exemple : `/?adventure=1&section=11&habilete=10&endurance=10`
 
-### `item_id=X&item_count=Y`
+### `param_section_<nom>=<valeur>`
+
+Injecte un paramètre de section nommé `<nom>` avec la valeur `<valeur>`. Simule les `section_params` transmis normalement par un choix en jeu.
+
+Utile pour les sections dont la destination de victoire est dynamique (ex : section 161 dont `combat.victoire.section` est `{ param: "section_victoire" }`).
+
+Exemple : `/?adventure=1&section=161&param_section_section_victoire=12`
+
+- Avec `param_section_section_victoire=12` : après victoire du combat, le joueur est envoyé à la section 12
 
 Ajoute des items à l'inventaire du héros.
 

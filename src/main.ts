@@ -379,7 +379,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       ;(engine as any).currentSection = -1
       engine.timer.start()
-      engine.navigateTo(parseInt(debugSection))
+
+      // Paramètres de section injectés via URL (format: param_section_<nom>=<valeur>)
+      // Exemple : param_section_section_victoire=12
+      // Alimentent currentSectionParams avant la navigation pour que resolveSection() fonctionne.
+      const debugSectionParams: Record<string, number> = {}
+      const searchString = window.location.search.substring(1) // Remove leading ?
+      if (searchString) {
+        const pairs = searchString.split('&')
+        for (const pair of pairs) {
+          const [key, value] = pair.split('=').map(decodeURIComponent)
+          if (key && value) {
+            const match = key.match(/^param_section_(.+)$/)
+            if (match) {
+              const parsed = parseInt(value, 10)
+              if (!isNaN(parsed)) debugSectionParams[match[1]] = parsed
+            }
+          }
+        }
+      }
+
+      engine.navigateTo(parseInt(debugSection), Object.keys(debugSectionParams).length > 0 ? debugSectionParams : undefined)
 
       // Surcharge les stats du monstre si précisées
       const combatState = engine.getCombatState()
@@ -432,6 +452,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 monstres: p.monstres.map((m: any) => ({ ...m, habilete }))
               }))
             }
+          }
+        }
+      }
+
+      // Cas lancer_de : combatState est null car le combat attend le lancer de dé.
+      // On patche directement les phases dans les données de la section pour que
+      // resolveMonsterSelection() charge les stats surchargées quelle que soit la face tirée.
+      if (!engine.getCombatState() && (params.has('monstre_endurance') || params.has('monstre_habilete'))) {
+        const sectionData = (engine as any).adventure?.sections?.find(
+          (s: any) => s.numero === parseInt(debugSection)
+        )
+        if (sectionData?.combat?.lancer_de && sectionData.combat.phases) {
+          if (params.has('monstre_endurance')) {
+            const endurance = parseInt(params.get('monstre_endurance')!, 10)
+            sectionData.combat.phases = sectionData.combat.phases.map((p: any) => ({
+              ...p,
+              monstres: p.monstres.map((m: any) => ({ ...m, endurance }))
+            }))
+          }
+          if (params.has('monstre_habilete')) {
+            const habilete = parseInt(params.get('monstre_habilete')!, 10)
+            sectionData.combat.phases = sectionData.combat.phases.map((p: any) => ({
+              ...p,
+              monstres: p.monstres.map((m: any) => ({ ...m, habilete }))
+            }))
           }
         }
       }

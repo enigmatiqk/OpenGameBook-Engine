@@ -1,4 +1,4 @@
-import type { Choice, Hero } from '../types'
+import type { Choice, Hero, SectionRef } from '../types'
 import { GameEngineNavigation } from './GameEngineNavigation'
 import { checkCondition } from './schema-conditions'
 import { applyEffects } from './schema-effects'
@@ -46,7 +46,7 @@ export function resolveChoice(
   choice: Choice,
   hero: Hero,
   navigation: GameEngineNavigation
-): { success: boolean; raison?: string; section?: number } {
+): { success: boolean; raison?: string; section?: SectionRef } {
   // Vérifier la condition
   const availability = isChoiceAvailable(choice, hero, navigation)
   if (!availability.available) {
@@ -62,7 +62,7 @@ export function resolveChoice(
   }
 
   // Déterminer la section de destination
-  let section: number | undefined
+  let section: SectionRef | undefined
   
   // Format classique
   if (choice.section !== undefined) {

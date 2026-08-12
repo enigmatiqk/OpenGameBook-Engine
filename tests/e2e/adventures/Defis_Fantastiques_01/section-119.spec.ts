@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testMonnaie } from '../../helpers/commonTests'
+﻿import { test, expect } from '@playwright/test'
+import { testSection, testChoiceButtons, testMonnaie, screenshotOnFailure } from '../../helpers/commonTests'
+
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 119
@@ -14,10 +15,7 @@ const BASE_URL = (params: string) =>
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      const screenshotPath = `test-results/section-${String(SECTION_NUMBER).padStart(3, '0')}-${testInfo.title.replace(/\s+/g, '-')}-failed.png`
-      await page.screenshot({ path: screenshotPath })
-    }
+    await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
   })
 
   test.beforeEach(async ({ page }) => {

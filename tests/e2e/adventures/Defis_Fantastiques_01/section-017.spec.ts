@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test'
-import { testSectionAndText, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+﻿import { test, expect } from '@playwright/test'
+import { testSection, testChoiceButtons, testNavigation, screenshotOnFailure } from '../../helpers/commonTests'
+
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 17
@@ -13,10 +14,7 @@ const SECTION_CHOICES = {
 test.describe('Section 017 - Le Vampire', () => {
 
   test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      const screenshotPath = `test-results/section-${String(SECTION_NUMBER).padStart(3, '0')}-${testInfo.title.replace(/\s+/g, '-')}-failed.png`
-      await page.screenshot({ path: screenshotPath })
-    }
+    await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
   })
 
   test.beforeEach(async ({ page }) => {
@@ -25,7 +23,7 @@ test.describe('Section 017 - Le Vampire', () => {
   })
 
   test('Section et texte', async ({ page }) => {
-    await testSectionAndText(page, SECTION_NUMBER, SECTION_TEXT)
+    await testSection(page, SECTION_NUMBER, SECTION_TEXT)
   })
 
   test('Boutons de choix', async ({ page }) => {
@@ -56,9 +54,7 @@ test.describe('Section 017 - Le Vampire', () => {
     await page.click(`.action-roll-btn`)
     
     // Vérifier qu'on est à la section 327
-    await page.waitForSelector('[data-section="327"]', { timeout: 10000 })
-    const sectionContent = page.locator('[data-section="327"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 327)
   })
 
   test('Après action échouée : "Fuir" et "Combattre" sont disponibles', async ({ page }) => {

@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testNavigation } from '../../helpers/commonTests'
+﻿import { test } from '@playwright/test'
+import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure } from '../../helpers/commonTests'
+
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 84
@@ -13,10 +14,7 @@ const SECTION_CHOICES = {
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      const screenshotPath = `test-results/${testInfo.title.replace(/\s+/g, '-')}-failed.png`
-      await page.screenshot({ path: screenshotPath })
-    }
+    await screenshotOnFailure(page, testInfo, SECTION_NUMBER)
   })
 
   test.beforeEach(async ({ page }) => {
@@ -34,15 +32,5 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('Navigation vers section 204', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0)
-  })
-
-  test('Navigation vers section 280', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 1)
-  })
-
-  test('Navigation vers section 377', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 2)
-  })
+  navigationTests(test, SECTION_CHOICES)
 })

@@ -640,7 +640,7 @@ export interface CombatState {
   currentRollHero?: number[]
   // Round en cours de construction pour la phase escorte
   // (le round principal est résolu, on accumule les résultats secondaires)
-  pendingRound?: CombatRound & { secondairesRolls: Array<{ monstre: Enemy; rollEnnemi: number[]; fa: number; degats: number }> }
+  pendingRound?: CombatRound & { secondairesRolls: Array<{ monstre: Enemy; rollEnnemi: number[]; fa: number; heroRoll: number[]; heroFa: number; degats: number }> }
   // fuite en cours (section vers laquelle fuir après le résultat de l'action)
   fuiteEnCours?: number
   // Phases du combat

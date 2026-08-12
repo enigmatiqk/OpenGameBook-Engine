@@ -1414,7 +1414,7 @@ export class GameEngine {
           this.combatState,
           this.adventure,
           effet.combat.stat,
-          effet.combat.delta,
+          effet.combat.delta ?? 0,
           (stat, delta, raison) => this.applyStatDelta(stat, delta, raison),
           []
         )
