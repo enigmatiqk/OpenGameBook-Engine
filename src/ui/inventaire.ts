@@ -150,7 +150,8 @@ export class InventaireView {
 
           // Bouton Jeter (icône seulement)
           // Visible si : drop inventaire autorisé, OU drop équipement autorisé ET item équipable (a un type)
-          const showDrop = dropAllowed || (equipDropAllowed && !!item.type)
+          // Masqué si l'item a item_dropable === false
+          const showDrop = (dropAllowed || (equipDropAllowed && !!item.type)) && item.item_dropable !== false
           if (showDrop) {
             const dropBtn = document.createElement('button')
             dropBtn.className = 'inv-drop-btn'
@@ -221,7 +222,7 @@ export class InventaireView {
         } else {
           const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
           const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${escAttr(item.id)}">⚔️</button>` : ''
-          const showDrop = dropAllowed || (equipDropAllowed && !!item.type)
+          const showDrop = (dropAllowed || (equipDropAllowed && !!item.type)) && item.item_dropable !== false
           const dropBtn = showDrop ? `<button class="btn-drop-modal" data-item-id="${escAttr(item.id)}">🗑️ Jeter</button>` : ''
           content += `<li>${escHtml(item.label)}${qty} ${equipBtn}${dropBtn}</li>`
         }

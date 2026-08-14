@@ -1581,6 +1581,12 @@ export class GameEngine {
     }
 
     const item = this.hero.inventaire[idx]
+
+    // Vérifie que l'item est droppable
+    if (typeof item !== 'string' && item.item_dropable === false) {
+      return { success: false, message: `${item.label} ne peut pas être jeté` }
+    }
+
     const label = typeof item !== 'string' ? item.label : item
 
     if (typeof item !== 'string' && item.quantite !== undefined && item.quantite > 1) {
@@ -1624,6 +1630,11 @@ export class GameEngine {
 
     const item = this.hero.equipement[slotName]
     if (!item) return { success: false, message: 'Aucun item dans ce slot' }
+
+    // Vérifie que l'item est droppable
+    if (item.item_dropable === false) {
+      return { success: false, message: `${item.label} ne peut pas être jeté` }
+    }
 
     // Déséquipe et supprime sans remettre en inventaire
     const label = item.label

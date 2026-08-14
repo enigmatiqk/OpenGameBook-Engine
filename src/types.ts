@@ -18,6 +18,7 @@ export interface InventaireItem {
   bonus?: Record<string, number>  // bonus de stats apportés quand équipé
   effets?: Effet[]           // effets appliqués quand l'item est porté
   equipe?: boolean           // true si l'item est actuellement équipé
+  item_dropable?: boolean    // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
 }
 
 export type InventaireEntree = string | InventaireItem
@@ -287,6 +288,7 @@ export interface EffetItem {
   delta?: number      // quantité à ajouter (défaut: 1)
   delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur delta
   raison?: string     // raison pour l'historique
+  item_dropable?: boolean  // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
 }
 
 export interface EffetMonstreStat {
@@ -374,6 +376,7 @@ export interface ItemGain {
   description?: string
   bonus?: Record<string, number>
   effets?: Effet[]  // effets appliqués quand l'item est porté
+  item_dropable?: boolean  // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
 }
 
 export interface ActionOutcome {

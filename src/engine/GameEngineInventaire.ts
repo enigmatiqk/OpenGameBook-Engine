@@ -164,6 +164,7 @@ export class GameEngineInventaire {
     if (itemGain.description) newItem.description = itemGain.description
     if (itemGain.bonus) newItem.bonus = itemGain.bonus
     if (itemGain.effets) newItem.effets = itemGain.effets
+    if (itemGain.item_dropable === false) newItem.item_dropable = false
 
     // remplace: true → équipe directement dans le slot du type de l'item
     // - slot occupé par même type : déséquipe l'ancien (retour inventaire), équipe le nouveau

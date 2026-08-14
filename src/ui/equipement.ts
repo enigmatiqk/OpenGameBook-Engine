@@ -30,7 +30,7 @@ export class EquipementView {
 
     const buildSlot = (slotName: string, slotLabel: string, cssClass: string): string => {
       const item = hero.equipement[slotName]
-      const dropBtn = (equipementDropAllowed && item)
+      const dropBtn = (equipementDropAllowed && item && item.item_dropable !== false)
         ? `<button class="btn-drop-equip-modal" data-slot="${escAttr(slotName)}" title="Jeter ${escAttr(item.label)}">🗑️</button>`
         : ''
       const unequipBtn = item ? `<button class="btn-unequip-modal" data-slot="${escAttr(slotName)}">✕</button>` : ''

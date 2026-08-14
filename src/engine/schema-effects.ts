@@ -73,7 +73,9 @@ export function applyItemEffect(item: NonNullable<Effet['item']>, hero: Hero): v
   if (existing && typeof existing !== 'string') {
     existing.quantite = (existing.quantite ?? 1) + delta
   } else {
-    hero.inventaire.push({ id: itemId, label: itemLabel, quantite: delta })
+    const newEntry: import('../types').InventaireItem = { id: itemId, label: itemLabel, quantite: delta }
+    if (item.item_dropable === false) newEntry.item_dropable = false
+    hero.inventaire.push(newEntry)
   }
 }
 
