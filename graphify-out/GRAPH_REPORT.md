@@ -1,16 +1,16 @@
-# Graph Report - OpenGameBook-Engine  (2026-08-12)
+# Graph Report - OpenGameBook-Engine  (2026-08-17)
 
 ## Corpus Check
-- 328 files · ~701,963 words
+- 331 files · ~701,625 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1825 nodes · 3587 edges · 143 communities (101 shown, 42 thin omitted)
+- 1883 nodes · 3752 edges · 144 communities (100 shown, 44 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 140 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `84a42ed2`
+- Built from commit: `6f7a9a52`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -21,23 +21,23 @@
 - Hero
 - commonTests.ts
 - testSection
-- GameEngine
+- Section
 - types.ts
 - scripts
-- ._buildSectionContent
+- GameView
 - ia_generate_images.py
 - compilerOptions
 - testStat
-- .getRegle
+- Adventure
 - pdf_scanner.py
 - extract_pdf-to-json.py
 - main.ts
 - Effets de Section
 - debugPanel.ts
-- .getLeaderboard
+- SaveStore
 - Système d'acquisition d'items
 - test_property6_extract_sections_count_and_uniqueness
-- Adventure
+- ._showHeroModal
 - GameEngineNavigation
 - LibraryView
 - 📖 Guides principaux
@@ -48,7 +48,7 @@
 - PrettyPrinter
 - testNavigation
 - Champs racine
-- GameEngine.ts
+- PlayTimer
 - sectionNotes.ts
 - ui/schema-choices.ts
 - scripts/convert.py
@@ -80,14 +80,14 @@
 - `regles` ★ obligatoire
 - Champs racine
 - Paramètres disponibles
-- serialization.property.test.ts
+- GameEngine.ts
 - Personnage (`personnage.json`)
 - Exemples
 - Effets
 - Défense par item équipé (`combat_defense`)
 - Jeter un équipement (`equipement_dropable`)
 - graphify reference: extra exports and benchmark
-- ui/schema-conditions.ts
+- GameEngine
 - graphify reference: query, path, explain
 - Effets d'items
 - Plan d'implémentation : Moteur de Gamebook
@@ -98,16 +98,16 @@
 - graphify reference: transcribe video and audio
 - extraction-spec.md
 - README.md
-- 142fff5de42f11ba7b6fa5ff5cd29ddefdd4e3e5.md
-- 92d9b878f7448b624dcd394dcefd8b0fd8851466.md
-- adventures-Defis_Fantastiq-586d3-mbat-affichage-bouton-fuite-chromium/error-context.md
-- adventures-Defis_Fantastiq-82530-61-Section-061-Combat-fuite-chromium/error-context.md
-- adventures-Defis_Fantastiq-bfc0f-053-Si-réussi---section-155-chromium/error-context.md
+- GameEngineMonstres
+- Créer une aventure
+- 2f8385d45eb8edc659bd3af26c192af275db0bfa.md
+- 707e13ca4a52be2414566197da003148e74dd492.md
+- 9ecc5220347f2e0bd7918b43c9f9bbdb19c70859.md
 - Stratégies de remplacement
-- b302f02c894a2b207ed45074571c8e8bb79443d9.md
-- d83f49d7bdda7832cc2c72cf4adb49ebf00d6569.md
-- adventures-Defis_Fantastiq-5966e-ection-066-Section-et-texte-chromium/error-context.md
-- adventures-Defis_Fantastiq-f594d-Section-061-Combat-victoire-chromium/error-context.md
+- deca6b7c63b7924cda4baac97cd55501ce074804.md
+- EquipementView
+- adventures-Defis_Fantastiq-1f2f4--Section-051-gain-de-chance-chromium/error-context.md
+- adventures-Defis_Fantastiq-5de48-ection-051-Boutons-de-choix-chromium/error-context.md
 - section-011.spec.ts
 - section-031.spec.ts
 - section-045.spec.ts
@@ -141,7 +141,8 @@
 - section-191.spec.ts
 - section-197.spec.ts
 - section-200.spec.ts
-- Action avec dés (test de stat)
+- adventures-Defis_Fantastiq-967fb-Navigation-vers-section-287-chromium/error-context.md
+- adventures-Defis_Fantastiq-bc4d4-ection-051-Section-et-texte-chromium/error-context.md
 - ia_sections/convert.py
 - adventures/manifest.json
 - serve.sh script
@@ -151,12 +152,12 @@
 2. `screenshotOnFailure()` - 200 edges
 3. `testChoiceButtons()` - 183 edges
 4. `navigationTests()` - 133 edges
-5. `GameEngine` - 100 edges
-6. `Hero` - 64 edges
-7. `Adventure` - 49 edges
-8. `CombatState` - 39 edges
-9. `testNavigation()` - 27 edges
-10. `GameView` - 26 edges
+5. `GameEngine` - 98 edges
+6. `Hero` - 83 edges
+7. `Adventure` - 73 edges
+8. `CombatState` - 41 edges
+9. `GameEngineActions` - 30 edges
+10. `testNavigation()` - 27 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `PDFScanner`  [INFERRED]
@@ -167,13 +168,13 @@
   scannerPDF/main.py → scannerPDF/pretty_printer.py
 - `test_property6_extract_sections_count_and_uniqueness()` --calls--> `parse_sections_from_text()`  [INFERRED]
   scannerPDF/tests/test_pdf_scanner.py → scannerPDF/pdf_scanner.py
-- `resolveItemDelta()` --calls--> `parseDiceFormula()`  [EXTRACTED]
-  src/engine/schema-effects.ts → src/engine/CombatResolver.ts
+- `GameEngine` --references--> `CombatResolver`  [EXTRACTED]
+  src/engine/GameEngine.ts → src/engine/CombatResolver.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (143 total, 42 thin omitted)
+## Communities (144 total, 44 thin omitted)
 
 ### Community 0 - "screenshotOnFailure"
 Cohesion: 0.04
@@ -185,11 +186,11 @@ Nodes (62): SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, 
 
 ### Community 2 - "CombatState"
 Cohesion: 0.09
-Nodes (20): applyMonstreEffets(), buildEnemy(), CombatResolver, evaluateMonstreCondition(), findItemCombatDefense(), parseAttackFormula(), resolveDeltaResultat(), resolveLancerDeFormule() (+12 more)
+Nodes (11): buildEnemy(), CombatResolver, findItemCombatDefense(), resolvePhaseData(), GameEngineCombat, CombatData, CombatRules, CombatState (+3 more)
 
 ### Community 3 - "Hero"
-Cohesion: 0.20
-Nodes (7): GameEngineEquipement, GameEngineHero, GameEngineInventaire, ChoixInitialOption, Hero, InventaireItem, ItemGain
+Cohesion: 0.16
+Nodes (8): GameEngineEffects, GameEngineEquipement, GameEngineHero, GameEngineInventaire, ChoixInitialOption, Hero, InventaireItem, ItemGain
 
 ### Community 4 - "commonTests.ts"
 Cohesion: 0.10
@@ -199,9 +200,13 @@ Nodes (17): SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, 
 Cohesion: 0.04
 Nodes (25): SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES (+17 more)
 
+### Community 6 - "Section"
+Cohesion: 0.16
+Nodes (5): ImageGenerator, ImageGeneratorImpl, Section, adventure, section
+
 ### Community 7 - "types.ts"
-Cohesion: 0.06
-Nodes (35): Action, ActionLancerDe, ActionOutcome, ActionRegle, ChoixInitial, CombatEvent, CombatEventChoix, CombatModifier (+27 more)
+Cohesion: 0.04
+Nodes (48): Action, ActionLancerDe, ActionOutcome, ActionRegle, ChoiceCondition, ChoixInitial, CombatEvent, CombatEventChoix (+40 more)
 
 ### Community 8 - "scripts"
 Cohesion: 0.07
@@ -219,9 +224,9 @@ Nodes (21): dist, DOM, ES2020, node_modules, src/**/*, tests, compilerOptions, l
 Cohesion: 0.06
 Nodes (19): SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES (+11 more)
 
-### Community 13 - ".getRegle"
-Cohesion: 0.14
-Nodes (6): newRollId(), GameEngineActions, Choice, Effet, PendingRoll, Regle
+### Community 13 - "Adventure"
+Cohesion: 0.10
+Nodes (6): GameEngineActions, GameEngineDuel, Adventure, Effet, PendingRoll, Regle
 
 ### Community 14 - "pdf_scanner.py"
 Cohesion: 0.13
@@ -232,7 +237,7 @@ Cohesion: 0.17
 Nodes (19): _build_couverture(), _build_livre(), _build_sections(), detect_first_section_page(), _extract_section_headers(), _find_section_for_image(), main(), pdf_to_text() (+11 more)
 
 ### Community 16 - "main.ts"
-Cohesion: 0.24
+Cohesion: 0.25
 Nodes (12): initDefeatView(), initLibrary(), initVictoryView(), launchGameView(), showHeroCreationAndLaunch(), showIntroScreen(), showLeaderboardModal(), showView() (+4 more)
 
 ### Community 17 - "Effets de Section"
@@ -240,12 +245,12 @@ Cohesion: 0.18
 Nodes (11): Dépasser la limite avec `ignore_max`, Effet d'item, Effet de stat, Effets de Section, Exemple complet, Historique des modifications, `ignore_stat_limit=1`, Limites de stat (+3 more)
 
 ### Community 18 - "debugPanel.ts"
-Cohesion: 0.19
-Nodes (15): DebugConditions, initDebugConditions(), initDebugNavHistory(), isDevMode(), addRow(), AdventureEntry, buildUrl(), DebugParams (+7 more)
+Cohesion: 0.22
+Nodes (14): DebugConditions, initDebugNavHistory(), isDevMode(), addRow(), AdventureEntry, buildUrl(), DebugParams, initDebugButton() (+6 more)
 
-### Community 19 - ".getLeaderboard"
-Cohesion: 0.38
-Nodes (3): LEADERBOARD_KEY(), LeaderboardEntry, LeaderboardView
+### Community 19 - "SaveStore"
+Cohesion: 0.20
+Nodes (7): LEADERBOARD_KEY(), SaveStore, LeaderboardEntry, LeaderboardView, leaderboardEntryArb, heroArb, statChangeArb
 
 ### Community 20 - "Système d'acquisition d'items"
 Cohesion: 0.15
@@ -255,13 +260,13 @@ Nodes (13): Définition d'un item à gagner, Exemple complet, Gain d'item via un
 Cohesion: 0.18
 Nodes (13): composite, given, parse_sections_from_text(), Parse raw text into a list of section dicts: {numero, texte, choix, type?}.…, _build_synthetic_text(), Property-based tests for the PDF scanner module. Property 6 — Validates:…, **Validates: Requirements 11.7** Property 1 (Python): For any adventure dict,…, Build a raw text string that looks like a gamebook with the given sections.… (+5 more)
 
-### Community 22 - "Adventure"
-Cohesion: 0.13
-Nodes (12): ImageGenerator, ImageGeneratorImpl, Adventure, Section, EquipementView, GameViewCallbacks, getInventaireItems(), getMonnaiInfo() (+4 more)
+### Community 22 - "._showHeroModal"
+Cohesion: 0.19
+Nodes (4): getInventaireItems(), getMonnaiInfo(), InventaireView, slugify()
 
 ### Community 23 - "GameEngineNavigation"
-Cohesion: 0.13
-Nodes (12): GameEngineNavigation, applyChoiceCost(), isChoiceAvailable(), resolveChoice(), checkCondition(), checkConditions(), applyEffect(), applyEffects() (+4 more)
+Cohesion: 0.14
+Nodes (11): GameEngineNavigation, applyChoiceCost(), isChoiceAvailable(), resolveChoice(), checkCondition(), checkConditions(), applyEffect(), applyEffects() (+3 more)
 
 ### Community 24 - "LibraryView"
 Cohesion: 0.17
@@ -299,9 +304,9 @@ Nodes (22): SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, SECTION_CHOICES, 
 Cohesion: 0.18
 Nodes (11): Champs racine, `collection` — optionnel, `image_de_garde` ★ obligatoire, `images_annexes` — optionnel, `images_defaite` — optionnel, `images_victoire` — optionnel, `intro` — optionnel, `mode_emploi` ★ obligatoire (+3 more)
 
-### Community 33 - "GameEngine.ts"
-Cohesion: 0.11
-Nodes (9): GameEngineSave, PlayTimer, SAVE_KEY(), SaveStore, EffetMonstreStat, SaveState, leaderboardEntryArb, heroArb (+1 more)
+### Community 33 - "PlayTimer"
+Cohesion: 0.13
+Nodes (4): GameEngineSave, PlayTimer, SAVE_KEY(), SaveState
 
 ### Community 34 - "sectionNotes.ts"
 Cohesion: 0.60
@@ -348,8 +353,8 @@ Cohesion: 0.07
 Nodes (28): Architecture moteur, Champs, Champs, Champs, Champs, `combat` ★ obligatoire, Comme `action` d'un choix, Comme `usage` d'un item d'inventaire (+20 more)
 
 ### Community 45 - "Choix"
-Cohesion: 0.09
-Nodes (22): Action `lancer_de`, Champs, Champs, Champs de `lancer_de`, Choix, Choix libre (`libre`), Choix local (`local`), Comportement moteur (+14 more)
+Cohesion: 0.08
+Nodes (26): Action avec dés (test de stat), Action `lancer_de`, Champs, Champs, Champs de `action`, Champs de `ActionOutcome` (`si_reussi` / `si_echoue`), Champs de `lancer_de`, Choix (+18 more)
 
 ### Community 46 - "Scanner PDF"
 Cohesion: 0.08
@@ -388,8 +393,8 @@ Cohesion: 0.10
 Nodes (21): `action_resolved` — action déjà tentée, `and` / `or` — conditions composées, `and` — toutes les conditions doivent être vraies, Cas de jeu, `combat_degats_heros` — dégâts reçus par le héros, `combat_degats_monstre` — dégâts infligés au monstre, `combat_victoire` — victoire au combat, Conditions (+13 more)
 
 ### Community 55 - "parseDiceFormula"
-Cohesion: 0.20
-Nodes (10): parseDiceFormula(), rollDice(), HeroInitState, RollResult, _buildPendingCard(), _buildResolvedCard(), _esc(), _render() (+2 more)
+Cohesion: 0.15
+Nodes (13): parseDiceFormula(), rollDice(), GameEngineRolls, resolveItemDelta(), HeroInitState, RollResult, _buildPendingCard(), _buildResolvedCard() (+5 more)
 
 ### Community 56 - "`sections` ★ obligatoire"
 Cohesion: 0.22
@@ -420,16 +425,16 @@ Cohesion: 0.25
 Nodes (8): `combat` ★ obligatoire, `composite`, `defaite` ★ obligatoire, `regles` ★ obligatoire, `restaurer_stat`, Règles personnalisées — optionnel, `test_stat`, `victoire` ★ obligatoire
 
 ### Community 63 - "Champs racine"
-Cohesion: 0.10
-Nodes (21): Ajouter l'aventure à la bibliothèque, Champs racine, `collection` — optionnel, Créer une aventure, Exemple minimal complet, `image_de_garde_ia` — optionnel, `image_de_garde` ★ obligatoire, `images_annexes` — optionnel (+13 more)
+Cohesion: 0.15
+Nodes (13): Champs racine, `collection` — optionnel, `image_de_garde_ia` — optionnel, `image_de_garde` ★ obligatoire, `images_annexes` — optionnel, `images_defaite_ia` — optionnel, `images_defaite` — optionnel, `images_victoire` — optionnel (+5 more)
 
 ### Community 64 - "Paramètres disponibles"
 Cohesion: 0.15
 Nodes (12): Aventure, Combat et Dés, Exemples, `ignore_stat_limit`, Inventaire, `lance_de`, Mode debug (développement uniquement), Notes importantes (+4 more)
 
-### Community 65 - "serialization.property.test.ts"
-Cohesion: 0.15
-Nodes (12): PersonnageTemplate, Regles, StatDefinition, arbAdventure, arbChoice, arbCombatData, arbCombatRules, arbEffet (+4 more)
+### Community 65 - "GameEngine.ts"
+Cohesion: 0.14
+Nodes (14): applyMonstreEffets(), evaluateMonstreCondition(), parseAttackFormula(), resolveDeltaResultat(), resolveLancerDeFormule(), resolveResultatDe(), rollDiceAdversaire(), Choice (+6 more)
 
 ### Community 66 - "Personnage (`personnage.json`)"
 Cohesion: 0.17
@@ -455,10 +460,6 @@ Nodes (8): Activation, Comportement, Condition `no_droppable_equip`, Dans la sec
 Cohesion: 0.22
 Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
 
-### Community 73 - "ui/schema-conditions.ts"
-Cohesion: 0.60
-Nodes (4): ChoiceCondition, formatConditionReason(), renderConditionsList(), renderConditionStatus()
-
 ### Community 74 - "graphify reference: query, path, explain"
 Cohesion: 0.33
 Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
@@ -483,69 +484,65 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
-### Community 85 - "142fff5de42f11ba7b6fa5ff5cd29ddefdd4e3e5.md"
-Cohesion: 0.40
-Nodes (4): Error details, Instructions, Test info, Test source
+### Community 86 - "Créer une aventure"
+Cohesion: 0.25
+Nodes (8): Ajouter l'aventure à la bibliothèque, Créer une aventure, Exemple minimal complet, `personnage` ★ obligatoire, `regles` ★ obligatoire, Règles système (résumé), `sections` ★ obligatoire, Structure générale
 
-### Community 86 - "92d9b878f7448b624dcd394dcefd8b0fd8851466.md"
-Cohesion: 0.40
-Nodes (4): Error details, Instructions, Test info, Test source
+### Community 87 - "2f8385d45eb8edc659bd3af26c192af275db0bfa.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 87 - "adventures-Defis_Fantastiq-586d3-mbat-affichage-bouton-fuite-chromium/error-context.md"
-Cohesion: 0.40
-Nodes (4): Error details, Instructions, Test info, Test source
+### Community 88 - "707e13ca4a52be2414566197da003148e74dd492.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 88 - "adventures-Defis_Fantastiq-82530-61-Section-061-Combat-fuite-chromium/error-context.md"
-Cohesion: 0.40
-Nodes (4): Error details, Instructions, Test info, Test source
-
-### Community 89 - "adventures-Defis_Fantastiq-bfc0f-053-Si-réussi---section-155-chromium/error-context.md"
-Cohesion: 0.40
-Nodes (4): Error details, Instructions, Test info, Test source
+### Community 89 - "9ecc5220347f2e0bd7918b43c9f9bbdb19c70859.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
 ### Community 90 - "Stratégies de remplacement"
 Cohesion: 0.50
 Nodes (4): `remplace: false` (défaut), `remplace: "item_id"`, `remplace: true`, Stratégies de remplacement
 
-### Community 91 - "b302f02c894a2b207ed45074571c8e8bb79443d9.md"
-Cohesion: 0.50
-Nodes (3): Error details, Instructions, Test info
+### Community 91 - "deca6b7c63b7924cda4baac97cd55501ce074804.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 92 - "d83f49d7bdda7832cc2c72cf4adb49ebf00d6569.md"
-Cohesion: 0.50
-Nodes (3): Error details, Instructions, Test info
+### Community 93 - "adventures-Defis_Fantastiq-1f2f4--Section-051-gain-de-chance-chromium/error-context.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 93 - "adventures-Defis_Fantastiq-5966e-ection-066-Section-et-texte-chromium/error-context.md"
-Cohesion: 0.50
-Nodes (3): Error details, Instructions, Test info
+### Community 94 - "adventures-Defis_Fantastiq-5de48-ection-051-Boutons-de-choix-chromium/error-context.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 94 - "adventures-Defis_Fantastiq-f594d-Section-061-Combat-victoire-chromium/error-context.md"
-Cohesion: 0.50
-Nodes (3): Error details, Instructions, Test info
+### Community 128 - "adventures-Defis_Fantastiq-967fb-Navigation-vers-section-287-chromium/error-context.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 128 - "Action avec dés (test de stat)"
-Cohesion: 0.50
-Nodes (4): Action avec dés (test de stat), Champs de `action`, Champs de `ActionOutcome` (`si_reussi` / `si_echoue`), Exemple avec effets et items sur si_reussi
+### Community 129 - "adventures-Defis_Fantastiq-bc4d4-ection-051-Section-et-texte-chromium/error-context.md"
+Cohesion: 0.33
+Nodes (5): Error details, Instructions, Page snapshot, Test info, Test source
 
 ## Knowledge Gaps
-- **835 isolated node(s):** `adventures`, `name`, `version`, `description`, `type` (+830 more)
+- **843 isolated node(s):** `adventures`, `name`, `version`, `description`, `type` (+838 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **42 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **44 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GameEngine` connect `GameEngine` to `GameEngine.ts`, `CombatState`, `Hero`, `._buildSectionContent`, `.getRegle`, `main.ts`, `debugPanel.ts`, `GameEngineNavigation`, `Adventure`, `parseDiceFormula`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
-- **Why does `testSection()` connect `testSection` to `screenshotOnFailure`, `testChoiceButtons`, `commonTests.ts`, `testStat`, `testNavigation`, `section-011.spec.ts`, `section-031.spec.ts`, `section-045.spec.ts`, `section-046.spec.ts`, `section-048.spec.ts`, `section-049.spec.ts`, `section-057.spec.ts`, `section-059.spec.ts`, `section-062.spec.ts`, `section-066.spec.ts`, `section-067.spec.ts`, `section-069.spec.ts`, `section-088.spec.ts`, `section-095.spec.ts`, `section-099.spec.ts`, `section-100.spec.ts`, `section-101.spec.ts`, `section-103.spec.ts`, `section-104.spec.ts`, `section-107.spec.ts`, `section-115.spec.ts`, `section-117.spec.ts`, `section-121.spec.ts`, `section-122.spec.ts`, `section-129.spec.ts`, `section-157.spec.ts`, `section-165.spec.ts`, `section-167.spec.ts`, `section-176.spec.ts`, `section-189.spec.ts`, `section-191.spec.ts`, `section-197.spec.ts`, `section-200.spec.ts`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **Why does `GameEngine` connect `GameEngine` to `GameEngine.ts`, `CombatState`, `PlayTimer`, `Hero`, `Section`, `GameView`, `Adventure`, `main.ts`, `SaveStore`, `GameEngineNavigation`, `GameEngineMonstres`, `._showHeroModal`, `parseDiceFormula`, `EquipementView`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `Adventure` connect `Adventure` to `GameEngine.ts`, `PlayTimer`, `Hero`, `Section`, `types.ts`, `GameEngine`, `GameView`, `main.ts`, `GameEngineMonstres`, `parseDiceFormula`, `GameEngineNavigation`, `LibraryView`, `._showHeroModal`, `EquipementView`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `Choix` connect `Choix` to `docs/README.md`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **What connects `adventures`, `name`, `version` to the rest of the system?**
-  _835 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _843 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `screenshotOnFailure` be split into smaller, more focused modules?**
   _Cohesion score 0.0392156862745098 - nodes in this community are weakly interconnected._
 - **Should `testChoiceButtons` be split into smaller, more focused modules?**
   _Cohesion score 0.023574041457797047 - nodes in this community are weakly interconnected._
 - **Should `CombatState` be split into smaller, more focused modules?**
-  _Cohesion score 0.08649912331969609 - nodes in this community are weakly interconnected._
-- **Should `commonTests.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.09595959595959595 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08874912648497554 - nodes in this community are weakly interconnected._

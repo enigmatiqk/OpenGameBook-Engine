@@ -1,9 +1,17 @@
-import type { Hero, Adventure, Regle, CombatState, Effet } from '../types'
+import type { Hero, Adventure, Regle, CombatState, Effet, Choice } from '../types'
+import { GameEngineHero } from './GameEngineHero'
 
 /**
  * Gère la résolution des actions et des règles
  */
 export class GameEngineActions {
+  // Track des utilisations des règles par contexte
+  // Clés: "section-{N}-{action}", "section_courante-{action}", "combat-{action}", "aventure-{action}"
+  private regleUtilisations: Record<string, number> = {}
+
+  constructor() {
+    this.regleUtilisations = {}
+  }
   /**
    * Récupère une règle par son nom
    */
@@ -295,6 +303,410 @@ export class GameEngineActions {
   static parseGain(gain: import('../types').RegleDuelDe['gain']): number {
     if (!gain) return 1
     return gain.multiplicateur ?? 1
+  }
+
+  /**
+   * Vérifie si une règle est disponible selon ses max_utilisations par contexte.
+   * Retourne { ok: true } si disponible, { ok: false, raison } sinon.
+   */
+  isRegleAvailable(adventure: Adventure | null, currentSection: number, actionName: string): { ok: boolean; raison?: string } {
+    if (!adventure) return { ok: true }
+    const regle = GameEngineActions.getRegle(adventure, actionName) as any
+    if (!regle?.max_utilisations) return { ok: true }
+
+    const max = regle.max_utilisations
+
+    if (max.section !== undefined) {
+      const key = `section-${currentSection}-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.section) {
+        return { ok: false, raison: `Limite atteinte pour cette section (${max.section}x)` }
+      }
+    }
+    if (max.section_courante !== undefined) {
+      const key = `section_courante-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.section_courante) {
+        return { ok: false, raison: `Limite atteinte pour cette visite (${max.section_courante}x)` }
+      }
+    }
+    if (max.combat !== undefined) {
+      const key = `combat-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.combat) {
+        return { ok: false, raison: `Limite atteinte pendant ce combat (${max.combat}x)` }
+      }
+    }
+    if (max.aventure !== undefined) {
+      const key = `aventure-${actionName}`
+      if ((this.regleUtilisations[key] ?? 0) >= max.aventure) {
+        return { ok: false, raison: `Limite atteinte pour cette aventure (${max.aventure}x)` }
+      }
+    }
+
+    return { ok: true }
+  }
+
+  /**
+   * Incrémente les compteurs de max_utilisations pour une règle dans tous les contextes définis.
+   */
+  incrementRegleUtilisations(adventure: Adventure | null, currentSection: number, actionName: string): void {
+    if (!adventure) return
+    const regle = GameEngineActions.getRegle(adventure, actionName) as any
+    if (!regle?.max_utilisations) return
+
+    const max = regle.max_utilisations
+    if (max.section !== undefined) {
+      const key = `section-${currentSection}-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.section_courante !== undefined) {
+      const key = `section_courante-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.combat !== undefined) {
+      const key = `combat-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+    if (max.aventure !== undefined) {
+      const key = `aventure-${actionName}`
+      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
+    }
+  }
+
+  /**
+   * Reset les compteurs section_courante des règles
+   */
+  resetSectionCouranteUtilisations(): void {
+    for (const key of Object.keys(this.regleUtilisations)) {
+      if (key.startsWith('section_courante-')) {
+        delete this.regleUtilisations[key]
+      }
+    }
+  }
+
+  /**
+   * Reset les compteurs combat des règles
+   */
+  resetCombatUtilisations(): void {
+    for (const key of Object.keys(this.regleUtilisations)) {
+      if (key.startsWith('combat-')) {
+        delete this.regleUtilisations[key]
+      }
+    }
+  }
+
+  /**
+   * Sauvegarde et restaure les utilisations des règles
+   */
+  getRegleUtilisations(): Record<string, number> {
+    return { ...this.regleUtilisations }
+  }
+
+  setRegleUtilisations(utilisations: Record<string, number>): void {
+    this.regleUtilisations = { ...utilisations }
+  }
+
+  /**
+   * Résout une action lancer_de avec les résultats définis
+   */
+  resolveActionLancerDe(
+    choice: Choice, 
+    rolls: number[],
+    resolveSection: (ref: import('../types').SectionRef) => number
+  ): { targetSection: number; effets?: Effet[] } {
+    const action = choice.action
+    if (typeof action !== 'object' || !('type' in action) || action.type !== 'lancer_de') {
+      throw new Error('Action n\'est pas de type lancer_de')
+    }
+
+    const resultats = (action as import('../types').ActionLancerDe).lancer_de?.resultats
+    if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats' dans lancer_de`)
+    
+    const total = rolls.reduce((a, b) => a + b, 0)
+    let targetSection: number | undefined
+    let targetEffets: Effet[] | undefined
+    
+    // Cherche le résultat correspondant
+    for (const [key, value] of Object.entries(resultats)) {
+      if (key.includes('-')) {
+        // Plage (ex: "1-5")
+        const [min, max] = key.split('-').map(Number)
+        if (total >= min && total <= max) {
+          targetSection = (value as any).section !== undefined ? resolveSection((value as any).section) : undefined
+          targetEffets = (value as any).effets
+          break
+        }
+      } else {
+        // Valeur unique
+        if (total === Number(key)) {
+          targetSection = (value as any).section !== undefined ? resolveSection((value as any).section) : undefined
+          targetEffets = (value as any).effets
+          break
+        }
+      }
+    }
+    
+    if (targetSection === undefined) {
+      throw new Error(`Aucun résultat trouvé pour ${total}`)
+    }
+
+    return { targetSection, effets: targetEffets }
+  }
+
+  /**
+   * Exécute une action qui ne nécessite pas de dé (ex: restaurer_stat).
+   * Point d'entrée générique : l'UI ne connaît pas le type de la règle.
+   */
+  executeActionNoDice(
+    adventure: Adventure,
+    hero: Hero,
+    choice: Choice,
+    currentSection: number,
+    applyStatDeltaWithDebug: (stat: string, delta: number, raison: string) => void,
+    recordActionResult: (actionName: string, resultat: string) => void,
+    choixIndex?: number,
+    trackChoiceUsage?: (key: string) => void
+  ): { success: boolean; message: string } {
+    if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
+
+    const actionName = typeof choice.action === 'string' ? choice.action : (choice.action as any).name
+    if (!actionName) throw new Error('Action name not found')
+
+    const regle = GameEngineActions.getRegle(adventure, actionName)
+    if (!regle) throw new Error(`Règle inconnue : "${actionName}"`)
+
+    // Applique la surcharge partielle si définie sur le choix (regle_surcharge)
+    const regleSurcharge = (choice as any).regle_surcharge
+    const rule = regleSurcharge ? { ...regle, ...regleSurcharge } : regle as any
+
+    // Vérifie les limites d'utilisation par contexte (max_utilisations)
+    const availability = this.isRegleAvailable(adventure, currentSection, actionName)
+    if (!availability.ok) {
+      return { success: false, message: availability.raison ?? 'Limite d\'utilisation atteinte' }
+    }
+
+    // Délègue l'exécution selon le type de règle
+    if (rule.type === 'restaurer_stat') {
+      const stat = rule.stat
+      const current = hero.statistiques[stat] ?? 0
+
+      // Vérifie la condition item si définie
+      if (rule.condition?.item_id) {
+        const condItemId = rule.condition.item_id
+        const condQty = rule.condition.quantite ?? 1
+        const condItem = hero.inventaire.find((i: any) => typeof i !== 'string' && i.id === condItemId)
+        const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
+        if (availableQty < condQty) {
+          return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
+        }
+      }
+
+      // ÉTAPE 1 : Appliquer valeur_start / delta_start EN PREMIER (si présents)
+      if (rule.valeur_start !== undefined) {
+        const newInitial = rule.valeur_start === 'start'
+          ? hero.statistiques_initiales[stat] ?? 0
+          : rule.valeur_start
+        hero.statistiques_initiales[stat] = newInitial
+      } else if (rule.delta_start !== undefined) {
+        hero.statistiques_initiales[stat] = (hero.statistiques_initiales[stat] ?? 0) + rule.delta_start
+      }
+
+      // Calcule la target value
+      let targetValue: number
+      if (rule.delta !== undefined) {
+        targetValue = current + rule.delta
+      } else if (rule.valeur === 'start') {
+        targetValue = hero.statistiques_initiales[stat] ?? 0
+      } else if (rule.valeur === 'max') {
+        targetValue = hero.statistiques_initiales[stat] ?? 0
+      } else if (typeof rule.valeur === 'number') {
+        targetValue = rule.valeur
+      } else {
+        targetValue = current
+      }
+
+      const delta = targetValue - current
+      if (delta !== 0) {
+        if (rule.ignore_max) {
+          hero.statistiques[stat] = targetValue
+          hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
+        } else {
+          applyStatDeltaWithDebug(stat, delta, `action ${actionName}`)
+        }
+      }
+
+      // Consomme le cout_item si défini
+      if (rule.cout_item?.item_id) {
+        const coutId = rule.cout_item.item_id
+        const coutQty = rule.cout_item.quantite ?? 1
+        const coutIdx = hero.inventaire.findIndex((i: any) => typeof i !== 'string' && i.id === coutId)
+        if (coutIdx !== -1) {
+          const coutItem = hero.inventaire[coutIdx]
+          if (typeof coutItem !== 'string') {
+            if (coutItem.quantite && coutItem.quantite > coutQty) {
+              coutItem.quantite -= coutQty
+            } else {
+              hero.inventaire.splice(coutIdx, 1)
+            }
+          }
+        }
+      }
+    } else {
+      throw new Error(`Type de règle "${rule.type}" ne supporte pas l'exécution sans dé`)
+    }
+
+    // Track l'action comme résolue avec succès
+    recordActionResult(actionName, 'succes')
+
+    // Incrémente les compteurs max_utilisations
+    this.incrementRegleUtilisations(adventure, currentSection, actionName)
+
+    // Track les utilisations si c'est un choix local avec limite
+    if (choice.local && choice.utilisations !== undefined && choixIndex !== undefined && trackChoiceUsage) {
+      const key = `${currentSection}-${choixIndex}`
+      trackChoiceUsage(key)
+    }
+
+    return { success: true, message: `${choice.texte} effectué !` }
+  }
+
+  /**
+   * Résout un jet de gain d'item (delta_de) après que l'UI a obtenu le résultat du joueur.
+   * Crédite l'item avec la quantité obtenue et retourne les informations pour navigation.
+   */
+  resolveGainRoll(
+    hero: Hero,
+    pending: import('../types').PendingGainRoll,
+    rolls: number[]
+  ): { targetSection: number; itemName: string; totalGained: number } {
+    const total = rolls.reduce((a, b) => a + b, 0)
+    const itemName = pending.itemName
+    const existingItem = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
+    if (existingItem && typeof existingItem !== 'string') {
+      existingItem.quantite = (existingItem.quantite ?? 0) + total
+    } else {
+      hero.inventaire.push({ id: itemName, label: pending.itemLabel, quantite: total })
+    }
+    hero.historique.push({ timestamp: Date.now(), stat: itemName, delta: total, raison: pending.raison })
+    
+    return {
+      targetSection: pending.targetSection,
+      itemName,
+      totalGained: total
+    }
+  }
+
+  /**
+   * Résout une action de choix avec jets de dés
+   */
+  resolveActionChoice(
+    adventure: Adventure,
+    hero: Hero,
+    choice: Choice,
+    rolls: number[],
+    applyEffets: (effets: Effet[], label: string) => void,
+    recordActionResult: (actionName: string, resultat: string) => void,
+    recordTrigger: (trigger: string) => void,
+    resolveSection: (ref: import('../types').SectionRef) => number
+  ): {
+    targetSection?: number;
+    pendingGainRoll?: import('../types').PendingGainRoll;
+    endValue?: 'victoire' | 'defaite';
+  } {
+    if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
+
+    const action = choice.action
+
+    // Gère l'action lancer_de
+    if (typeof action === 'object' && 'type' in action && action.type === 'lancer_de') {
+      const { targetSection, effets } = this.resolveActionLancerDe(choice, rolls, resolveSection)
+      
+      // Applique les effets du résultat avant de naviguer
+      if (effets && effets.length > 0) {
+        applyEffets(effets, choice.texte)
+      }
+      
+      return { targetSection }
+    }
+
+    const actionName = typeof action === 'string' ? action : (action as any).name
+    if (!actionName) throw new Error('Action name not found')
+
+    const resultat = GameEngineActions.resolveRegle(adventure, hero, actionName, rolls,
+      (effets, label) => applyEffets(effets, label)
+    )
+    recordActionResult(actionName, resultat)
+
+    // Extrait les outcomes (ancien format vs nouveau)
+    const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+      ? choice.action as import('../types').ActionRegle
+      : null
+    const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
+    const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
+
+    // Applique les effets du résultat
+    const isSuccess = resultat === GameEngineActions.getRegleSuccesKey(adventure, actionName)
+    const outcome = isSuccess ? si_reussi : si_echoue
+
+    if (outcome) {
+      // Vérifie si un effet item avec delta_de nécessite un jet manuel
+      const effets: Effet[] = outcome.effets ?? []
+      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
+      
+      if (gainDiceEffet?.item?.delta_de) {
+        // Applique les effets sans delta_de immédiatement
+        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
+        if (autresEffets.length > 0) applyEffets(autresEffets, choice.texte)
+        
+        // Applique les items gagnés
+        if (outcome.items && hero) {
+          for (const itemGain of outcome.items) {
+            GameEngineHero.addItemGain(hero, itemGain, adventure.personnage.emplacements_equipement ?? {})
+          }
+        }
+        
+        const targetSection = outcome.choix?.section !== undefined ? resolveSection(outcome.choix.section) : undefined
+        if (!targetSection) throw new Error('outcome avec delta_de doit avoir choix.section')
+        
+        return {
+          pendingGainRoll: {
+            formula: gainDiceEffet.item.delta_de,
+            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
+            itemName: gainDiceEffet.item.name,
+            itemLabel: gainDiceEffet.item.name,
+            raison: gainDiceEffet.item.raison ?? choice.texte,
+            targetSection,
+            remainingEffets: [],
+          }
+        }
+      }
+      
+      // Pas de delta_de — chemin normal
+      if (outcome.effets) {
+        applyEffets(outcome.effets, choice.texte)
+      }
+      
+      // Applique les items gagnés
+      if (outcome.items && hero) {
+        for (const itemGain of outcome.items) {
+          GameEngineHero.addItemGain(hero, itemGain, adventure.personnage.emplacements_equipement ?? {})
+        }
+      }
+      
+      // Active le trigger de l'outcome si défini
+      if (outcome.trigger) {
+        recordTrigger(outcome.trigger)
+      }
+
+      // Gère end selon le résultat
+      if (outcome.end) {
+        return { endValue: outcome.end }
+      }
+
+      // Navigation
+      const targetSection = outcome.choix?.section !== undefined ? resolveSection(outcome.choix.section) : undefined
+      return { targetSection }
+    }
+
+    return {}
   }
 
   /**

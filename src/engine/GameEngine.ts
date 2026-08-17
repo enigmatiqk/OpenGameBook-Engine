@@ -1,10 +1,10 @@
 import type {
   Adventure, Hero, SaveState, Choice, Section,
-  DiceRollResult, PendingRoll, RollResult,
-  HeroInitState, CombatState, RegleComposite, EffetMonstreStat
+  PendingRoll, RollResult,
+  HeroInitState, CombatState, RegleComposite
 } from '../types'
 import { PlayTimer } from './PlayTimer'
-import { CombatResolver, parseDiceFormula, parseAttackFormula } from './CombatResolver'
+import { CombatResolver, parseAttackFormula } from './CombatResolver'
 import { SaveStore } from './SaveStore'
 import { initDebugNavHistory, initDebugConditions } from './GameEngineDebug'
 import { GameEngineHero } from './GameEngineHero'
@@ -12,10 +12,10 @@ import { GameEngineCombat } from './GameEngineCombat'
 import { GameEngineNavigation } from './GameEngineNavigation'
 import { GameEngineActions } from './GameEngineActions'
 import { GameEngineSave } from './GameEngineSave'
-import { resolveStatValeurDelta, applyItemEffect } from './schema-effects'
-
-let rollIdCounter = 0
-function newRollId(): string { return `roll_${++rollIdCounter}` }
+import { GameEngineRolls } from './GameEngineRolls'
+import { GameEngineDuel } from './GameEngineDuel'
+import { GameEngineMonstres } from './GameEngineMonstres'
+import { GameEngineEffects } from './GameEngineEffects'
 
 export class GameEngine {
   private adventure: Adventure | null = null
@@ -28,32 +28,11 @@ export class GameEngine {
   private sectionsDepuisChargement: number = 0
   private readonly SECTIONS_AVANT_SAUVEGARDE = 10
 
-  // État création héros
-  private heroInitState: HeroInitState | null = null
-  private heroInitKeys: string[] = []
-
   // État combat en cours
   private combatState: CombatState | null = null
 
-  // Modifications de stats des monstres en attente (appliquées lors du prochain combat)
-  // clé : monstre_id (ou "__any__" pour s'appliquer au premier monstre sans id ciblé)
-  private pendingMonsterStatMods: Record<string, EffetMonstreStat[]> = {}
-
-  // Modifications de stats du monstre (ancien format string — rétrocompat)
-  private nextCombatMonsterStatMods: string = ''
-
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
-
-  // Track des utilisations des règles par contexte
-  // Clés: "section-{N}-{action}", "section_courante-{action}", "combat-{action}", "aventure-{action}"
-  private regleUtilisations: Record<string, number> = {}
-
-  // État intermédiaire d'un duel de dés (jet héros effectué, attente jet adversaire)
-  private pendingDuelRoll: import('../types').PendingDuelRoll | null = null
-
-  // Mise courante saisie par le joueur pour un duel_de (avant débit)
-  private currentMiseDuel: number = 0
 
   // Paramètres transmis à la section courante via section_params du choix entrant
   private currentSectionParams: Record<string, number> = {}
@@ -66,6 +45,11 @@ export class GameEngine {
   private navigation: GameEngineNavigation
   private combatModule: GameEngineCombat
   private saveModule: GameEngineSave
+  private rollsModule: GameEngineRolls
+  private duelModule: GameEngineDuel
+  private actionsModule: GameEngineActions
+  private monstresModule: GameEngineMonstres
+  private effectsModule: GameEngineEffects
 
   constructor(timer?: PlayTimer, combatResolver?: CombatResolver, saveStore?: SaveStore) {
     this.timer = timer ?? new PlayTimer()
@@ -76,6 +60,11 @@ export class GameEngine {
     this.navigation = new GameEngineNavigation()
     this.combatModule = new GameEngineCombat(this.combatResolver)
     this.saveModule = new GameEngineSave(this.timer, this.saveStore)
+    this.rollsModule = new GameEngineRolls()
+    this.duelModule = new GameEngineDuel()
+    this.actionsModule = new GameEngineActions()
+    this.monstresModule = new GameEngineMonstres()
+    this.effectsModule = new GameEngineEffects()
   }
 
   loadAdventure(adventure: Adventure): void {
@@ -86,11 +75,12 @@ export class GameEngine {
     this.victory = false
     this.finalTimeMs = null
     this.saveState = null
-    this.heroInitState = null
     this.combatState = null
-    this.pendingMonsterStatMods = {}
     this.timer.reset()
     this.navigation.init()
+    this.rollsModule.resetHeroInit()
+    this.duelModule.reset()
+    this.monstresModule.reset()
   }
 
   // ─── Création du héros ────────────────────────────────────────────────────
@@ -102,19 +92,15 @@ export class GameEngine {
   startNewGame(): HeroInitState {
     if (!this.adventure) throw new Error('No adventure loaded.')
 
-    const { statistiques } = this.adventure.personnage
-    this.heroInitKeys = Object.keys(statistiques)
-    this.heroInitState = { resolved: [] }
-
     // Crée le héros avec les stats initiales
     this.hero = GameEngineHero.createHero(this.adventure, 
-      Object.fromEntries(this.heroInitKeys.map(k => [k, 0]))
+      Object.fromEntries(Object.keys(this.adventure.personnage.statistiques).map(k => [k, 0]))
     )
 
     this.timer.reset()
     this.sectionsDepuisChargement = this.SECTIONS_AVANT_SAUVEGARDE
     
-    return this._advanceHeroInit()
+    return this.rollsModule.startHeroInit(this.adventure, this.hero)
   }
 
   /**
@@ -133,65 +119,20 @@ export class GameEngine {
    * Retourne le nouvel état (avec le prochain PendingRoll ou sans si terminé).
    */
   resolveHeroInitRoll(result: RollResult): HeroInitState {
-    if (!this.adventure || !this.hero || !this.heroInitState) throw new Error('No hero init in progress.')
-
-    const pending = this.heroInitState.pending
-    if (!pending || pending.id !== result.id) throw new Error('Roll ID mismatch.')
-
-    // Extraire la stat depuis le contexte "hero_init:habilete"
-    const statKey = pending.context.split(':')[1]
-    const def = this.adventure.personnage.statistiques[statKey]
-    const { modifier } = parseDiceFormula(def.init)
-    const total = result.total + modifier
-
-    const diceResult: DiceRollResult = {
-      stat: statKey,
-      label: def.label,
-      rolls: result.rolls,
-      formula: def.init,
-      total,
-    }
-
-    this.hero.statistiques[statKey] = total
-    this.heroInitState = { resolved: [...this.heroInitState.resolved, diceResult] }
-
-    return this._advanceHeroInit()
-  }
-
-  /**
-   * Avance vers la prochaine stat à initialiser, ou finalise si tout est résolu.
-   */
-  private _advanceHeroInit(): HeroInitState {
-    if (!this.adventure || !this.hero || !this.heroInitState) throw new Error('No hero init in progress.')
-
-    const resolved = this.heroInitState.resolved
-    const nextKey = this.heroInitKeys[resolved.length]
-
-    if (!nextKey) {
-      // Toutes les stats sont résolues
-      this.hero.statistiques_initiales = { ...this.hero.statistiques }
-      this.heroInitState = { resolved }
+    if (!this.adventure || !this.hero) throw new Error('No hero init in progress.')
+    const heroInitState = this.rollsModule.resolveHeroInitRoll(this.adventure, this.hero, result)
+    
+    // Si la création est terminée, démarrer le timer et aller à la section 1
+    if (this.rollsModule.isHeroInitComplete()) {
       this.currentSection = 1
       this.timer.start()
-      return { resolved }
     }
-
-    const def = this.adventure.personnage.statistiques[nextKey]
-    const { count, sides } = parseDiceFormula(def.init)
-
-    const pending: PendingRoll = {
-      id: newRollId(),
-      label: `Lancer les dés — ${def.label}`,
-      formula: `${count}d${sides}`,
-      context: `hero_init:${nextKey}`,
-    }
-
-    this.heroInitState = { resolved, pending }
-    return this.heroInitState
+    
+    return heroInitState
   }
 
   isHeroInitComplete(): boolean {
-    return !!this.heroInitState && !this.heroInitState.pending
+    return this.rollsModule.isHeroInitComplete()
   }
 
   /**
@@ -240,15 +181,14 @@ export class GameEngine {
    */
   private _applyStatDeltaWithDebug(stat: string, delta: number, raison: string): void {
     if (!this.hero) return
-    const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero)
-    if (this.isDebugIgnoreStatLimit()) {
-      if (this.hero.statistiques[normalizedStat] !== undefined) {
-        this.hero.statistiques[normalizedStat] += delta
-        this.hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
-      }
-    } else {
-      this.applyStatDelta(normalizedStat, delta, raison)
-    }
+    this.effectsModule.applyStatDeltaWithDebug(
+      this.hero,
+      stat,
+      delta,
+      raison,
+      this.isDebugIgnoreStatLimit(),
+      (s, d, r) => this.applyStatDelta(s, d, r)
+    )
   }
 
   /**
@@ -280,11 +220,11 @@ export class GameEngine {
     }
     // Charger les utilisations des règles
     if (save.regleUtilisations) {
-      this.regleUtilisations = { ...save.regleUtilisations }
+      this.actionsModule.setRegleUtilisations(save.regleUtilisations)
     }
     // Charger les mods de monstres en attente
     if (save.pendingMonsterStatMods) {
-      this.pendingMonsterStatMods = { ...save.pendingMonsterStatMods }
+      this.monstresModule.setState({ pendingMonsterStatMods: save.pendingMonsterStatMods })
     }
     // Restaurer les paramètres de section
     this.currentSectionParams = save.currentSectionParams ? { ...save.currentSectionParams } : {}
@@ -325,11 +265,7 @@ export class GameEngine {
     this.navigation.resetSectionActions()
 
     // Reset les compteurs section_courante des règles
-    for (const key of Object.keys(this.regleUtilisations)) {
-      if (key.startsWith('section_courante-')) {
-        delete this.regleUtilisations[key]
-      }
-    }
+    this.actionsModule.resetSectionCouranteUtilisations()
 
     // Met à jour l'historique de navigation
     this.navigation.updateNavHistory(this.currentSection)
@@ -355,44 +291,12 @@ export class GameEngine {
         // Applique les mods sur le premier monstre de la première phase
         let premiereMonstre = combatData.phases[0]?.monstres[0]
         if (premiereMonstre) {
-          // Applique les modifications de stats du monstre (ancien format string — rétrocompat)
-          if (this.nextCombatMonsterStatMods) {
-            premiereMonstre = this.combatModule.applyMonsterStatMods(premiereMonstre, this.nextCombatMonsterStatMods)
-            this.nextCombatMonsterStatMods = ''
-          }
-
-          // Applique les mods structurés (type "monstre_stat") en cherchant par id puis par __any__
-          premiereMonstre = this._applyPendingMonsterStatMods(premiereMonstre)
-
-          // Charge les stats sauvegardées du monstre persistant s'il existe
-          if (premiereMonstre.id && premiereMonstre.persistant) {
-            // Récupère la définition initiale pour les champs non redéfinis localement
-            const initial = this._findMonsterInitialStats(premiereMonstre.id)
-
-            // habilete/endurance : priorité aux stats sauvegardées, sinon définition initiale, sinon local
-            let habilete = premiereMonstre.habilete
-            let endurance = premiereMonstre.endurance
-            if (this.hero.monstres_stats?.[premiereMonstre.id]) {
-              const savedStats = this.hero.monstres_stats[premiereMonstre.id]
-              habilete = savedStats.habilete
-              endurance = savedStats.endurance
-            } else if (initial) {
-              habilete = habilete ?? initial.habilete
-              endurance = endurance ?? initial.endurance
-            }
-
-            // nom et effets : local en priorité, sinon définition initiale
-            const nom = premiereMonstre.nom ?? initial?.nom
-            const effets = premiereMonstre.effets ?? initial?.effets
-
-            premiereMonstre = {
-              ...premiereMonstre,
-              ...(habilete !== undefined ? { habilete } : {}),
-              ...(endurance !== undefined ? { endurance } : {}),
-              ...(nom ? { nom } : {}),
-              ...(effets ? { effets } : {}),
-            }
-          }
+          // Applique toutes les modifications de monstre via le module
+          premiereMonstre = this.monstresModule.prepareMonsterForCombat(
+            premiereMonstre,
+            this.hero,
+            this.adventure
+          )
 
           // Reconstruire le combatData avec le monstre modifié
           const phasesModifiees = [...combatData.phases]
@@ -451,7 +355,7 @@ export class GameEngine {
 
     // Track les modifications de stats du monstre pour le prochain combat (ancien format string)
     if (choice.stat_monstre) {
-      this.nextCombatMonsterStatMods = choice.stat_monstre
+      this.monstresModule.setNextCombatMonsterStatMods(choice.stat_monstre)
     }
 
     // Applique les effets du choix
@@ -516,65 +420,9 @@ export class GameEngine {
    */
   isRegleAvailable(actionName: string): { ok: boolean; raison?: string } {
     if (!this.adventure) return { ok: true }
-    const regle = GameEngineActions.getRegle(this.adventure, actionName) as any
-    if (!regle?.max_utilisations) return { ok: true }
-
-    const max = regle.max_utilisations
-
-    if (max.section !== undefined) {
-      const key = `section-${this.currentSection}-${actionName}`
-      if ((this.regleUtilisations[key] ?? 0) >= max.section) {
-        return { ok: false, raison: `Limite atteinte pour cette section (${max.section}x)` }
-      }
-    }
-    if (max.section_courante !== undefined) {
-      const key = `section_courante-${actionName}`
-      if ((this.regleUtilisations[key] ?? 0) >= max.section_courante) {
-        return { ok: false, raison: `Limite atteinte pour cette visite (${max.section_courante}x)` }
-      }
-    }
-    if (max.combat !== undefined) {
-      const key = `combat-${actionName}`
-      if ((this.regleUtilisations[key] ?? 0) >= max.combat) {
-        return { ok: false, raison: `Limite atteinte pendant ce combat (${max.combat}x)` }
-      }
-    }
-    if (max.aventure !== undefined) {
-      const key = `aventure-${actionName}`
-      if ((this.regleUtilisations[key] ?? 0) >= max.aventure) {
-        return { ok: false, raison: `Limite atteinte pour cette aventure (${max.aventure}x)` }
-      }
-    }
-
-    return { ok: true }
+    return this.actionsModule.isRegleAvailable(this.adventure, this.currentSection, actionName)
   }
 
-  /**
-   * Incrémente les compteurs de max_utilisations pour une règle dans tous les contextes définis.
-   */
-  private _incrementRegleUtilisations(actionName: string): void {
-    if (!this.adventure) return
-    const regle = GameEngineActions.getRegle(this.adventure, actionName) as any
-    if (!regle?.max_utilisations) return
-
-    const max = regle.max_utilisations
-    if (max.section !== undefined) {
-      const key = `section-${this.currentSection}-${actionName}`
-      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
-    }
-    if (max.section_courante !== undefined) {
-      const key = `section_courante-${actionName}`
-      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
-    }
-    if (max.combat !== undefined) {
-      const key = `combat-${actionName}`
-      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
-    }
-    if (max.aventure !== undefined) {
-      const key = `aventure-${actionName}`
-      this.regleUtilisations[key] = (this.regleUtilisations[key] ?? 0) + 1
-    }
-  }
 
   /**
    * Vérifie si un choix local a encore des utilisations disponibles
@@ -596,48 +444,8 @@ export class GameEngine {
   }
 
   getActionPendingRoll(choice: Choice): PendingRoll | null {
-    if (!choice.action || !this.adventure) return null
-    
-    const action = choice.action
-    
-    // Support pour lancer_de avec formule directe
-    if (typeof action === 'object' && 'type' in action && action.type === 'lancer_de') {
-      const lancerDe = (action as import('../types').ActionLancerDe).lancer_de
-      const formule = lancerDe?.formule ?? (lancerDe as any)?.choix
-      if (!formule) throw new Error(`lancer_de action manque la propriété 'formule' dans lancer_de`)
-      return {
-        id: newRollId(),
-        label: choice.texte,
-        formula: formule,
-        context: `action:lancer_de`,
-      }
-    }
-    
-    const actionName = typeof action === 'string' ? action : (action as any).name
-    
-    // Une règle qui n'utilise pas de dés retourne null — l'UI appellera executeActionNoDice
-    const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (regle && !GameEngineActions.requiresDice(regle)) {
-      return null
-    }
-
-    // duel_de : le premier PendingRoll est le jet héros
-    if (regle?.type === 'duel_de') {
-      return {
-        id: newRollId(),
-        label: `Votre jet (${regle.jet_heros})`,
-        formula: regle.jet_heros,
-        context: `action:duel_de:heros:${actionName}`,
-      }
-    }
-    
-    const formula = GameEngineActions.getActionFormula(this.adventure, actionName)
-    return {
-      id: newRollId(),
-      label: choice.texte,
-      formula,
-      context: `action:${actionName}`,
-    }
+    if (!this.adventure) return null
+    return this.rollsModule.getActionPendingRoll(this.adventure, choice)
   }
 
   /**
@@ -645,96 +453,23 @@ export class GameEngine {
    * Null si aucun duel en attente.
    */
   getDuelAdversairePendingRoll(): PendingRoll | null {
-    if (!this.pendingDuelRoll || !this.adventure) return null
-    const regle = GameEngineActions.getRegle(this.adventure, this.pendingDuelRoll.actionName)
-    if (!regle || regle.type !== 'duel_de') return null
-    return {
-      id: newRollId(),
-      label: `Jet de l'adversaire (${regle.jet_adversaire})`,
-      formula: regle.jet_adversaire,
-      context: `action:duel_de:adversaire:${this.pendingDuelRoll.actionName}`,
-    }
+    if (!this.adventure) return null
+    return this.duelModule.getDuelAdversairePendingRoll(this.adventure)
   }
 
   /**
    * Retourne les infos du duel en cours pour affichage UI du jet adversaire.
    */
   getDuelState(): { totalHeros: number; conditionSucces: string; libelleSucces: string; libelleEchec: string } | null {
-    if (!this.pendingDuelRoll || !this.adventure) return null
-    const regle = GameEngineActions.getRegle(this.adventure, this.pendingDuelRoll.actionName)
-    if (!regle || regle.type !== 'duel_de') return null
-    return {
-      totalHeros: this.pendingDuelRoll.totalHeros,
-      conditionSucces: regle.conditions?.succes?.expr ?? '{jet_heros} > {jet_adversaire}',
-      libelleSucces: regle.resultats.succes,
-      libelleEchec: regle.resultats.echec,
-    }
-  }
-
-  /**
-   * Résout le jet adversaire d'un duel et finalise le résultat.
-   */
-  resolveDuelAdversaire(rolls: number[]): Section {
-    if (!this.adventure || !this.hero || !this.pendingDuelRoll) {
-      throw new Error('Aucun duel en attente.')
-    }
-    const { actionName, choice, totalHeros, mise } = this.pendingDuelRoll
-    this.pendingDuelRoll = null
-
-    const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (!regle || regle.type !== 'duel_de') throw new Error(`Règle duel_de introuvable : ${actionName}`)
-
-    const totalAdversaire = rolls.reduce((a, b) => a + b, 0)
-    const succes = GameEngineActions.evalDuelCondition(regle.conditions?.succes, totalHeros, totalAdversaire)
-
-    // Track résultat de l'action
-    const resultat = succes ? regle.resultats.succes : regle.resultats.echec
-    this.navigation.recordActionResult(actionName, resultat)
-
-    if (succes) {
-      // Crédit du gain : mise × multiplicateur
-      const multiplicateur = GameEngineActions.parseGain(regle.gain)
-      const credit = mise * multiplicateur
-      this._applyItemDelta(regle.cout.item_id, credit, `Gain pari (${actionName})`)
-
-      const si_reussi = (choice.action as any)?.si_reussi ?? (choice as any).si_reussi
-      if (si_reussi?.effets) this._applyEffets(si_reussi.effets, choice.texte)
-      if (si_reussi?.trigger) this.navigation.recordTrigger(si_reussi.trigger)
-      if (si_reussi?.items && this.hero) {
-        for (const itemGain of si_reussi.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-        }
-      }
-    } else {
-      const si_echoue = (choice.action as any)?.si_echoue ?? (choice as any).si_echoue
-      if (si_echoue?.effets) this._applyEffets(si_echoue.effets, choice.texte)
-      if (si_echoue?.trigger) this.navigation.recordTrigger(si_echoue.trigger)
-      if (si_echoue?.items && this.hero) {
-        for (const itemGain of si_echoue.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-        }
-      }
-    }
-
-    // Navigation
-    const rawTargetSection = succes
-      ? (choice as any).si_reussi?.choix?.section
-      : (choice as any).si_echoue?.choix?.section
-    const targetSection = rawTargetSection !== undefined ? this.resolveSection(rawTargetSection) : undefined
-
-    if (targetSection !== undefined) {
-      return this.navigateTo(targetSection)
-    }
-
-    // Pas de navigation (local: true) — retourner la section courante
-    return this.adventure.sections.find(s => s.numero === this.currentSection)!
+    if (!this.adventure) return null
+    return this.duelModule.getDuelState(this.adventure)
   }
 
   /**
    * Définit la mise courante pour le prochain duel (saisie utilisateur)
    */
   setMiseDuel(mise: number): void {
-    this.currentMiseDuel = mise
+    this.duelModule.setMiseDuel(mise)
   }
 
   /**
@@ -742,208 +477,85 @@ export class GameEngine {
    */
   getDuelMiseInfo(actionName: string): { min: number; max: number; disponible: number } | null {
     if (!this.adventure || !this.hero) return null
-    const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (!regle || regle.type !== 'duel_de' || !regle.cout.quantite_choix) return null
-    const item = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === regle.cout.item_id)
-    const disponible = item && typeof item !== 'string' ? (item.quantite ?? 1) : 0
-    return {
-      min: regle.cout.quantite_choix.min,
-      max: Math.min(regle.cout.quantite_choix.max, disponible),
-      disponible,
+    return this.duelModule.getDuelMiseInfo(this.adventure, this.hero, actionName)
+  }
+
+  /**
+   * Résout le jet adversaire d'un duel et finalise le résultat.
+   */
+  resolveDuelAdversaire(rolls: number[]): Section {
+    if (!this.adventure || !this.hero) {
+      throw new Error('Aucun duel en attente.')
     }
+    
+    return this.duelModule.resolveDuelAdversaire(
+      this.adventure,
+      this.hero,
+      rolls,
+      (effets, label) => this._applyEffets(effets, label),
+      (itemId, delta, raison) => this._applyItemDelta(itemId, delta, raison),
+      (actionName, resultat) => this.navigation.recordActionResult(actionName, resultat),
+      (trigger) => this.navigation.recordTrigger(trigger),
+      (ref) => this.resolveSection(ref),
+      (section) => this.navigateTo(section)
+    )
   }
 
   resolveActionChoice(choice: Choice, rolls: number[]): Section {
     if (!this.adventure || !this.hero) throw new Error('No active game.')
-    if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
-
-    const action = choice.action
-
-    // Gère l'action lancer_de
-    if (typeof action === 'object' && 'type' in action && action.type === 'lancer_de') {
-      const resultats = (action as import('../types').ActionLancerDe).lancer_de?.resultats
-      if (!resultats) throw new Error(`lancer_de action manque la propriété 'resultats' dans lancer_de`)
-      
-      const total = rolls.reduce((a, b) => a + b, 0)
-      let targetSection: number | undefined
-      let targetEffets: import('../types').Effet[] | undefined
-      
-      // Cherche le résultat correspondant
-      for (const [key, value] of Object.entries(resultats)) {
-        if (key.includes('-')) {
-          // Plage (ex: "1-5")
-          const [min, max] = key.split('-').map(Number)
-          if (total >= min && total <= max) {
-            targetSection = (value as any).section !== undefined ? this.resolveSection((value as any).section) : undefined
-            targetEffets = (value as any).effets
-            break
-          }
-        } else {
-          // Valeur unique
-          if (total === Number(key)) {
-            targetSection = (value as any).section !== undefined ? this.resolveSection((value as any).section) : undefined
-            targetEffets = (value as any).effets
-            break
-          }
-        }
-      }
-      
-      if (targetSection === undefined) {
-        throw new Error(`Aucun résultat trouvé pour ${total}`)
-      }
-
-      // Applique les effets du résultat avant de naviguer
-      if (targetEffets && targetEffets.length > 0) {
-        this._applyEffets(targetEffets, choice.texte)
-      }
-      
-      return this.navigateTo(targetSection)
-    }
-
-    const actionName = typeof action === 'string' ? action : (action as any).name
-    if (!actionName) throw new Error('Action name not found')
 
     // Gère duel_de : premier appel = jet héros, on débite la mise et on attend le jet adversaire
-    const regleDuel = GameEngineActions.getRegle(this.adventure, actionName)
-    if (regleDuel?.type === 'duel_de') {
+    const actionName = typeof choice.action === 'string' ? choice.action : (choice.action as any)?.name
+    if (actionName) {
       const totalHeros = rolls.reduce((a, b) => a + b, 0)
-      const mise = GameEngineActions.getMiseEffective(regleDuel, this.hero, this.currentMiseDuel)
-      // Débite la mise immédiatement
-      this._applyItemDelta(regleDuel.cout.item_id, -mise, `Mise pari (${actionName})`)
-      // Stocke l'état intermédiaire
-      this.pendingDuelRoll = { actionName, choice, totalHeros, mise }
-      // Retourne la section courante — l'UI doit demander le jet adversaire
-      return this.adventure.sections.find(s => s.numero === this.currentSection)!
-    }
-
-    const resultat = GameEngineActions.resolveRegle(this.adventure, this.hero, actionName, rolls,
-      (effets, label) => this._applyEffets(effets, label)
-    )
-    this.navigation.recordActionResult(actionName, resultat)
-
-    // Extrait les outcomes (ancien format vs nouveau)
-    const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
-      ? choice.action as import('../types').ActionRegle
-      : null
-    const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
-    const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
-
-    // Applique les effets du résultat
-    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
-      // Succès — vérifie si un effet item avec delta_de nécessite un jet manuel
-      const effets: import('../types').Effet[] = si_reussi?.effets ?? []
-      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
-      if (gainDiceEffet?.item?.delta_de) {
-        // Applique les effets sans delta_de immédiatement
-        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
-        if (autresEffets.length > 0) this._applyEffets(autresEffets, choice.texte)
-        if (si_reussi?.items && this.hero) {
-          for (const itemGain of si_reussi.items) {
-            GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-          }
-        }
-        const targetSection = si_reussi?.choix?.section !== undefined ? this.resolveSection(si_reussi.choix.section) : undefined
-        if (!targetSection) throw new Error('si_reussi avec delta_de doit avoir choix.section')
-        return {
-          pendingGainRoll: {
-            formula: gainDiceEffet.item.delta_de,
-            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
-            itemName: gainDiceEffet.item.name,
-            itemLabel: gainDiceEffet.item.name,
-            raison: gainDiceEffet.item.raison ?? choice.texte,
-            targetSection,
-            remainingEffets: [],
-          }
-        } as any
-      }
-      // Succès sans delta_de — chemin normal
-      if (si_reussi?.effets) {
-        this._applyEffets(si_reussi.effets, choice.texte)
-      }
-      // Applique les items gagnés en cas de succès
-      if (si_reussi?.items && this.hero) {
-        for (const itemGain of si_reussi.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-        }
-      }
-      // Active le trigger de l'outcome si défini
-      if (si_reussi?.trigger) {
-        this.navigation.recordTrigger(si_reussi.trigger)
-      }
-    } else {
-      // Échec — vérifie si un effet item avec delta_de nécessite un jet manuel
-      const effets: import('../types').Effet[] = si_echoue?.effets ?? []
-      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
-      if (gainDiceEffet?.item?.delta_de) {
-        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
-        if (autresEffets.length > 0) this._applyEffets(autresEffets, choice.texte)
-        if (si_echoue?.items && this.hero) {
-          for (const itemGain of si_echoue.items) {
-            GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-          }
-        }
-        const targetSection = si_echoue?.choix?.section !== undefined ? this.resolveSection(si_echoue.choix.section) : undefined
-        if (!targetSection) throw new Error('si_echoue avec delta_de doit avoir choix.section')
-        return {
-          pendingGainRoll: {
-            formula: gainDiceEffet.item.delta_de,
-            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
-            itemName: gainDiceEffet.item.name,
-            itemLabel: gainDiceEffet.item.name,
-            raison: gainDiceEffet.item.raison ?? choice.texte,
-            targetSection,
-            remainingEffets: [],
-          }
-        } as any
-      }
-      // Échec sans delta_de — chemin normal
-      if (si_echoue?.effets) {
-        this._applyEffets(si_echoue.effets, choice.texte)
-      }
-      // Applique les items gagnés en cas d'échec
-      if (si_echoue?.items && this.hero) {
-        for (const itemGain of si_echoue.items) {
-          GameEngineHero.addItemGain(this.hero, itemGain, this.adventure.personnage.emplacements_equipement ?? {})
-        }
-      }
-      // Active le trigger de l'outcome si défini
-      if (si_echoue?.trigger) {
-        this.navigation.recordTrigger(si_echoue.trigger)
-      }
-    }
-
-    // Navigue selon le résultat
-    let targetSection: number | undefined
-    if (resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)) {
-      const raw = si_reussi?.choix?.section
-      targetSection = raw !== undefined ? this.resolveSection(raw) : undefined
-    } else {
-      const raw = si_echoue?.choix?.section
-      targetSection = raw !== undefined ? this.resolveSection(raw) : undefined
-    }
-
-    // Gère end selon le résultat (succès ou échec)
-    if (targetSection === undefined) {
-      const succes = resultat === GameEngineActions.getRegleSuccesKey(this.adventure, actionName)
-      const endValue = succes ? si_reussi?.end : si_echoue?.end
-      if (endValue) {
-        this.gameOver = true
-        this.victory = endValue === 'victoire'
-        this.finalTimeMs = this.timer.getElapsedMs()
-        this.timer.pause()
-        if (endValue === 'defaite' && this.adventure) {
-          this.saveModule.deleteSave(this.adventure.titre)
-        }
+      if (this.duelModule.startDuel(
+        this.adventure, 
+        this.hero, 
+        actionName, 
+        choice, 
+        totalHeros,
+        (itemId, delta, raison) => this._applyItemDelta(itemId, delta, raison)
+      )) {
+        // Retourne la section courante — l'UI doit demander le jet adversaire
         return this.adventure.sections.find(s => s.numero === this.currentSection)!
       }
     }
 
-    // Si pas de section cible, reste sur la section courante
-    if (!targetSection) {
+    const result = this.actionsModule.resolveActionChoice(
+      this.adventure,
+      this.hero,
+      choice,
+      rolls,
+      (effets, label) => this._applyEffets(effets, label),
+      (actionName, resultat) => this.navigation.recordActionResult(actionName, resultat),
+      (trigger) => this.navigation.recordTrigger(trigger),
+      (ref) => this.resolveSection(ref)
+    )
+
+    // Gère les différents types de résultats
+    if (result.pendingGainRoll) {
+      return {
+        pendingGainRoll: result.pendingGainRoll
+      } as any
+    }
+
+    if (result.endValue) {
+      this.gameOver = true
+      this.victory = result.endValue === 'victoire'
+      this.finalTimeMs = this.timer.getElapsedMs()
+      this.timer.pause()
+      if (result.endValue === 'defaite' && this.adventure) {
+        this.saveModule.deleteSave(this.adventure.titre)
+      }
       return this.adventure.sections.find(s => s.numero === this.currentSection)!
     }
-    
-    return this.navigateTo(targetSection)
+
+    if (result.targetSection !== undefined) {
+      return this.navigateTo(result.targetSection)
+    }
+
+    // Pas de navigation (local: true) — retourner la section courante
+    return this.adventure.sections.find(s => s.numero === this.currentSection)!
   }
 
   /**
@@ -951,17 +563,10 @@ export class GameEngine {
    * Crédite l'item avec la quantité obtenue et navigue vers la section cible.
    */
   resolveGainRoll(pending: import('../types').PendingGainRoll, rolls: number[]): Section {
-    if (!this.adventure || !this.hero) throw new Error('No active game.')
-    const total = rolls.reduce((a, b) => a + b, 0)
-    const itemName = pending.itemName
-    const existingItem = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
-    if (existingItem && typeof existingItem !== 'string') {
-      existingItem.quantite = (existingItem.quantite ?? 0) + total
-    } else {
-      this.hero.inventaire.push({ id: itemName, label: pending.itemLabel, quantite: total })
-    }
-    this.hero.historique.push({ timestamp: Date.now(), stat: itemName, delta: total, raison: pending.raison })
-    return this.navigateTo(pending.targetSection)
+    if (!this.hero) throw new Error('No active game.')
+    
+    const result = this.actionsModule.resolveGainRoll(this.hero, pending, rolls)
+    return this.navigateTo(result.targetSection)
   }
 
   /**
@@ -970,107 +575,19 @@ export class GameEngine {
    */
   executeActionNoDice(choice: Choice, choixIndex?: number): { success: boolean; message: string } {
     if (!this.adventure || !this.hero) throw new Error('No active game.')
-    if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
 
-    const actionName = typeof choice.action === 'string' ? choice.action : (choice.action as any).name
-    if (!actionName) throw new Error('Action name not found')
-
-    const regle = GameEngineActions.getRegle(this.adventure, actionName)
-    if (!regle) throw new Error(`Règle inconnue : "${actionName}"`)
-
-    // Applique la surcharge partielle si définie sur le choix (regle_surcharge)
-    const regleSurcharge = (choice as any).regle_surcharge
-    const rule = regleSurcharge ? { ...regle, ...regleSurcharge } : regle as any
-
-    // Vérifie les limites d'utilisation par contexte (max_utilisations)
-    const availability = this.isRegleAvailable(actionName)
-    if (!availability.ok) {
-      return { success: false, message: availability.raison ?? 'Limite d\'utilisation atteinte' }
-    }
-
-    // Délègue l'exécution selon le type de règle
-    if (rule.type === 'restaurer_stat') {
-      const stat = rule.stat
-      const current = this.hero.statistiques[stat] ?? 0
-
-      // Vérifie la condition item si définie
-      if (rule.condition?.item_id) {
-        const condItemId = rule.condition.item_id
-        const condQty = rule.condition.quantite ?? 1
-        const condItem = this.hero.inventaire.find((i: any) => typeof i !== 'string' && i.id === condItemId)
-        const availableQty = condItem && typeof condItem !== 'string' ? (condItem.quantite ?? 1) : 0
-        if (availableQty < condQty) {
-          return { success: false, message: `${condItemId} insuffisant (${availableQty}/${condQty})` }
-        }
+    return this.actionsModule.executeActionNoDice(
+      this.adventure,
+      this.hero,
+      choice,
+      this.currentSection,
+      (stat, delta, raison) => this._applyStatDeltaWithDebug(stat, delta, raison),
+      (actionName, resultat) => this.navigation.recordActionResult(actionName, resultat),
+      choixIndex,
+      (key) => {
+        this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
       }
-
-      // ÉTAPE 1 : Appliquer valeur_start / delta_start EN PREMIER (si présents)
-      if (rule.valeur_start !== undefined) {
-        const newInitial = rule.valeur_start === 'start'
-          ? this.hero.statistiques_initiales[stat] ?? 0
-          : rule.valeur_start
-        this.hero.statistiques_initiales[stat] = newInitial
-      } else if (rule.delta_start !== undefined) {
-        this.hero.statistiques_initiales[stat] = (this.hero.statistiques_initiales[stat] ?? 0) + rule.delta_start
-      }
-
-      // Calcule la target value
-      let targetValue: number
-      if (rule.delta !== undefined) {
-        targetValue = current + rule.delta
-      } else if (rule.valeur === 'start') {
-        targetValue = this.hero.statistiques_initiales[stat] ?? 0
-      } else if (rule.valeur === 'max') {
-        targetValue = this.hero.statistiques_initiales[stat] ?? 0
-      } else if (typeof rule.valeur === 'number') {
-        targetValue = rule.valeur
-      } else {
-        targetValue = current
-      }
-
-      const delta = targetValue - current
-      if (delta !== 0) {
-        if (rule.ignore_max) {
-          this.hero.statistiques[stat] = targetValue
-          this.hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
-        } else {
-          this._applyStatDeltaWithDebug(stat, delta, `action ${actionName}`)
-        }
-      }
-
-      // Consomme le cout_item si défini
-      if (rule.cout_item?.item_id) {
-        const coutId = rule.cout_item.item_id
-        const coutQty = rule.cout_item.quantite ?? 1
-        const coutIdx = this.hero.inventaire.findIndex((i: any) => typeof i !== 'string' && i.id === coutId)
-        if (coutIdx !== -1) {
-          const coutItem = this.hero.inventaire[coutIdx]
-          if (typeof coutItem !== 'string') {
-            if (coutItem.quantite && coutItem.quantite > coutQty) {
-              coutItem.quantite -= coutQty
-            } else {
-              this.hero.inventaire.splice(coutIdx, 1)
-            }
-          }
-        }
-      }
-    } else {
-      throw new Error(`Type de règle "${rule.type}" ne supporte pas l'exécution sans dé`)
-    }
-
-    // Track l'action comme résolue avec succès
-    this.navigation.recordActionResult(actionName, 'succes')
-
-    // Incrémente les compteurs max_utilisations
-    this._incrementRegleUtilisations(actionName)
-
-    // Track les utilisations si c'est un choix local avec limite
-    if (choice.local && choice.utilisations !== undefined && choixIndex !== undefined) {
-      const key = `${this.currentSection}-${choixIndex}`
-      this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
-    }
-
-    return { success: true, message: `${choice.texte} effectué !` }
+    )
   }
 
   getTestStatInfo(nom: string): { jet: string; stat: string; condition: string; statValeur: number; resultats: Record<string, string> } | null {
@@ -1092,7 +609,7 @@ export class GameEngine {
 
     if (phase.type === 'pending_ennemi') {
       return {
-        id: newRollId(),
+        id: GameEngineRolls.newRollId(),
         label: `Lancer les dés — ${this.combatState.enemy.nom}`,
         formula: `${diceCount}d${diceSides}`,
         context: 'combat:ennemi',
@@ -1100,7 +617,7 @@ export class GameEngine {
     }
     if (phase.type === 'pending_hero') {
       return {
-        id: newRollId(),
+        id: GameEngineRolls.newRollId(),
         label: 'Lancer mes dés',
         formula: `${diceCount}d${diceSides}`,
         context: 'combat:hero',
@@ -1108,7 +625,7 @@ export class GameEngine {
     }
     if (phase.type === 'pending_secondaire_ennemi') {
       return {
-        id: newRollId(),
+        id: GameEngineRolls.newRollId(),
         label: `Lancer les dés — ${phase.secondaire.nom} (escorte)`,
         formula: `${diceCount}d${diceSides}`,
         context: 'combat:secondaire_ennemi',
@@ -1116,7 +633,7 @@ export class GameEngine {
     }
     if (phase.type === 'pending_secondaire_hero') {
       return {
-        id: newRollId(),
+        id: GameEngineRolls.newRollId(),
         label: `Lancer mes dés contre ${phase.secondaire.nom} (escorte)`,
         formula: `${diceCount}d${diceSides}`,
         context: 'combat:secondaire_hero',
@@ -1127,7 +644,7 @@ export class GameEngine {
       if (regle?.type === 'test_stat' || regle?.type === 'composite') {
         const jetFormula = GameEngineActions.getActionFormula(this.adventure, phase.action)
         return {
-          id: newRollId(),
+          id: GameEngineRolls.newRollId(),
           label: `Tenter — ${phase.action}`,
           formula: jetFormula,
           context: `combat:action:${phase.action}`,
@@ -1142,18 +659,7 @@ export class GameEngine {
    */
   getMonsterSelectionRoll(): PendingRoll | null {
     if (!this.adventure) return null
-    const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-    if (!section?.combat) return null
-    
-    const combat = section.combat
-    if (!combat.lancer_de) return null
-    
-    return {
-      id: newRollId(),
-      label: 'Lancer un dé pour déterminer le combat',
-      formula: combat.lancer_de.formule,
-      context: 'monster_selection',
-    }
+    return this.rollsModule.getMonsterSelectionRoll(this.adventure, this.currentSection)
   }
 
   /**
@@ -1241,7 +747,7 @@ export class GameEngine {
     }
     
     // Sauvegarde les stats du monstre persistant après chaque round
-    this._savePersistentMonsterStats()
+    this.monstresModule.savePersistentMonsterStats(this.adventure, this.hero, this.combatState, this.currentSection)
   }
 
   /**
@@ -1309,14 +815,10 @@ export class GameEngine {
       const { victoire, heroEnduranceFinale } = this.combatState.phase
       
       // Reset les compteurs combat des règles
-      for (const key of Object.keys(this.regleUtilisations)) {
-        if (key.startsWith('combat-')) {
-          delete this.regleUtilisations[key]
-        }
-      }
+      this.actionsModule.resetCombatUtilisations()
 
       // Sauvegarde les stats des monstres persistants une dernière fois
-      this._savePersistentMonsterStats()
+      this.monstresModule.savePersistentMonsterStats(this.adventure, this.hero, this.combatState, this.currentSection)
       
       // Track le résultat du combat pour les conditions
       this.navigation.recordCombatResult(victoire)
@@ -1364,164 +866,40 @@ export class GameEngine {
    */
   private _applyItemDelta(itemId: string, delta: number, raison: string): void {
     if (!this.hero) return
-    const item = this.hero.inventaire.find(i => typeof i !== 'string' && i.id === itemId)
-    if (!item || typeof item === 'string') return
-    const newQty = (item.quantite ?? 1) + delta
-    if (newQty <= 0) {
-      this.hero.inventaire.splice(this.hero.inventaire.indexOf(item), 1)
-    } else {
-      item.quantite = newQty
-    }
-    this.hero.historique.push({ timestamp: Date.now(), stat: itemId, delta, raison })
+    this.effectsModule.applyItemDelta(this.hero, itemId, delta, raison)
   }
 
   private _applyEffets(effets: import('../types').Effet[], labelSource: string): void {
     if (!this.hero) return
-    for (const effet of effets) {
-      if (!this.navigation.checkEffectCondition(effet, this.hero)) continue
-
-      if (effet.type === 'stat' && effet.stat) {
-        const statName = GameEngineHero.normalizeStat(effet.stat.name, this.hero)
-        const valeurDelta = resolveStatValeurDelta(effet.stat, this.hero)
-        if (valeurDelta !== null) {
-          const effectiveDelta = valeurDelta > 0 ? valeurDelta : (effet.stat.ignore_max ? valeurDelta : 0)
-          if (effectiveDelta !== 0) {
-            if (effet.stat.ignore_max) {
-              this.hero.statistiques[statName] = (this.hero.statistiques[statName] ?? 0) + effectiveDelta
-              this.hero.historique.push({ timestamp: Date.now(), stat: statName, delta: effectiveDelta, raison: effet.stat.raison ?? labelSource })
-            } else {
-              this._applyStatDeltaWithDebug(statName, effectiveDelta, effet.stat.raison ?? labelSource)
-            }
-          }
-        } else {
-          this._applyStatDeltaWithDebug(statName, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
+    
+    this.effectsModule.applyEffets(
+      effets,
+      labelSource,
+      this.hero,
+      this.adventure,
+      (effet, hero) => this.navigation.checkEffectCondition(effet, hero),
+      (stat, delta, raison) => this._applyStatDeltaWithDebug(stat, delta, raison),
+      (monsterId, mod) => this.monstresModule.addMonsterStatMod(monsterId, mod),
+      (stat, delta) => {
+        if (this.combatState && this.adventure) {
+          this.effectsModule.applyCombatEffet(
+            this.combatState,
+            this.adventure,
+            stat,
+            delta,
+            (s, d, r) => this.applyStatDelta(s, d, r)
+          )
         }
-      } else if (effet.type === 'item' && effet.item) {
-        // Si l'effet item ressemble à un ItemGain (a label, type, effets...), utiliser addItemGain
-        const effetItem = effet.item as any
-        if (effetItem.label && this.hero && this.adventure) {
-          GameEngineHero.addItemGain(this.hero, effetItem, this.adventure.personnage.emplacements_equipement ?? {})
-        } else {
-          applyItemEffect(effet.item, this.hero)
-        }
-      } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
-        const ms = effet.monstre_stat
-        const key = ms.monstre_id || '__any__'
-        if (!this.pendingMonsterStatMods[key]) this.pendingMonsterStatMods[key] = []
-        this.pendingMonsterStatMods[key].push(ms)
-      } else if (effet.type === 'combat' && effet.combat && this.combatState && this.adventure) {
-        GameEngineActions.applyCombatEffet(
-          this.combatState,
-          this.adventure,
-          effet.combat.stat,
-          effet.combat.delta ?? 0,
-          (stat, delta, raison) => this.applyStatDelta(stat, delta, raison),
-          []
-        )
-      }
-
-      // Active le trigger si défini
-      if (effet.trigger) {
-        this.navigation.recordTrigger(effet.trigger)
-      }
-    }
-  }
-
-  /**
-   * Applique les mods structurés (type "monstre_stat") au monstre donné.
-   * Cherche d'abord par monstre_id, puis consomme les mods "__any__" si pas de match ciblé.
-   * Les mods consommés sont supprimés de pendingMonsterStatMods.
-   */
-  private _applyPendingMonsterStatMods(monstre: import('../types').MonstreData): import('../types').MonstreData {
-    if (Object.keys(this.pendingMonsterStatMods).length === 0) return monstre
-
-    // Cherche par id exact
-    const id = monstre.id
-    const modsToApply: import('../types').EffetMonstreStat[] = []
-
-    if (id && this.pendingMonsterStatMods[id]) {
-      modsToApply.push(...this.pendingMonsterStatMods[id])
-      delete this.pendingMonsterStatMods[id]
-    }
-
-    // Consomme aussi les mods sans id ciblé (__any__)
-    if (this.pendingMonsterStatMods['__any__']) {
-      modsToApply.push(...this.pendingMonsterStatMods['__any__'])
-      delete this.pendingMonsterStatMods['__any__']
-    }
-
-    if (modsToApply.length === 0) return monstre
-
-    let m = { ...monstre }
-    for (const mod of modsToApply) {
-      if (mod.name === 'endurance') {
-        m = { ...m, endurance: Math.max(1, (m.endurance ?? 0) + mod.delta) }
-      } else if (mod.name === 'habilete') {
-        m = { ...m, habilete: Math.max(1, (m.habilete ?? 0) + mod.delta) }
-      }
-    }
-
-    // Attache les mods complets au monstre pour affichage dans l'UI combat
-    ;(m as any)._statMods = modsToApply.map(mod => ({
-      name: mod.name,
-      delta: mod.delta,
-      raison: mod.raison
-    }))
-
-    return m
+      },
+      (trigger) => this.navigation.recordTrigger(trigger)
+    )
   }
 
   /**
    * Retourne les mods de monstres en attente (pour affichage UI préventif si besoin)
    */
   getPendingMonsterStatMods(): Record<string, import('../types').EffetMonstreStat[]> {
-    return { ...this.pendingMonsterStatMods }
-  }
-
-  /**
-   * Cherche les données initiales d'un monstre par son id dans toutes les sections.
-   * Retourne nom, habilete, endurance et effets depuis la section qui le définit complètement.
-   */
-  private _findMonsterInitialStats(monsterId: string): { habilete: number; endurance: number; nom?: string; effets?: import('../types').Effet[] } | null {
-    if (!this.adventure) return null
-    
-    for (const section of this.adventure.sections) {
-      if (section.combat?.phases) {
-        for (const phase of section.combat.phases) {
-          for (const monstre of phase.monstres) {
-            if (monstre.id === monsterId && monstre.habilete !== undefined && monstre.endurance !== undefined) {
-              return { habilete: monstre.habilete, endurance: monstre.endurance, nom: monstre.nom, effets: monstre.effets }
-            }
-          }
-        }
-      }
-    }
-    
-    return null
-  }
-
-  /**
-   * Sauvegarde les stats du monstre persistant en cours de combat
-   */
-  private _savePersistentMonsterStats(): void {
-    if (!this.combatState || !this.hero || !this.adventure) return
-    
-    const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-    if (!section?.combat?.phases) return
-    
-    for (const phase of section.combat.phases) {
-      for (const monstre of phase.monstres) {
-        if (monstre.id && monstre.persistant) {
-          if (!this.hero.monstres_stats) {
-            this.hero.monstres_stats = {}
-          }
-          this.hero.monstres_stats[monstre.id] = {
-            habilete: this.combatState.enemy.habilete,
-            endurance: Math.max(0, this.combatState.enemyVie)
-          }
-        }
-      }
-    }
+    return this.monstresModule.getPendingMonsterStatMods()
   }
 
   // ─── Stats ────────────────────────────────────────────────────────────────
@@ -1683,12 +1061,14 @@ export class GameEngine {
       // Ajouter les utilisations des choix locaux
       state.choixUtilisations = { ...this.choixUtilisations }
       // Ajouter les utilisations des règles
-      if (Object.keys(this.regleUtilisations).length > 0) {
-        state.regleUtilisations = { ...this.regleUtilisations }
+      const currentRegleUtilisations = this.actionsModule.getRegleUtilisations()
+      if (Object.keys(currentRegleUtilisations).length > 0) {
+        state.regleUtilisations = currentRegleUtilisations
       }
       // Ajouter les mods de monstres en attente
-      if (Object.keys(this.pendingMonsterStatMods).length > 0) {
-        state.pendingMonsterStatMods = { ...this.pendingMonsterStatMods }
+      const monsterState = this.monstresModule.getState()
+      if (Object.keys(monsterState.pendingMonsterStatMods).length > 0) {
+        state.pendingMonsterStatMods = monsterState.pendingMonsterStatMods
       }
       // Sauvegarder les paramètres de section courants
       if (Object.keys(this.currentSectionParams).length > 0) {
