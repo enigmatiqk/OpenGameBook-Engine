@@ -17,7 +17,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test.beforeEach(async ({ page }) => {
     // Lancer le jeu en mode debug
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=potion-invisibilite`)
     // Attendre que la section soit chargée
     await page.waitForSelector('.section-text')
   })
@@ -31,7 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('gain de chance', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&chance=10&ignore_stat_limit`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=potion-invisibilite&chance=10&ignore_stat_limit`)
     await page.waitForSelector('.section-text')
 
     const chanceValue = await page.locator('#stat-chance').textContent()
