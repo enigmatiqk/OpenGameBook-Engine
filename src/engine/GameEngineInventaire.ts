@@ -1,5 +1,5 @@
-import type { Hero, Adventure, ChoixInitialOption, ItemGain, InventaireItem } from '../types'
-import { parseDiceFormula, rollDice } from './CombatResolver'
+import type { Hero, Adventure, ChoixInitialOption, EffetItem, InventaireItem } from '../types'
+import { applyItemEffect } from './schema-effects'
 
 /**
  * Gère l'inventaire du héros : ajout d'items, consommation, effets
@@ -133,122 +133,19 @@ export class GameEngineInventaire {
   }
 
   /**
-   * Ajoute un item gagné à l'inventaire du héros
-   * Gère le remplacement d'items si nécessaire
-   * Applique les effets de l'item
+   * Ajoute un item gagné à l'inventaire du héros.
+   * Délègue à applyItemEffect (point d'entrée unifié).
    * @param emplacements emplacements_equipement de l'aventure (requis pour remplace:true sur slot vide)
    */
   static addItemGain(
     hero: Hero,
-    itemGain: ItemGain,
+    itemGain: EffetItem,
     removeItemEffects: (hero: Hero, item: InventaireItem) => void,
     applyItemEffects: (hero: Hero, item: InventaireItem) => void,
     emplacements: Record<string, import('../types').EmplacementDefinition> = {}
   ): { success: boolean; message: string } {
-    const newItem: any = {
-      id: itemGain.id,
-      label: itemGain.label,
-    }
-
-    if (itemGain.type) newItem.type = itemGain.type
-    if (itemGain.poids) newItem.poids = itemGain.poids
-    // delta_de prioritaire sur quantite
-    if (itemGain.delta_de) {
-      const { count, sides, modifier } = parseDiceFormula(itemGain.delta_de)
-      newItem.quantite = rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
-    } else if (itemGain.quantite) {
-      newItem.quantite = itemGain.quantite
-    }
-    if (itemGain.image) newItem.image = itemGain.image
-    if (itemGain.image_ia) newItem.image_ia = itemGain.image_ia
-    if (itemGain.description) newItem.description = itemGain.description
-    if (itemGain.bonus) newItem.bonus = itemGain.bonus
-    if (itemGain.effets) newItem.effets = itemGain.effets
-    if (itemGain.item_dropable === false) newItem.item_dropable = false
-
-    // remplace: true → équipe directement dans le slot du type de l'item
-    // - slot occupé par même type : déséquipe l'ancien (retour inventaire), équipe le nouveau
-    // - slot vide : équipe directement
-    if (itemGain.remplace === true && itemGain.type) {
-      // Cherche un slot occupé par un item du même type
-      let targetSlot: string | null = null
-      for (const [slotName, equippedItem] of Object.entries(hero.equipement)) {
-        if (equippedItem.type === itemGain.type) {
-          targetSlot = slotName
-          break
-        }
-      }
-
-      if (targetSlot) {
-        // Déséquipe l'ancien → retour inventaire
-        const old = hero.equipement[targetSlot]
-        if (old.effets) removeItemEffects(hero, old)
-        old.equipe = false
-        hero.inventaire.push(old)
-        delete hero.equipement[targetSlot]
-      } else {
-        // Slot vide : cherche le nom du slot via emplacements_equipement
-        for (const [slotName, slotDef] of Object.entries(emplacements)) {
-          if (slotDef.types_acceptes.includes(itemGain.type)) {
-            // Capacité > 1 : cherche le premier sous-slot libre
-            if (slotDef.capacite > 1) {
-              for (let i = 1; i <= slotDef.capacite; i++) {
-                const sub = `${slotName}_${i}`
-                if (!hero.equipement[sub]) { targetSlot = sub; break }
-              }
-            } else {
-              targetSlot = slotName
-            }
-            break
-          }
-        }
-        // Fallback si aucun emplacement défini : utilise le type comme clé de slot
-        if (!targetSlot) targetSlot = itemGain.type
-      }
-
-      // Équipe le nouvel item dans le slot trouvé
-      newItem.equipe = true
-      hero.equipement[targetSlot] = newItem
-      if (newItem.effets) applyItemEffects(hero, newItem)
-      return { success: true, message: `${itemGain.label} équipé` }
-    }
-
-    // remplace: string → remplace un item spécifique par id (inventaire ou équipement)
-    if (typeof itemGain.remplace === 'string') {
-      // Cherche dans l'inventaire
-      const invIdx = hero.inventaire.findIndex(i =>
-        typeof i !== 'string' && i.id === itemGain.remplace
-      )
-      if (invIdx !== -1) {
-        const old = hero.inventaire[invIdx]
-        if (typeof old !== 'string' && old.effets) removeItemEffects(hero, old)
-        hero.inventaire.splice(invIdx, 1)
-      } else {
-        // Cherche dans l'équipement
-        for (const [slotName, equippedItem] of Object.entries(hero.equipement)) {
-          if (equippedItem.id === itemGain.remplace) {
-            if (equippedItem.effets) removeItemEffects(hero, equippedItem)
-            equippedItem.equipe = false
-            hero.inventaire.push(equippedItem)
-            delete hero.equipement[slotName]
-            break
-          }
-        }
-      }
-    }
-
-    // Sinon ajoute dans l'inventaire
-    hero.inventaire.push(newItem)
-    
-    // Applique les effets du nouvel item
-    if (newItem.effets) {
-      applyItemEffects(hero, newItem)
-    }
-    
-    return {
-      success: true,
-      message: `${itemGain.label} obtenu`
-    }
+    applyItemEffect(itemGain, hero, emplacements, removeItemEffects, applyItemEffects)
+    return { success: true, message: `${itemGain.name} obtenu` }
   }
 
   /**
@@ -256,12 +153,12 @@ export class GameEngineInventaire {
    */
   static addItemGains(
     hero: Hero,
-    itemGains: ItemGain[],
+    itemGains: EffetItem[],
     removeItemEffects: (hero: Hero, item: InventaireItem) => void,
     applyItemEffects: (hero: Hero, item: InventaireItem) => void,
     emplacements: Record<string, import('../types').EmplacementDefinition> = {}
   ): string[] {
-    return itemGains.map(gain => 
+    return itemGains.map(gain =>
       this.addItemGain(hero, gain, removeItemEffects, applyItemEffects, emplacements).message
     )
   }

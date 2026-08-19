@@ -19,6 +19,8 @@ export interface InventaireItem {
   effets?: Effet[]           // effets appliqués quand l'item est porté
   equipe?: boolean           // true si l'item est actuellement équipé
   item_dropable?: boolean    // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
+  image?: string             // image de l'item
+  image_ia?: string          // image IA de l'item
 }
 
 export type InventaireEntree = string | InventaireItem
@@ -283,12 +285,22 @@ export interface EffetStat {
 }
 
 export interface EffetItem {
-  id?: string         // id de l'item (prioritaire sur name si présent)
-  name: string        // id de l'item (legacy) ou label
-  delta?: number      // quantité à ajouter (défaut: 1)
-  delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur delta
-  raison?: string     // raison pour l'historique
+  id?: string              // id de l'item (prioritaire sur name si présent)
+  name: string             // nom affiché de l'item
+  delta?: number           // quantité à ajouter/retirer (défaut: 1). Négatif = retirer. Si positif et item inexistant → crée l'item
+  delta_de?: string        // quantité aléatoire par lancé de dés (ex: "2d6") — prioritaire sur delta
+  raison?: string          // raison pour l'historique
   item_dropable?: boolean  // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
+  // Champs pour la création/équipement d'un item complet
+  type?: string            // type d'item (ex: "casque", "armure") — requis pour remplace: true
+  remplace?: boolean | string  // true = équipe dans le slot du type ; string = remplace l'item avec cet id
+  poids?: number
+  quantite?: number        // quantité initiale lors de la création (distinct de delta)
+  image?: string
+  image_ia?: string
+  description?: string
+  bonus?: Record<string, number>
+  effets?: Effet[]         // effets appliqués quand l'item est porté
 }
 
 export interface EffetMonstreStat {
@@ -363,25 +375,12 @@ export interface CoutEffet {
   raison?: string
 }
 
-export interface ItemGain {
-  id: string
-  label: string
-  type?: string
-  poids?: number
-  quantite?: number
-  delta_de?: string   // quantité déterminée par un lancé de dés (ex: "2d6") — prioritaire sur quantite
-  remplace?: boolean | string  // true = remplace un item du même type, string = remplace l'item avec cet id
-  image?: string
-  image_ia?: string
-  description?: string
-  bonus?: Record<string, number>
-  effets?: Effet[]  // effets appliqués quand l'item est porté
-  item_dropable?: boolean  // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
-}
+/** @deprecated Utiliser EffetItem directement — alias de compatibilité pendant la migration JSON */
+export type ItemGain = EffetItem
 
 export interface ActionOutcome {
   effets?: Effet[]
-  items?: ItemGain[]
+  items?: EffetItem[]
   choix?: Choice
   end?: "victoire" | "defaite"
   trigger?: string    // trigger à activer si cet outcome est atteint (ex: "corde_coupe")
@@ -420,7 +419,7 @@ export interface Choice {
   condition?: ChoiceCondition
   cout?: CoutEffet[]
   effets?: Effet[]
-  items?: ItemGain[]  // items gagnés en prenant ce choix
+  items?: EffetItem[]  // items gagnés en prenant ce choix
   libre?: boolean           // @deprecated — remplacé par section_saisie
   section_saisie?: SectionSaisie  // saisie utilisateur du numéro de section cible
   section_params?: Record<string, number>  // paramètres transmis à la section de destination

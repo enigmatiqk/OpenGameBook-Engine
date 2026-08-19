@@ -60,6 +60,7 @@ export interface DebugConditions {
   action_resolved?: string
   item_quantite?: { item_id: string; quantite: number }
   ignore_stat_limit?: boolean
+  item_dropable?: boolean   // force item_dropable: true sur la section courante
 }
 
 /**
@@ -100,6 +101,11 @@ export function initDebugConditions(): DebugConditions {
   if (params.has('ignore_stat_limit')) {
     conditions.ignore_stat_limit = true
   }
-  
+
+  // item_dropable (présence seule) — force item_dropable: true sur la section courante
+  if (params.has('item_dropable')) {
+    conditions.item_dropable = true
+  }
+
   return conditions
 }

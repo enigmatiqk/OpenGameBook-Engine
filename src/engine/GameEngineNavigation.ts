@@ -350,7 +350,10 @@ export class GameEngineNavigation {
     section: Section,
     hero: Hero,
     applyStatDelta: (stat: string, delta: number, raison: string) => void,
-    monnaiId?: string
+    monnaiId?: string,
+    emplacements: Record<string, import('../types').EmplacementDefinition> = {},
+    removeItemEffects?: (hero: Hero, item: import('../types').InventaireItem) => void,
+    applyItemEffects?: (hero: Hero, item: import('../types').InventaireItem) => void
   ): void {
     if (!section.effets) return
 
@@ -399,7 +402,7 @@ export class GameEngineNavigation {
           applyStatDelta(statName, effet.stat.delta ?? 0, effet.stat.raison ?? `section ${section.numero}`)
         }
       } else if (effet.type === 'item' && effet.item) {
-        applyItemEffect(effet.item, hero)
+        applyItemEffect(effet.item, hero, emplacements, removeItemEffects, applyItemEffects)
       }
 
       // Active le trigger si défini

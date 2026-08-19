@@ -1,4 +1,4 @@
-import type { Hero, Adventure, ChoixInitialOption, ItemGain, InventaireItem } from '../types'
+import type { Hero, Adventure, ChoixInitialOption, EffetItem, InventaireItem } from '../types'
 import { GameEngineInventaire } from './GameEngineInventaire'
 import { GameEngineEquipement } from './GameEngineEquipement'
 
@@ -149,7 +149,7 @@ export class GameEngineHero {
    * Gère le remplacement d'items si nécessaire
    * Applique les effets de l'item
    */
-  static addItemGain(hero: Hero, itemGain: ItemGain, emplacements: Record<string, import('../types').EmplacementDefinition> = {}): { success: boolean; message: string } {
+  static addItemGain(hero: Hero, itemGain: EffetItem, emplacements: Record<string, import('../types').EmplacementDefinition> = {}): { success: boolean; message: string } {
     return GameEngineInventaire.addItemGain(
       hero,
       itemGain,
@@ -162,7 +162,7 @@ export class GameEngineHero {
   /**
    * Ajoute plusieurs items gagnés à l'inventaire
    */
-  static addItemGains(hero: Hero, itemGains: ItemGain[], emplacements: Record<string, import('../types').EmplacementDefinition> = {}): string[] {
+  static addItemGains(hero: Hero, itemGains: EffetItem[], emplacements: Record<string, import('../types').EmplacementDefinition> = {}): string[] {
     return GameEngineInventaire.addItemGains(
       hero,
       itemGains,

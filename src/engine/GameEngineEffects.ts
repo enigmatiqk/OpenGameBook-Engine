@@ -78,13 +78,15 @@ export class GameEngineEffects {
           applyStatDeltaWithDebug(statName, effet.stat.delta ?? 0, effet.stat.raison ?? labelSource)
         }
       } else if (effet.type === 'item' && effet.item) {
-        // Si l'effet item ressemble à un ItemGain (a label, type, effets...), utiliser addItemGain
-        const effetItem = effet.item as any
-        if (effetItem.label && adventure) {
-          GameEngineHero.addItemGain(hero, effetItem, adventure.personnage.emplacements_equipement ?? {})
-        } else {
-          applyItemEffect(effet.item, hero)
-        }
+        // Point d'entrée unique : applyItemEffect gère tous les cas (delta simple, création, équipement)
+        const emplacements = adventure?.personnage.emplacements_equipement ?? {}
+        applyItemEffect(
+          effet.item,
+          hero,
+          emplacements,
+          (h, i) => GameEngineHero.removeItemEffects(h, i),
+          (h, i) => GameEngineHero.applyItemEffects(h, i)
+        )
       } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
         addMonsterStatMod(effet.monstre_stat.monstre_id || null, effet.monstre_stat)
       } else if (effet.type === 'combat' && effet.combat) {

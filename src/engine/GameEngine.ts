@@ -324,7 +324,10 @@ export class GameEngine {
         (stat, delta, raison) => {
           this._applyStatDeltaWithDebug(stat, delta, raison)
         },
-        this.adventure?.personnage.monnaie
+        this.adventure?.personnage.monnaie,
+        this.adventure?.personnage.emplacements_equipement ?? {},
+        (h, i) => GameEngineHero.removeItemEffects(h, i),
+        (h, i) => GameEngineHero.applyItemEffects(h, i)
       )
     }
 
@@ -986,6 +989,7 @@ export class GameEngine {
   /**
    * Indique si le bouton Jeter doit être affiché pour la section courante.
    * Basé sur regles.item_drop et la propriété item_dropable de la section.
+   * En mode debug, le param URL &item_dropable force le mode item_dropable.
    */
   isDropAllowed(): boolean {
     if (!this.adventure) return false
@@ -994,7 +998,10 @@ export class GameEngine {
     if (itemDrop.aventure) return true
     if (itemDrop.section) {
       const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-      return section?.item_dropable === true
+      if (section?.item_dropable === true) return true
+      // Mode debug : &item_dropable force à true
+      const debugConds = initDebugConditions()
+      if (debugConds.item_dropable) return true
     }
     return false
   }
@@ -1030,6 +1037,7 @@ export class GameEngine {
 
   /**
    * Indique si le bouton Jeter équipement doit être affiché pour la section courante.
+   * En mode debug, le param URL &item_dropable force le mode equipement_dropable aussi.
    */
   isEquipementDropAllowed(): boolean {
     if (!this.adventure) return false
@@ -1038,7 +1046,10 @@ export class GameEngine {
     if (equipDrop.aventure) return true
     if (equipDrop.section) {
       const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-      return section?.equipement_dropable === true
+      if (section?.equipement_dropable === true) return true
+      // Mode debug : &item_dropable force à true
+      const debugConds = initDebugConditions()
+      if (debugConds.item_dropable) return true
     }
     return false
   }

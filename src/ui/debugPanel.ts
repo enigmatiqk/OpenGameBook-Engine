@@ -72,6 +72,7 @@ interface DebugParams {
   action_resolved:    string
   item_quantite:      string
   ignore_stat_limit:  boolean
+  item_dropable:      boolean
   show_section:       boolean
 }
 
@@ -109,6 +110,7 @@ function parseCurrentParams(): DebugParams {
     action_resolved:   p.get('action_resolved')   ?? '',
     item_quantite:     p.get('item_quantite')     ?? '',
     ignore_stat_limit: p.has('ignore_stat_limit'),
+    item_dropable:     p.has('item_dropable'),
     show_section:      p.has('show_section'),
   }
 }
@@ -148,6 +150,7 @@ function buildUrl(params: DebugParams): string {
   if (params.action_resolved.trim()) p.set('action_resolved', params.action_resolved.trim())
   set('item_quantite',      params.item_quantite)
   if (params.ignore_stat_limit) p.set('ignore_stat_limit', '__FLAG__')
+  if (params.item_dropable)     p.set('item_dropable',     '__FLAG__')
   if (params.show_section)      p.set('show_section',      '__FLAG__')
 
   const qs = p.toString()
@@ -500,6 +503,19 @@ export function showDebugPanel(): void {
   islHint.textContent = 'ignore les limites de stats'
   islRow.append(islLabel, islCb, islHint)
   secDev.appendChild(islRow)
+
+  // item_dropable checkbox
+  const idRow = document.createElement('div')
+  idRow.setAttribute('style', S.row)
+  const idLabel = document.createElement('span')
+  idLabel.setAttribute('style', S.label)
+  idLabel.textContent = 'item_dropable'
+  const idCb = makeCheckbox(params, 'item_dropable', updatePreview)
+  const idHint = document.createElement('span')
+  idHint.setAttribute('style', S.hint)
+  idHint.textContent = 'force le mode "jeter" sur la section courante'
+  idRow.append(idLabel, idCb, idHint)
+  secDev.appendChild(idRow)
 
   // show_section checkbox
   const ssRow = document.createElement('div')
