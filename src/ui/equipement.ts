@@ -36,7 +36,7 @@ export class EquipementView {
       const unequipBtn = item ? `<button class="btn-unequip-modal" data-slot="${escAttr(slotName)}">✕</button>` : ''
       return `<div class="equipment-slot-rpg ${cssClass}">
         <div class="slot-label">${escHtml(slotLabel)}</div>
-        <div class="slot-item">${item ? escHtml(item.label) : '(vide)'}</div>
+        <div class="slot-item"${item ? ` id="${escAttr(item.id)}"` : ''}>${item ? escHtml(item.label) : '(vide)'}</div>
         ${unequipBtn}${dropBtn}
       </div>`
     }
