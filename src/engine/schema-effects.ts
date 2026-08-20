@@ -174,7 +174,45 @@ export function applyItemEffect(
       }
     }
 
-    // Ajoute dans l'inventaire
+    // Si un item avec le même id existe déjà dans l'inventaire, on le met à jour
+    // plutôt que d'en créer un doublon. Le name/label du dernier effet traité prend
+    // la priorité (comportement voulu). On incrémente la quantité si delta > 1.
+    const existingIdx = hero.inventaire.findIndex(i =>
+      typeof i !== 'string' && i.id === itemId
+    )
+    if (existingIdx !== -1) {
+      const existing = hero.inventaire[existingIdx] as InventaireItem
+      // Met à jour le label avec le name le plus récent
+      existing.label = item.name
+      // Met à jour les propriétés riches si présentes
+      if (item.type)        existing.type = item.type
+      if (item.poids)       existing.poids = item.poids
+      if (item.image)       existing.image = item.image
+      if (item.image_ia)    existing.image_ia = item.image_ia
+      if (item.description) existing.description = item.description
+      if (item.bonus)       existing.bonus = item.bonus
+      if (item.effets)      existing.effets = item.effets
+      if (item.item_dropable === false) existing.item_dropable = false
+      if (item.item_unequip === false)  existing.item_unequip = false
+      // quantite fixe la valeur absolue, delta ajuste par rapport à l'existant
+      // quantite: 0 ou delta: 0 = renommage seul (quantité inchangée)
+      if (item.quantite !== undefined) {
+        if (item.quantite !== 0) {
+          existing.quantite = item.quantite
+        }
+      } else if (item.delta !== undefined) {
+        if (item.delta !== 0) {
+          existing.quantite = (existing.quantite ?? 1) + item.delta
+        }
+      } else {
+        // delta défaut = 1
+        existing.quantite = (existing.quantite ?? 1) + 1
+      }
+      if (existing.effets && applyItemEffects) applyItemEffects(hero, existing)
+      return
+    }
+
+    // Ajoute dans l'inventaire (aucun doublon existant)
     hero.inventaire.push(newItem)
     if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
     return
