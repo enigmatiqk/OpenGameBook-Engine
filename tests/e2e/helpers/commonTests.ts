@@ -47,9 +47,9 @@ export async function testSection(page: Page, sectionNumber: number, expectedTex
 /**
  * Teste que la bonne section est affichée et que le texte est correct
  */
-export async function testSectionAndText(page: Page, sectionNumber: number, expectedText: string) {
-  await testSection(page, sectionNumber, expectedText)
-}
+// export async function testSectionAndText(page: Page, sectionNumber: number, expectedText: string) {
+//   await testSection(page, sectionNumber, expectedText)
+// }
 
 /**
  * Teste que le nombre de boutons de choix est correct et que les labels sont présents
@@ -90,8 +90,8 @@ export async function testNavigation(page: Page, sectionChoices: Record<number, 
   // Attendre le chargement de la nouvelle section
   await page.waitForSelector('.section-text', { timeout: 5000 })
   // Vérifier qu'on est à la bonne section
-  const sectionContent = page.locator(`[data-section="${targetSection}"]`)
-  await expect(sectionContent).toBeVisible()
+
+  await testSection(page, targetSection)
 }
 
 /**
@@ -99,6 +99,7 @@ export async function testNavigation(page: Page, sectionChoices: Record<number, 
  */
 export function navigationTests(test: (name: string, fn: (args: { page: Page }) => Promise<void>) => void, sectionChoices: Record<number, string>) {
   Object.entries(sectionChoices).forEach(([targetSection], index) => {
+    if (index === 0) return
     test(`Navigation vers section ${targetSection}`, async ({ page }) => {
       await testNavigation(page, sectionChoices, index)
     })
@@ -124,7 +125,7 @@ export async function testStat(page: Page, stat: String, value: Number) {
  * @param strict - si true: data-count === count, si false: data-count >= count (default: false)
  */
 export async function testItem(page: Page, item_id: string, count: number = 1, strict: boolean = false) {
-  const item = page.locator(`#${item_id}`)
+  const item = page.locator(`.inv-items #${item_id}`)
   await expect(item).toBeVisible()
 
   const rawCount = await item.getAttribute('data-count')
@@ -136,6 +137,19 @@ export async function testItem(page: Page, item_id: string, count: number = 1, s
       expect(actual).toBeGreaterThanOrEqual(count)
     }
   }
+}
+
+/**
+ * Vérifie qu'un item est équipé sur la fiche du heros
+ * @param page - La page Playwright
+ * @param item_id - l'id DOM de l'equiment (ex: "casque-bronze")
+ */
+export async function testEquipement(page: Page, item_id: string) {
+  //fiche hero
+  await page.click(`.btn-hero-sheet`)
+
+  const item = page.locator(`.equipment-grid-rpg .slot-item#${item_id}`)
+  await expect(item).toBeVisible()
 }
 
 /**

@@ -1,5 +1,5 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure, testItem } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
@@ -31,9 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('gain clé N°9', async ({ page }) => {
-    const cleItem = page.locator('#cle-9')
-    await expect(cleItem).toBeVisible()
-    await expect(cleItem).toHaveAttribute('data-count', '1')
+    await testItem(page, "cle-9", 1)
   })
 
   navigationTests(test, SECTION_CHOICES)

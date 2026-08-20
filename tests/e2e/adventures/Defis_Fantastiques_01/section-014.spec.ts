@@ -6,7 +6,6 @@ const ADVENTURE_ID = 3
 const SECTION_NUMBER = 14
 const SECTION_TEXT = "Il n'y a pas trace de passage secret"
 const SECTION_CHOICES = {
-  117: 'Continuer',
   161: "Découvrir ce qui s'approche ainsi"
 }
 
@@ -29,29 +28,30 @@ test.describe('Section 014', () => {
     await testChoiceButtons(page, SECTION_CHOICES)
   })
 
-  test('1ere visite', async ({ page }) => {
-    const ButtonA = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[161]}")`)
-    await expect(ButtonA).toBeEnabled()
-
-    const ButtonB = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[117]}")`)
-    await expect(ButtonB).toBeDisabled()
-  })
-
-  test('Retour', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&sn2=${SECTION_NUMBER}`)
-    await page.waitForSelector('.section-text')
-    
-    const ButtonA = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[161]}")`)
-    await expect(ButtonA).toBeDisabled()
-
-    const ButtonB = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[117]}")`)
-    await expect(ButtonB).toBeEnabled()
-  })
-
   test('Navigation vers section 161', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 1)
+    await testNavigation(page, SECTION_CHOICES, 0)
   })
-  test('Navigation vers section 117', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 0, `sn2=${SECTION_NUMBER}`)
+
+  test('Combat 161, victoire en 117', async ({ page }) => {
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&monstre_endurance=2&habilete=50`)
+    await page.waitForSelector('.section-text')
+
+    //aller sur la page de combat
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES[161]}")`)
+    await page.waitForSelector('.section-text')
+
+    //definir le monstre
+    await page.click(`.choice-btn--combat`)
+    //lancer de
+    await page.click(`.action-roll-btn`)
+    //round 1
+    await page.click(`.combat-roll-btn`)
+    await page.click(`.combat-roll-btn`)
+
+    await page.waitForSelector('.combat-next-btn')
+    await page.click(`.combat-next-btn`)
+    
+    await testSection(page, 117)
+
   })
 })

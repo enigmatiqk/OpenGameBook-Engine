@@ -42,7 +42,7 @@ test.describe('Section 012', () => {
   })
 
   test('Retour', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&sn2=${SECTION_NUMBER}`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&sn1=11&sn2=${SECTION_NUMBER}`)
     await page.waitForSelector('.section-text')
     
     const ButtonA = page.locator(`button:has-text("${SECTION_CHOICES[161]}")`)
@@ -59,9 +59,9 @@ test.describe('Section 012', () => {
     await testNavigation(page, SECTION_CHOICES, 0)
   })
   test('Navigation vers section 256', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 1, `sn2=${SECTION_NUMBER}`)
+    await testNavigation(page, SECTION_CHOICES, 1, `sn1=11&sn2=${SECTION_NUMBER}`)
   })
   test('Navigation vers section 364', async ({ page }) => {
-    await testNavigation(page, SECTION_CHOICES, 2, `sn2=${SECTION_NUMBER}`)
+    await testNavigation(page, SECTION_CHOICES, 2, `sn1=11&sn2=${SECTION_NUMBER}`)
   })
 })
