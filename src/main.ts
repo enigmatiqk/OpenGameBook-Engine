@@ -408,30 +408,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      engine.navigateTo(parseInt(debugSection), Object.keys(debugSectionParams).length > 0 ? debugSectionParams : undefined)
-
-      // Surcharge les stats du monstre si précisées
-      const combatState = engine.getCombatState()
-      if (combatState) {
+      // Fonction helper : applique les overrides de stats monstre sur un combatState
+      const applyDebugMonsterOverrides = (cs: ReturnType<typeof engine.getCombatState>) => {
+        if (!cs) return
         if (params.has('monstre_endurance')) {
           const endurance = parseInt(params.get('monstre_endurance')!, 10)
-          combatState.enemyVie = endurance
-          // Applique aussi à tous les monstres restants de la phase courante
-          if (combatState.monstresRestants) {
-            combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, endurance }))
+          cs.enemyVie = endurance
+          if (cs.monstresRestants) {
+            cs.monstresRestants = cs.monstresRestants.map(m => ({ ...m, endurance }))
           }
-          // Applique aussi à toutes les phases suivantes
-          if (combatState.phases) {
-            combatState.phases = combatState.phases.map(p => ({
+          if (cs.phases) {
+            cs.phases = cs.phases.map((p: any) => ({
               ...p,
-              monstres: p.monstres.map(m => ({ ...m, endurance }))
+              monstres: p.monstres.map((m: any) => ({ ...m, endurance }))
             }))
           }
-          // Met à jour aussi combatDataGlobal pour que les transitions de phase reconstruisent correctement
-          if (combatState.combatDataGlobal?.phases) {
-            combatState.combatDataGlobal = {
-              ...combatState.combatDataGlobal,
-              phases: combatState.combatDataGlobal.phases.map((p: any) => ({
+          if (cs.combatDataGlobal?.phases) {
+            cs.combatDataGlobal = {
+              ...cs.combatDataGlobal,
+              phases: cs.combatDataGlobal.phases.map((p: any) => ({
                 ...p,
                 monstres: p.monstres.map((m: any) => ({ ...m, endurance }))
               }))
@@ -440,23 +435,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (params.has('monstre_habilete')) {
           const habilete = parseInt(params.get('monstre_habilete')!, 10)
-          combatState.enemy.habilete = habilete
-          // Applique aussi à tous les monstres restants de la phase courante
-          if (combatState.monstresRestants) {
-            combatState.monstresRestants = combatState.monstresRestants.map(m => ({ ...m, habilete }))
+          cs.enemy.habilete = habilete
+          if (cs.monstresRestants) {
+            cs.monstresRestants = cs.monstresRestants.map(m => ({ ...m, habilete }))
           }
-          // Applique aussi à toutes les phases suivantes
-          if (combatState.phases) {
-            combatState.phases = combatState.phases.map(p => ({
+          if (cs.phases) {
+            cs.phases = cs.phases.map((p: any) => ({
               ...p,
-              monstres: p.monstres.map(m => ({ ...m, habilete }))
+              monstres: p.monstres.map((m: any) => ({ ...m, habilete }))
             }))
           }
-          // Met à jour aussi combatDataGlobal
-          if (combatState.combatDataGlobal?.phases) {
-            combatState.combatDataGlobal = {
-              ...combatState.combatDataGlobal,
-              phases: combatState.combatDataGlobal.phases.map((p: any) => ({
+          if (cs.combatDataGlobal?.phases) {
+            cs.combatDataGlobal = {
+              ...cs.combatDataGlobal,
+              phases: cs.combatDataGlobal.phases.map((p: any) => ({
                 ...p,
                 monstres: p.monstres.map((m: any) => ({ ...m, habilete }))
               }))
@@ -465,12 +457,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Cas lancer_de : combatState est null car le combat attend le lancer de dé.
-      // On patche directement les phases dans les données de la section pour que
-      // resolveMonsterSelection() charge les stats surchargées quelle que soit la face tirée.
-      if (!engine.getCombatState() && (params.has('monstre_endurance') || params.has('monstre_habilete'))) {
+      // Fonction helper : applique les overrides de stats monstre sur une section lancer_de
+      const applyDebugMonsterOverridesOnSection = (sectionNum: number) => {
+        if (!params.has('monstre_endurance') && !params.has('monstre_habilete')) return
         const sectionData = (engine as any).adventure?.sections?.find(
-          (s: any) => s.numero === parseInt(debugSection)
+          (s: any) => s.numero === sectionNum
         )
         if (sectionData?.combat?.lancer_de && sectionData.combat.phases) {
           if (params.has('monstre_endurance')) {
@@ -489,6 +480,25 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
+
+      // Propage les overrides debug sur chaque navigateTo() ultérieur (y compris le premier appel)
+      if (params.has('monstre_endurance') || params.has('monstre_habilete')) {
+        const origNavigateTo = engine.navigateTo.bind(engine)
+        ;(engine as any).navigateTo = (sectionRef: import('./types').SectionRef, sectionParams?: Record<string, number>) => {
+          const section = origNavigateTo(sectionRef, sectionParams)
+          const cs = engine.getCombatState()
+          if (cs) {
+            applyDebugMonsterOverrides(cs)
+          } else {
+            // Cas lancer_de : patche directement les données de section
+            const target = typeof sectionRef === 'number' ? sectionRef : engine.getCurrentSection()
+            applyDebugMonsterOverridesOnSection(target)
+          }
+          return section
+        }
+      }
+
+      engine.navigateTo(parseInt(debugSection), Object.keys(debugSectionParams).length > 0 ? debugSectionParams : undefined)
 
       launchGameView(engine)
 
