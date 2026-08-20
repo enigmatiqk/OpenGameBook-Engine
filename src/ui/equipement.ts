@@ -33,7 +33,7 @@ export class EquipementView {
       const dropBtn = (equipementDropAllowed && item && item.item_dropable !== false)
         ? `<button class="btn-drop-equip-modal" data-slot="${escAttr(slotName)}" title="Jeter ${escAttr(item.label)}">🗑️</button>`
         : ''
-      const unequipBtn = item ? `<button class="btn-unequip-modal" data-slot="${escAttr(slotName)}">✕</button>` : ''
+      const unequipBtn = (item && item.item_unequip !== false) ? `<button class="btn-unequip-modal" data-slot="${escAttr(slotName)}">✕</button>` : ''
       return `<div class="equipment-slot-rpg ${cssClass}">
         <div class="slot-label">${escHtml(slotLabel)}</div>
         <div class="slot-item"${item ? ` id="${escAttr(item.id)}"` : ''}>${item ? escHtml(item.label) : '(vide)'}</div>

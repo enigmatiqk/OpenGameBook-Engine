@@ -106,6 +106,7 @@ export function applyItemEffect(
     if (item.bonus)       newItem.bonus = item.bonus
     if (item.effets)      newItem.effets = item.effets
     if (item.item_dropable === false) newItem.item_dropable = false
+    if (item.item_unequip === false) newItem.item_unequip = false
 
     // remplace: true → équipe dans le slot du type (ignoré si quantité > 1)
     if (item.remplace === true && item.type && (quantite ?? 1) <= 1) {

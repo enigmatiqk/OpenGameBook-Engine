@@ -19,6 +19,7 @@ export interface InventaireItem {
   effets?: Effet[]           // effets appliqués quand l'item est porté
   equipe?: boolean           // true si l'item est actuellement équipé
   item_dropable?: boolean    // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
+  item_unequip?: boolean     // si false, l'item ne peut pas être déséquipé par le joueur (défaut: true)
   image?: string             // image de l'item
   image_ia?: string          // image IA de l'item
 }
