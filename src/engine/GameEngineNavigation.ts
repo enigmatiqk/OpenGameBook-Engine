@@ -280,6 +280,21 @@ export class GameEngineNavigation {
         conditionOk = false
         raison = `Aucun item équipé ne correspond à "${texte}"`
       }
+    } else if (cond.type === 'item_name') {
+      // Vrai si un item de l'inventaire (non équipé) correspond au critère sur son label ou id
+      const texte = cond.texte ?? ''
+      const useContains = cond.contains !== false  // true par défaut
+      const inventoryItems = hero.inventaire.filter(i => typeof i !== 'string' && !i.equipe)
+      const match = inventoryItems.some(i => {
+        if (typeof i === 'string') return false
+        const haystack = `${i.label ?? ''} ${i.id ?? ''}`.toLowerCase()
+        const needle = texte.toLowerCase()
+        return useContains ? haystack.includes(needle) : (i.label?.toLowerCase() === needle || i.id?.toLowerCase() === needle)
+      })
+      if (!match) {
+        conditionOk = false
+        raison = `Aucun item dans l'inventaire ne correspond à "${texte}"`
+      }
     } else if (cond.type === 'section-connue') {
       const target = cond.section ?? currentSection
       if (target === undefined) {
