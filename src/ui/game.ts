@@ -586,12 +586,27 @@ export class GameView {
 
     content += '</div>' // ferme hero-layout
 
-    // Section Historique (en bas)
-    if (hero.historique.length > 0) {
-      content += '<h3>Historique</h3><ul class="hero-history">'
-      for (const e of hero.historique) {
-        const sign = e.delta >= 0 ? '+' : ''
-        content += `<li>${this._escHtml(e.stat)} : ${sign}${e.delta} (${this._escHtml(e.raison)})</li>`
+    // Section Effets d'équipement (en bas)
+    const equipmentEffects: { source: string; stat: string; delta: number; raison?: string }[] = []
+    for (const item of Object.values(hero.equipement)) {
+      if (!item.effets) continue
+      for (const effet of item.effets) {
+        if ((effet.type === 'stat' || effet.type === 'stat_total') && effet.stat) {
+          const delta = effet.stat.delta ?? 0
+          if (delta !== 0) {
+            equipmentEffects.push({ source: item.label, stat: effet.stat.name, delta, raison: effet.stat.raison })
+          }
+        }
+      }
+    }
+    if (equipmentEffects.length > 0) {
+      const statLabels = adventure.personnage.statistiques
+      content += '<h3>Effets d\'équipement</h3><ul class="hero-equipment-effects">'
+      for (const ef of equipmentEffects) {
+        const statLabel = statLabels[ef.stat]?.label ?? ef.stat
+        const sign = ef.delta >= 0 ? '+' : ''
+        const raison = ef.raison ? ` (${this._escHtml(ef.raison)})` : ''
+        content += `<li>${this._escHtml(ef.source)} : ${this._escHtml(statLabel)} ${sign}${ef.delta}${raison}</li>`
       }
       content += '</ul>'
     }
