@@ -116,6 +116,96 @@ function _esc(s: string): string {
 }
 
 /**
+ * Affiche l'écran de ramassage de l'inventaire de départ.
+ * Les items (inventaire + équipement) sont présentés dans un ordre aléatoire.
+ * Le joueur les ramasse un par un en cliquant.
+ * Saute l'étape si 0 ou 1 item distinct.
+ */
+export function showInventaireDepart(
+  container: HTMLElement,
+  engine: GameEngine,
+  onComplete: () => void
+): void {
+  const items = engine.getInventaireDepart()
+  if (items.length === 0) { onComplete(); return }
+  _renderInventaireDepart(container, engine, items, onComplete)
+}
+
+function _renderInventaireDepart(
+  container: HTMLElement,
+  engine: GameEngine,
+  remaining: Array<{ item: import('../types').InventaireItem; isEquipement: boolean }>,
+  onComplete: () => void
+): void {
+  container.innerHTML = ''
+
+  const wrap = document.createElement('div')
+  wrap.className = 'dice-screen'
+
+  const title = document.createElement('h2')
+  title.className = 'dice-title'
+  title.textContent = 'Votre équipement de départ'
+  wrap.appendChild(title)
+
+  const subtitle = document.createElement('p')
+  subtitle.className = 'dice-subtitle'
+  subtitle.textContent = 'Ramassez vos affaires dans l\'ordre que vous souhaitez.'
+  wrap.appendChild(subtitle)
+
+  if (remaining.length > 0) {
+    const grid = document.createElement('div')
+    grid.className = 'inventaire-depart-grid'
+
+    for (const entry of remaining) {
+      const { item, isEquipement } = entry
+
+      const card = document.createElement('button')
+      card.className = 'item-depart-card'
+      card.type = 'button'
+      if (item.description) card.title = item.description
+
+      const badge = document.createElement('div')
+      badge.className = 'item-depart-badge'
+      badge.textContent = isEquipement ? '🛡️' : '🎒'
+
+      const name = document.createElement('div')
+      name.className = 'item-depart-name'
+      name.textContent = item.label
+
+      card.appendChild(badge)
+      card.appendChild(name)
+
+      if (item.quantite && item.quantite > 1) {
+        const qty = document.createElement('div')
+        qty.className = 'item-depart-qty'
+        qty.textContent = `×${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''}`
+        card.appendChild(qty)
+      }
+
+      card.addEventListener('click', () => {
+        engine.applyItemDepart(item, isEquipement)
+        const next = remaining.filter(e => e.item !== item)
+        _renderInventaireDepart(container, engine, next, onComplete)
+      })
+
+      grid.appendChild(card)
+    }
+
+    wrap.appendChild(grid)
+  } else {
+    // Tout ramassé
+    const btn = document.createElement('button')
+    btn.className = 'btn btn-primary dice-confirm'
+    btn.type = 'button'
+    btn.textContent = '⚔️ Partir à l\'aventure'
+    btn.addEventListener('click', onComplete)
+    wrap.appendChild(btn)
+  }
+
+  container.appendChild(wrap)
+}
+
+/**
  * Affiche les écrans de choix initiaux (ex: choix de potion) un par un.
  * Appelle onComplete() quand tous les choix sont faits.
  */

@@ -5,7 +5,7 @@ import { LeaderboardView } from './ui/leaderboard'
 import { GameEngine } from './engine/GameEngine'
 import { LibraryManager } from './engine/LibraryManager'
 import { SaveStore } from './engine/SaveStore'
-import { showHeroCreationScreen, showChoixInitiaux } from './ui/diceRoll'
+import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
 import { initImagePrefsButton } from './ui/imagePreferences'
 import { initDebugButton } from './ui/debugPanel'
@@ -71,12 +71,16 @@ function showHeroCreationAndLaunch(engine: GameEngine): void {
   if (adventure && adventure.intro) {
     showIntroScreen(gameContainer, engine, () => {
       showHeroCreationScreen(gameContainer, engine, () => {
-        showChoixInitiaux(gameContainer, engine, () => launchGameView(engine))
+        showChoixInitiaux(gameContainer, engine, () => {
+          showInventaireDepart(gameContainer, engine, () => launchGameView(engine))
+        })
       })
     })
   } else {
     showHeroCreationScreen(gameContainer, engine, () => {
-      showChoixInitiaux(gameContainer, engine, () => launchGameView(engine))
+      showChoixInitiaux(gameContainer, engine, () => {
+        showInventaireDepart(gameContainer, engine, () => launchGameView(engine))
+      })
     })
   }
 }

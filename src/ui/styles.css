@@ -527,3 +527,166 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   gap: 0.75rem;
   justify-content: center;
 }
+
+/* ─── Setup screens (création héros, choix initiaux, inventaire de départ) ─── */
+.dice-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 3rem 2rem;
+  gap: 1.5rem;
+}
+
+.dice-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--accent);
+  text-align: center;
+}
+
+.dice-subtitle {
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 1rem;
+  max-width: 480px;
+}
+
+/* Grille des jets de dés */
+.dice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 640px;
+}
+
+.dice-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.dice-card--resolved {
+  border-color: var(--success);
+}
+
+.dice-stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.dice-row {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.die {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.dice-formula {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dice-total {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.dice-roll-btn {
+  width: 100%;
+}
+
+.dice-confirm {
+  margin-top: 0.5rem;
+  padding: 0.75rem 2.5rem;
+  font-size: 1rem;
+}
+
+/* Grille de cartes pour les choix initiaux et l'inventaire de départ */
+.choix-initial-options,
+.inventaire-depart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 720px;
+}
+
+.choix-initial-btn,
+.item-depart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, border-color 0.15s, background-color 0.15s;
+  min-height: 90px;
+}
+
+.choix-initial-btn:hover,
+.item-depart-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  background: var(--bg-card-hover);
+}
+
+.item-depart-badge {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.item-depart-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.item-depart-qty {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+@media (max-width: 600px) {
+  .dice-screen { padding: 2rem 1rem; }
+  .dice-title { font-size: 1.5rem; }
+  .choix-initial-options,
+  .inventaire-depart-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}

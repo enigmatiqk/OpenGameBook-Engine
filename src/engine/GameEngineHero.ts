@@ -13,60 +13,56 @@ export class GameEngineHero {
     const hero: Hero = {
       statistiques: { ...statistiques },
       statistiques_initiales: { ...statistiques },
-      inventaire: [...adventure.personnage.inventaire],
+      inventaire: [],
       equipement: {},
       historique: [],
       sectionsVisitees: [],
       acquisition_log: [],
     }
 
-    // Initialise l'équipement de départ s'il existe
-    if (adventure.personnage.equipement && Array.isArray(adventure.personnage.equipement)) {
-      for (const item of adventure.personnage.equipement) {
-        // Crée une copie de l'item
-        const equippedItem = { ...item }
-        equippedItem.equipe = true
-        
-        // Trouve le slot correspondant au type
-        const emplacements = adventure.personnage.emplacements_equipement || {}
-        let targetSlotBase: string | null = null
+    return hero
+  }
 
-        for (const [slotName, slot] of Object.entries(emplacements)) {
-          if (item.type && slot.types_acceptes.includes(item.type)) {
-            targetSlotBase = slotName
-            break
-          }
-        }
+  /**
+   * Équipe un item de départ directement dans le bon slot et alimente acquisition_log.
+   * Reproduit la logique de createHero pour l'équipement initial.
+   */
+  static equiperItemDepart(hero: Hero, item: InventaireItem, emplacements: Record<string, import('../types').EmplacementDefinition>): void {
+    const equippedItem = { ...item, equipe: true }
 
-        if (targetSlotBase) {
-          const slotDef = emplacements[targetSlotBase]
-          
-          // Gère les armes 2 mains
-          if (item.type === 'arme_2mains') {
-            hero.equipement['main_1'] = equippedItem
-            this.applyItemEffects(hero, equippedItem)
-          } else if (slotDef.capacite > 1) {
-            // Si capacité > 1, trouver le premier slot libre
-            let targetSlot = targetSlotBase
-            for (let i = 1; i <= slotDef.capacite; i++) {
-              const slotName = `${targetSlotBase}_${i}`
-              if (!hero.equipement[slotName]) {
-                targetSlot = slotName
-                break
-              }
-            }
-            hero.equipement[targetSlot] = equippedItem
-            this.applyItemEffects(hero, equippedItem)
-          } else {
-            // Capacité = 1
-            hero.equipement[targetSlotBase] = equippedItem
-            this.applyItemEffects(hero, equippedItem)
-          }
-        }
+    let targetSlotBase: string | null = null
+    for (const [slotName, slot] of Object.entries(emplacements)) {
+      if (item.type && slot.types_acceptes.includes(item.type)) {
+        targetSlotBase = slotName
+        break
       }
     }
 
-    return hero
+    if (targetSlotBase) {
+      const slotDef = emplacements[targetSlotBase]
+      if (item.type === 'arme_2mains') {
+        hero.equipement['main_1'] = equippedItem
+        this.applyItemEffects(hero, equippedItem)
+      } else if (slotDef.capacite > 1) {
+        let targetSlot = targetSlotBase
+        for (let i = 1; i <= slotDef.capacite; i++) {
+          const slotName = `${targetSlotBase}_${i}`
+          if (!hero.equipement[slotName]) { targetSlot = slotName; break }
+        }
+        hero.equipement[targetSlot] = equippedItem
+        this.applyItemEffects(hero, equippedItem)
+      } else {
+        hero.equipement[targetSlotBase] = equippedItem
+        this.applyItemEffects(hero, equippedItem)
+      }
+    }
+
+    // Alimente le journal d'acquisition
+    if (!hero.acquisition_log) hero.acquisition_log = []
+    const lastStep = hero.acquisition_log.length > 0
+      ? hero.acquisition_log[hero.acquisition_log.length - 1].step
+      : 0
+    hero.acquisition_log.push({ step: lastStep + 1, item_id: item.id })
   }
 
   /**

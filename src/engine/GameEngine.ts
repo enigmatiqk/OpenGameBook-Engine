@@ -211,6 +211,49 @@ export class GameEngine {
     GameEngineHero.applyChoixInitial(this.hero, option)
   }
 
+  /**
+   * Retourne la liste mélangée des items de départ (inventaire + équipement).
+   * Chaque entrée est { item, isEquipement }.
+   * Ne retourne rien (tableau vide) si 0 ou 1 item distinct — pas besoin d'écran de ramassage.
+   */
+  getInventaireDepart(): Array<{ item: import('../types').InventaireItem; isEquipement: boolean }> {
+    if (!this.adventure) return []
+    const result: Array<{ item: import('../types').InventaireItem; isEquipement: boolean }> = []
+
+    for (const entry of this.adventure.personnage.inventaire) {
+      if (typeof entry === 'string') continue
+      result.push({ item: entry, isEquipement: false })
+    }
+    for (const item of (this.adventure.personnage.equipement ?? [])) {
+      result.push({ item, isEquipement: true })
+    }
+
+    if (result.length <= 1) return []
+
+    // Mélange aléatoire (Fisher-Yates)
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]]
+    }
+    return result
+  }
+
+  /**
+   * Applique un item de départ ramassé par le joueur.
+   * - isEquipement: true → équipe directement dans le bon slot
+   * - isEquipement: false → ajoute à l'inventaire via applyItemEffect
+   * Dans les deux cas alimente acquisition_log.
+   */
+  applyItemDepart(item: import('../types').InventaireItem, isEquipement: boolean): void {
+    if (!this.hero || !this.adventure) throw new Error('No active hero.')
+    const emplacements = this.adventure.personnage.emplacements_equipement ?? {}
+    if (isEquipement) {
+      GameEngineHero.equiperItemDepart(this.hero, item, emplacements)
+    } else {
+      GameEngineHero.addItemGain(this.hero, { name: item.label, id: item.id, ...item }, emplacements)
+    }
+  }
+
   // ─── Navigation ───────────────────────────────────────────────────────────
 
   resumeGame(save: SaveState): void {
