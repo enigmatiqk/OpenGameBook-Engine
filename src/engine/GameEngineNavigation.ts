@@ -307,6 +307,52 @@ export class GameEngineNavigation {
           raison = `Vous n'avez pas encore visité la section ${target}`
         }
       }
+    } else if (cond.type === 'nth_item_acquired') {
+      // Parmi les items de items_id, détermine lequel est en position n (1-based)
+      // selon order (asc/desc) et mode (first/last occurrence dans le log),
+      // puis vérifie que c'est bien item_id.
+      const log = hero.acquisition_log ?? []
+      const candidates = cond.items_id ?? []
+      const n = cond.n ?? 1
+      const order = cond.order ?? 'asc'
+      const mode = cond.mode ?? 'first'
+
+      if (candidates.length === 0 || !cond.item_id) {
+        conditionOk = false
+        raison = 'Condition nth_item_acquired invalide : items_id ou item_id manquant'
+      } else {
+        // Filtre le log sur les items candidats
+        const relevantEntries = log.filter(e => candidates.includes(e.item_id))
+
+        // Pour chaque item candidat, retient l'occurrence voulue (first/last)
+        const byItem = new Map<string, number>()
+        if (mode === 'first') {
+          // Parcours en ordre croissant : on garde la première fois qu'on voit chaque item
+          for (const entry of relevantEntries) {
+            if (!byItem.has(entry.item_id)) byItem.set(entry.item_id, entry.step)
+          }
+        } else {
+          // mode === 'last' : parcours en ordre décroissant (ou on écrase à chaque fois)
+          for (const entry of relevantEntries) {
+            byItem.set(entry.item_id, entry.step)
+          }
+        }
+
+        // Trie les items par leur step retenu
+        const sorted = Array.from(byItem.entries()).sort((a, b) =>
+          order === 'asc' ? a[1] - b[1] : b[1] - a[1]
+        )
+
+        // n est 1-based
+        const targetEntry = sorted[n - 1]
+        if (!targetEntry) {
+          conditionOk = false
+          raison = `Pas assez d'items acquis pour la position ${n}`
+        } else if (targetEntry[0] !== cond.item_id) {
+          conditionOk = false
+          raison = `L'item en position ${n} est "${targetEntry[0]}", pas "${cond.item_id}"`
+        }
+      }
     } else if (cond.type === 'and') {      // Toutes les sous-conditions doivent être vraies (ET logique)
       if (!cond.conditions || cond.conditions.length === 0) {
         conditionOk = true

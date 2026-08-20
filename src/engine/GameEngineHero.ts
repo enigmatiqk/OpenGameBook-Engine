@@ -17,6 +17,7 @@ export class GameEngineHero {
       equipement: {},
       historique: [],
       sectionsVisitees: [],
+      acquisition_log: [],
     }
 
     // Initialise l'équipement de départ s'il existe

@@ -2,6 +2,18 @@ import type { Hero, Effet, InventaireItem, EmplacementDefinition } from '../type
 import { parseDiceFormula, rollDice } from './CombatResolver'
 
 /**
+ * Enregistre une acquisition d'item dans le journal du héros.
+ * Le step est auto-incrémenté à partir du dernier entry du log.
+ */
+function logAcquisition(hero: Hero, itemId: string): void {
+  if (!hero.acquisition_log) hero.acquisition_log = []
+  const lastStep = hero.acquisition_log.length > 0
+    ? hero.acquisition_log[hero.acquisition_log.length - 1].step
+    : 0
+  hero.acquisition_log.push({ step: lastStep + 1, item_id: itemId })
+}
+
+/**
  * Résout la quantité d'un effet item : delta_de (lancé de dés) prioritaire sur delta.
  * Par défaut : 1.
  */
@@ -148,6 +160,7 @@ export function applyItemEffect(
 
       newItem.equipe = true
       hero.equipement[targetSlot] = newItem
+      logAcquisition(hero, itemId)
       if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
       return
     }
@@ -199,14 +212,17 @@ export function applyItemEffect(
       if (item.quantite !== undefined) {
         if (item.quantite !== 0) {
           existing.quantite = item.quantite
+          logAcquisition(hero, itemId)
         }
       } else if (item.delta !== undefined) {
         if (item.delta !== 0) {
           existing.quantite = (existing.quantite ?? 1) + item.delta
+          if (item.delta > 0) logAcquisition(hero, itemId)
         }
       } else {
         // delta défaut = 1
         existing.quantite = (existing.quantite ?? 1) + 1
+        logAcquisition(hero, itemId)
       }
       if (existing.effets && applyItemEffects) applyItemEffects(hero, existing)
       return
@@ -214,6 +230,7 @@ export function applyItemEffect(
 
     // Ajoute dans l'inventaire (aucun doublon existant)
     hero.inventaire.push(newItem)
+    logAcquisition(hero, itemId)
     if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
     return
   }
@@ -233,6 +250,7 @@ export function applyItemEffect(
     const newEntry: InventaireItem = { id: itemId, label: item.name, quantite: delta }
     if (item.item_dropable === false) newEntry.item_dropable = false
     hero.inventaire.push(newEntry)
+    logAcquisition(hero, itemId)
   }
   // delta négatif + item inexistant → erreur silencieuse (le héros ne peut pas tricher)
 }

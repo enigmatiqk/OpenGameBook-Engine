@@ -350,8 +350,8 @@ export type SectionRef = number | { param: string }
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name' | 'item_name' | 'section-connue'
-  item_id?: string        // pour item_quantite
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name' | 'item_name' | 'section-connue' | 'nth_item_acquired'
+  item_id?: string        // pour item_quantite ; pour nth_item_acquired : l'item attendu à la position n
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
   stat?: string           // pour stat : nom de la stat
@@ -368,6 +368,11 @@ export interface ChoiceCondition {
   conditions?: ChoiceCondition[]  // pour and/or : liste de sous-conditions
   texte?: string          // pour item_equipe_name : texte à chercher dans le nom de l'item équipé
   contains?: boolean      // pour item_equipe_name : true = contient (pas égalité stricte), false = égalité stricte
+  // ── nth_item_acquired ──────────────────────────────────────────────────────
+  items_id?: string[]     // liste des items candidats à comparer (filtre sur le log)
+  n?: number              // position souhaitée (1-based)
+  order?: 'asc' | 'desc' // asc = le plus ancien en position 1 ; desc = le plus récent en position 1
+  mode?: 'first' | 'last' // first = première occurrence de chaque item ; last = dernière occurrence
 }
 
 export interface CoutEffet {
@@ -495,6 +500,11 @@ export interface StatChange {
   raison: string
 }
 
+export interface AcquisitionLogEntry {
+  step: number      // numéro d'ordre global d'acquisition (1-based, incrémental)
+  item_id: string   // id de l'item acquis
+}
+
 export interface Hero {
   statistiques: Record<string, number>
   statistiques_initiales: Record<string, number>
@@ -503,6 +513,7 @@ export interface Hero {
   historique: StatChange[]
   sectionsVisitees?: number[]        // historique complet de toutes les sections visitées
   monstres_stats?: Record<string, { habilete: number; endurance: number }>
+  acquisition_log?: AcquisitionLogEntry[]  // journal d'acquisition : historique ordonné de tous les items reçus
 }
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
