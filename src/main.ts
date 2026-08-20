@@ -344,7 +344,12 @@ document.addEventListener('DOMContentLoaded', () => {
           itemLabel = raw.slice(sep + 1)
         }
 
-        const itemId = `debug_equip_${itemType}_${n}`
+        const itemId = itemLabel
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') || `debug_equip_${itemType}_${n}`
         const equipItem: import('./types').InventaireItem = {
           id: itemId,
           label: itemLabel,
