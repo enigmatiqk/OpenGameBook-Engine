@@ -6,38 +6,34 @@ import { resolveStatValeurDelta, applyItemEffect } from './schema-effects'
  * Gère la navigation entre sections et les conditions
  */
 export class GameEngineNavigation {
-  private navHistory: number[] = []
-  private readonly NAV_HISTORY_SIZE = 2
   private sectionActionResults: Record<string, string> = {}
   private lastCombatVictory: boolean | null = null
   private lastCombatState: CombatState | null = null
   private activeTriggers: Set<string> = new Set()
 
   /**
-   * Initialise la navigation avec un historique optionnel
+   * Initialise la navigation
    */
-  init(debugHistory?: number[]): void {
-    this.navHistory = debugHistory ?? []
+  init(): void {
     this.sectionActionResults = {}
     this.lastCombatVictory = null
     this.lastCombatState = null
   }
 
   /**
-   * Retourne l'historique de navigation
+   * Retourne l'historique de navigation (alias de hero.sectionsVisitees)
    */
-  getNavHistory(): number[] {
-    return [...this.navHistory]
+  getNavHistory(hero: Hero | null): number[] {
+    return [...(hero?.sectionsVisitees ?? [])]
   }
 
   /**
-   * Met à jour l'historique de navigation
+   * Enregistre la section courante dans hero.sectionsVisitees (avec doublons pour préserver l'ordre)
    */
-  updateNavHistory(currentSection: number): void {
-    this.navHistory.push(currentSection)
-    if (this.navHistory.length > this.NAV_HISTORY_SIZE) {
-      this.navHistory.shift()
-    }
+  updateNavHistory(currentSection: number, hero: Hero | null): void {
+    if (!hero) return
+    if (!hero.sectionsVisitees) hero.sectionsVisitees = []
+    hero.sectionsVisitees.push(currentSection)
   }
 
   /**
@@ -130,27 +126,30 @@ export class GameEngineNavigation {
       }
     } else if (cond.type === 'retour') {
       // Vérifie si on revient à une section précédente
-      // - Si pas de section définie : section courante doit = sn2 (navHistory[0])
-      // - Si section définie : section définie doit = sn1 (navHistory[1])
+      // - Si pas de section définie : section courante doit = sn2 (sectionsVisitees[-2])
+      // - Si section définie : section définie doit = sn1 (sectionsVisitees[-1])
+      const history = hero.sectionsVisitees ?? []
       let isReturn = false
-      
+
       if (cond.section !== undefined) {
         // Cas avec section définie : vérifier que sn1 = cond.section
-        const via = this.navHistory[this.navHistory.length - 1] // sn1
+        const via = history[history.length - 1] // sn1
         isReturn = via !== undefined && via === cond.section
       } else {
         // Cas sans section définie : vérifier que section courante = sn2
-        const returnOrigin = this.navHistory[0] // sn2
+        const returnOrigin = history[history.length - 2] // sn2
         isReturn = returnOrigin !== undefined && returnOrigin === currentSection
       }
-      
+
       if (!isReturn) {
         conditionOk = false
         raison = 'Vous devez d\'abord explorer cette voie'
       }
     } else if (cond.type === 'first_visit') {
-      const returnOrigin = this.navHistory[this.navHistory.length - this.NAV_HISTORY_SIZE]
-      if (returnOrigin === this.navHistory[this.navHistory.length - 1]) {
+      const history = hero.sectionsVisitees ?? []
+      const sn1 = history[history.length - 1]
+      const sn2 = history[history.length - 2]
+      if (sn2 === sn1) {
         conditionOk = false
         raison = 'Vous avez déjà exploré cette voie'
       }
@@ -280,6 +279,18 @@ export class GameEngineNavigation {
       if (!match) {
         conditionOk = false
         raison = `Aucun item équipé ne correspond à "${texte}"`
+      }
+    } else if (cond.type === 'section-connue') {
+      const target = cond.section ?? currentSection
+      if (target === undefined) {
+        conditionOk = false
+        raison = 'Condition section-connue invalide : section courante inconnue'
+      } else {
+        const visited = hero.sectionsVisitees ?? []
+        if (!visited.includes(target)) {
+          conditionOk = false
+          raison = `Vous n'avez pas encore visité la section ${target}`
+        }
       }
     } else if (cond.type === 'and') {      // Toutes les sous-conditions doivent être vraies (ET logique)
       if (!cond.conditions || cond.conditions.length === 0) {

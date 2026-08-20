@@ -348,7 +348,7 @@ export type SectionRef = number | { param: string }
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name' | 'section-connue'
   item_id?: string        // pour item_quantite
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -499,6 +499,7 @@ export interface Hero {
   inventaire: InventaireEntree[]
   equipement: Record<string, InventaireItem>  // items équipés par slot (clé: nom du slot)
   historique: StatChange[]
+  sectionsVisitees?: number[]        // historique complet de toutes les sections visitées
   monstres_stats?: Record<string, { habilete: number; endurance: number }>
 }
 

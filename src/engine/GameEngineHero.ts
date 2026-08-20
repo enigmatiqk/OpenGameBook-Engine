@@ -16,6 +16,7 @@ export class GameEngineHero {
       inventaire: [...adventure.personnage.inventaire],
       equipement: {},
       historique: [],
+      sectionsVisitees: [],
     }
 
     // Initialise l'équipement de départ s'il existe

@@ -108,9 +108,14 @@ export class GameEngine {
    * À appeler après que la section initiale soit chargée.
    */
   applyDebugNavHistory(): void {
-    const debugHistory = initDebugNavHistory(2) // NAV_HISTORY_SIZE = 2
-    if (debugHistory.length > 0) {
-      this.navigation.init(debugHistory)
+    // Alimente hero.sectionsVisitees avec tous les sn* disponibles (sans limite)
+    // C'est la seule source de vérité pour l'historique de navigation
+    if (this.hero) {
+      const allSections = initDebugNavHistory(999)
+      if (allSections.length > 0) {
+        if (!this.hero.sectionsVisitees) this.hero.sectionsVisitees = []
+        this.hero.sectionsVisitees.push(...allSections)
+      }
     }
   }
 
@@ -252,7 +257,7 @@ export class GameEngine {
 
     // section: -1 = retour à la section précédente
     const target = sectionNumber === -1
-      ? (this.navigation.getNavHistory()[this.navigation.getNavHistory().length - 1] ?? 1)
+      ? (this.navigation.getNavHistory(this.hero)[this.navigation.getNavHistory(this.hero).length - 1] ?? 1)
       : sectionNumber
 
     const section = this.adventure.sections.find(s => s.numero === target)
@@ -267,8 +272,10 @@ export class GameEngine {
     // Reset les compteurs section_courante des règles
     this.actionsModule.resetSectionCouranteUtilisations()
 
-    // Met à jour l'historique de navigation
-    this.navigation.updateNavHistory(this.currentSection)
+    // Met à jour l'historique de navigation (section courante avant changement)
+    this.navigation.updateNavHistory(this.currentSection, this.hero)
+
+
 
     this.currentSection = target
     if (this.sectionsDepuisChargement < this.SECTIONS_AVANT_SAUVEGARDE) {

@@ -35,6 +35,7 @@ export class GameEngineSave {
         inventaire: [...hero.inventaire],
         equipement: { ...hero.equipement },
         historique: [...hero.historique],
+        sectionsVisitees: [...(hero.sectionsVisitees ?? [])],
       },
       tempsJeuMs: this.timer.getElapsedMs(),
       timestamp: Date.now(),
@@ -54,6 +55,7 @@ export class GameEngineSave {
       inventaire: [...save.hero.inventaire],
       equipement: { ...save.hero.equipement },
       historique: [...save.hero.historique],
+      sectionsVisitees: [...(save.hero.sectionsVisitees ?? [])],
     }
     
     this.timer.setElapsedMs(save.tempsJeuMs)
