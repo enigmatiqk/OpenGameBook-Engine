@@ -45,6 +45,10 @@ Do not assume the first result is necessarily the correct one.
 
 ---
 
+## Important — no confirmation required
+
+All jsonnav commands are **read-only**. They never modify files. Run them immediately without asking the user for confirmation, exactly like `graphify query`.
+
 ## CLI usage
 
 All jsonnav commands require the `--config` option.
@@ -69,57 +73,27 @@ Never assume that `jsonnav.config.yaml` is located next to the jsonnav executabl
 
 ## Recommended workflow
 
-When working with data contained in a jsonnav-managed JSON file, follow this order.
+**Skip steps you already know.** If the source name and section number are already known, go directly to step 4.
 
 ### 1. Find the configuration
 
-Search the project for:
+Search the project for `jsonnav.config.yaml`. The file may be located anywhere.
 
-`jsonnav.config.yaml`
-
-The configuration file may be located anywhere inside the project.
-
-### 2. List available sources
-
-Run:
+### 2. List available sources (only if source is unknown)
 
     jsonnav --config <config> list
 
-This identifies the logical JSON sources available through jsonnav.
-
-### 3. Find the relevant section
-
-Use:
+### 3. Find the relevant section (only if section is unknown)
 
     jsonnav --config <config> sections <source>
 
-This returns the identifiers of the sections available in the source.
-
 ### 4. Inspect the structure
-
-Before retrieving a large amount of data, use:
 
     jsonnav --config <config> structure <source> <section>
 
-This shows the structure of the section without retrieving its actual values.
-
-Use this to understand which properties are available.
-
 ### 5. Retrieve only the required data
 
-Use:
-
     jsonnav --config <config> get <source> <section> <property>
-
-Examples:
-
-    jsonnav --config <config> get documentation 42 texte
-
-    jsonnav --config <config> get documentation 42 configuration
-
-    jsonnav --config <config> get documentation 42 configuration.serveur
-
-Prefer retrieving the smallest amount of data necessary for the current task.
 
 ---
 
