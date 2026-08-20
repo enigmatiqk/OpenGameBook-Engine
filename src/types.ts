@@ -267,6 +267,8 @@ export interface CombatData {
   fuite?: { 
     section: SectionRef
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
+    fuite_directe?: boolean    // si false, masque le bouton "Fuir directement" (défaut: true)
+    fuite_chance?: boolean     // si false, masque le bouton "Tenter sa chance pour fuir" (défaut: true)
   }
   defense?: {
     texte?: string            // libellé personnalisé du bouton de défense (ex: "Esquiver")

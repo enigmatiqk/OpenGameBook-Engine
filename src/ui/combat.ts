@@ -330,20 +330,22 @@ export class CombatView {
       const showFuiteButtons = (sectionFuite?.section || state.eventDeclenche?.action === 'btn_fuite') && state.heroVie > 0
       
       if (showFuiteButtons && sectionFuiteDestination) {
-        // Bouton pour fuir directement
-        const fuirDirectBtn = document.createElement('button')
-        fuirDirectBtn.className = 'btn btn-secondary combat-fuite-direct-btn'
-        fuirDirectBtn.type = 'button'
-        fuirDirectBtn.textContent = '🏃 Fuir directement'
-        fuirDirectBtn.addEventListener('click', () => {
-          this.engine.startFuite()
-          this.engine.navigateTo(sectionFuiteDestination)
-          this.onCombatEnd()
-        })
-        actionsEl.appendChild(fuirDirectBtn)
+        // Bouton pour fuir directement (masqué si fuite_base: false)
+        if (sectionFuite?.fuite_directe !== false) {
+          const fuirDirectBtn = document.createElement('button')
+          fuirDirectBtn.className = 'btn btn-secondary combat-fuite-direct-btn'
+          fuirDirectBtn.type = 'button'
+          fuirDirectBtn.textContent = '🏃 Fuir directement'
+          fuirDirectBtn.addEventListener('click', () => {
+            this.engine.startFuite()
+            this.engine.navigateTo(sectionFuiteDestination)
+            this.onCombatEnd()
+          })
+          actionsEl.appendChild(fuirDirectBtn)
+        }
         
-        // Bouton pour tenter sa chance si la règle existe
-        if (fuiteAction) {
+        // Bouton pour tenter sa chance si la règle existe (masqué si fuite_chance: false)
+        if (fuiteAction && sectionFuite?.fuite_chance !== false) {
           const fuirChanceBtn = document.createElement('button')
           fuirChanceBtn.className = 'btn btn-secondary combat-fuite-chance-btn'
           fuirChanceBtn.type = 'button'
