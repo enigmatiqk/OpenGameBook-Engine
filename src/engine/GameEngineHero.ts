@@ -15,16 +15,14 @@ export class GameEngineHero {
       statistiques_initiales: { ...statistiques },
       inventaire: [],
       equipement: {},
-      historique: [],
-      sectionsVisitees: [],
-      acquisition_log: [],
+      journal: [],
     }
 
     return hero
   }
 
   /**
-   * Équipe un item de départ directement dans le bon slot et alimente acquisition_log.
+   * Équipe un item de départ directement dans le bon slot et alimente le journal.
    * Reproduit la logique de createHero pour l'équipement initial.
    */
   static equiperItemDepart(hero: Hero, item: InventaireItem, emplacements: Record<string, import('../types').EmplacementDefinition>): void {
@@ -57,12 +55,9 @@ export class GameEngineHero {
       }
     }
 
-    // Alimente le journal d'acquisition
-    if (!hero.acquisition_log) hero.acquisition_log = []
-    const lastStep = hero.acquisition_log.length > 0
-      ? hero.acquisition_log[hero.acquisition_log.length - 1].step
-      : 0
-    hero.acquisition_log.push({ step: lastStep + 1, item_id: item.id })
+    // Alimente le journal
+    if (!hero.journal) hero.journal = []
+    hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: 1, value_string: item.id, tags: ['item', 'equip', 'add'] })
   }
 
   /**
@@ -97,7 +92,8 @@ export class GameEngineHero {
     
     if (realDelta !== 0) {
       hero.statistiques[normalizedStat] = newValue
-      hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta: realDelta, raison })
+      if (!hero.journal) hero.journal = []
+      hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: realDelta, tags: realDelta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison })
     }
     
     return realDelta
@@ -242,5 +238,44 @@ export class GameEngineHero {
    */
   static getAllEquippedItems(hero: Hero): Record<string, InventaireItem> {
     return GameEngineEquipement.getAllEquippedItems(hero)
+  }
+
+  /**
+   * Retourne la liste mélangée des items de départ (inventaire + équipement).
+   * Ne retourne rien (tableau vide) si 0 ou 1 item distinct.
+   */
+  static getInventaireDepart(adventure: Adventure): Array<{ item: InventaireItem; isEquipement: boolean }> {
+    const result: Array<{ item: InventaireItem; isEquipement: boolean }> = []
+
+    for (const entry of adventure.personnage.inventaire) {
+      if (typeof entry === 'string') continue
+      result.push({ item: entry as InventaireItem, isEquipement: false })
+    }
+    for (const item of (adventure.personnage.equipement ?? [])) {
+      result.push({ item, isEquipement: true })
+    }
+
+    if (result.length <= 1) return []
+
+    // Mélange aléatoire (Fisher-Yates)
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]]
+    }
+    return result
+  }
+
+  /**
+   * Applique un item de départ ramassé par le joueur.
+   * - isEquipement: true → équipe directement dans le bon slot
+   * - isEquipement: false → ajoute à l'inventaire via applyItemEffect
+   */
+  static applyItemDepart(hero: Hero, adventure: Adventure, item: InventaireItem, isEquipement: boolean): void {
+    const emplacements = adventure.personnage.emplacements_equipement ?? {}
+    if (isEquipement) {
+      GameEngineHero.equiperItemDepart(hero, item, emplacements)
+    } else {
+      GameEngineHero.addItemGain(hero, { ...item, name: item.label }, emplacements)
+    }
   }
 }

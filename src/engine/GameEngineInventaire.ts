@@ -1,5 +1,6 @@
 import type { Hero, Adventure, ChoixInitialOption, EffetItem, InventaireItem } from '../types'
 import { applyItemEffect } from './schema-effects'
+import { initDebugConditions } from './GameEngineDebug'
 
 /**
  * Gère l'inventaire du héros : ajout d'items, consommation, effets
@@ -82,7 +83,8 @@ export class GameEngineInventaire {
         if (rule.ignore_max) {
           // Ignore le plafond normal
           hero.statistiques[stat] = targetValue
-          hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `consommation de ${item.label}` })
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: stat, value_number: delta, tags: delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: `consommation de ${item.label}` })
         } else {
           applyEffect(stat, delta, `consommation de ${item.label}`)
         }
@@ -107,8 +109,12 @@ export class GameEngineInventaire {
         // Comportement par défaut : décrémente l'item lui-même
         if (item.quantite && item.quantite > 1) {
           item.quantite--
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: -1, value_string: item.id, tags: ['item', 'remove'], raison: 'consommation' })
         } else {
           hero.inventaire.splice(itemIndex, 1)
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: -1, value_string: item.id, tags: ['item', 'delete'], raison: 'consommation' })
         }
       }
 
@@ -182,27 +188,19 @@ export class GameEngineInventaire {
           // Modifie seulement la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
           hero.statistiques[normalizedStat] = current + (effet.stat.delta ?? 0)
-          hero.historique.push({ 
-            timestamp: Date.now(), 
-            stat: normalizedStat, 
-            delta: effet.stat.delta ?? 0, 
-            raison: `équipement: ${item.label}` 
-          })
+          const d = effet.stat.delta ?? 0
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: d, tags: d > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: `équipement: ${item.label}` })
         } else if (effet.type === 'stat_total') {
           // Modifie la stat initiale (et donc le total)
           const currentStart = hero.statistiques_initiales[normalizedStat] ?? 0
           hero.statistiques_initiales[normalizedStat] = currentStart + (effet.stat.delta ?? 0)
-          
           // Applique aussi à la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
           hero.statistiques[normalizedStat] = current + (effet.stat.delta ?? 0)
-          
-          hero.historique.push({ 
-            timestamp: Date.now(), 
-            stat: normalizedStat, 
-            delta: effet.stat.delta ?? 0, 
-            raison: `équipement (total): ${item.label}` 
-          })
+          const d = effet.stat.delta ?? 0
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: d, tags: d > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: `équipement (total): ${item.label}` })
         }
       }
     }
@@ -228,31 +226,130 @@ export class GameEngineInventaire {
           const current = hero.statistiques[normalizedStat] ?? 0
           const newValue = Math.max(0, current - (effet.stat.delta ?? 0))
           hero.statistiques[normalizedStat] = newValue
-          hero.historique.push({ 
-            timestamp: Date.now(), 
-            stat: normalizedStat, 
-            delta: -(effet.stat.delta ?? 0), 
-            raison: `retrait équipement: ${item.label}` 
-          })
+          const d = -(effet.stat.delta ?? 0)
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: d, tags: ['stat', 'remove'], raison: `retrait équipement: ${item.label}` })
         } else if (effet.type === 'stat_total') {
           // Retire de la stat initiale (et donc du total)
           const currentStart = hero.statistiques_initiales[normalizedStat] ?? 0
           const newStart = Math.max(0, currentStart - (effet.stat.delta ?? 0))
           hero.statistiques_initiales[normalizedStat] = newStart
-          
           // Retire aussi de la stat courante
           const current = hero.statistiques[normalizedStat] ?? 0
           const newValue = Math.max(0, current - (effet.stat.delta ?? 0))
           hero.statistiques[normalizedStat] = newValue
-          
-          hero.historique.push({ 
-            timestamp: Date.now(), 
-            stat: normalizedStat, 
-            delta: -(effet.stat.delta ?? 0), 
-            raison: `retrait équipement (total): ${item.label}` 
-          })
+          const d = -(effet.stat.delta ?? 0)
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: d, tags: ['stat', 'remove'], raison: `retrait équipement (total): ${item.label}` })
         }
       }
     }
+  }
+
+  /**
+   * Indique si le bouton Jeter est disponible pour la section courante.
+   */
+  static isDropAllowed(adventure: Adventure, currentSection: number): boolean {
+    const itemDrop = (adventure.regles as any).item_drop as { aventure?: boolean; section?: boolean } | undefined
+    if (!itemDrop) return false
+    if (itemDrop.aventure) return true
+    if (itemDrop.section) {
+      const section = adventure.sections.find(s => s.numero === currentSection)
+      if (section?.item_dropable === true) return true
+      const debugConds = initDebugConditions()
+      if (debugConds.item_dropable) return true
+    }
+    return false
+  }
+
+  /**
+   * Indique si le bouton Jeter équipement est disponible pour la section courante.
+   */
+  static isEquipementDropAllowed(adventure: Adventure, currentSection: number): boolean {
+    const equipDrop = adventure.regles.equipement_drop as { aventure?: boolean; section?: boolean } | undefined
+    if (!equipDrop) return false
+    if (equipDrop.aventure) return true
+    if (equipDrop.section) {
+      const section = adventure.sections.find(s => s.numero === currentSection)
+      if (section?.equipement_dropable === true) return true
+      const debugConds = initDebugConditions()
+      if (debugConds.item_dropable) return true
+    }
+    return false
+  }
+
+  /**
+   * Supprime un item de l'inventaire (drop).
+   */
+  static dropItem(
+    hero: Hero,
+    adventure: Adventure,
+    itemId: string,
+    currentSection: number,
+    recordItemDrop: () => void,
+    recordEquipementDrop: () => void
+  ): { success: boolean; message: string } {
+    const monnaiId = adventure.personnage.monnaie
+    if (monnaiId && itemId === monnaiId) {
+      return { success: false, message: 'La monnaie ne peut pas être jetée' }
+    }
+
+    const idx = hero.inventaire.findIndex(i =>
+      typeof i !== 'string' && i.id === itemId && !i.equipe
+    )
+    if (idx === -1) return { success: false, message: 'Item non trouvé ou équipé' }
+
+    const item = hero.inventaire[idx]
+    if (typeof item !== 'string' && item.item_dropable === false) {
+      return { success: false, message: `${item.label} ne peut pas être jeté` }
+    }
+
+    const label = typeof item !== 'string' ? item.label : item
+    const hasType = typeof item !== 'string' && !!item.type
+
+    if (!hero.journal) hero.journal = []
+    if (typeof item !== 'string' && item.quantite !== undefined && item.quantite > 1) {
+      item.quantite--
+      hero.journal.push({ timestamp: Date.now(), section: currentSection, name: 'item_id', value_number: -1, value_string: itemId, tags: ['item', ...(hasType ? ['equip'] : []), 'remove'], raison: 'jet' })
+    } else {
+      hero.inventaire.splice(idx, 1)
+      hero.journal.push({ timestamp: Date.now(), section: currentSection, name: 'item_id', value_number: -1, value_string: itemId, tags: ['item', ...(hasType ? ['equip'] : []), 'delete'], raison: 'jet' })
+    }
+
+    if (hasType && GameEngineInventaire.isEquipementDropAllowed(adventure, currentSection)) {
+      recordEquipementDrop()
+    } else {
+      recordItemDrop()
+    }
+    return { success: true, message: `${label} jeté` }
+  }
+
+  /**
+   * Déséquipe un item équipé et le supprime (drop équipement).
+   */
+  static dropEquippedItem(
+    hero: Hero,
+    slotName: string,
+    currentSection: number,
+    unequipItem: (hero: Hero, slotName: string) => { success: boolean; message: string },
+    recordEquipementDrop: () => void
+  ): { success: boolean; message: string } {
+    const item = hero.equipement[slotName]
+    if (!item) return { success: false, message: 'Aucun item dans ce slot' }
+    if (item.item_dropable === false) {
+      return { success: false, message: `${item.label} ne peut pas être jeté` }
+    }
+
+    const label = item.label
+    unequipItem(hero, slotName)
+
+    const idx = hero.inventaire.findIndex(i => typeof i !== 'string' && i.id === item.id && !i.equipe)
+    if (idx !== -1) hero.inventaire.splice(idx, 1)
+
+    if (!hero.journal) hero.journal = []
+    hero.journal.push({ timestamp: Date.now(), section: currentSection, name: 'item_id', value_number: -1, value_string: item.id, tags: ['item', 'equip', 'delete'], raison: 'jet équipement' })
+
+    recordEquipementDrop()
+    return { success: true, message: `${label} jeté` }
   }
 }

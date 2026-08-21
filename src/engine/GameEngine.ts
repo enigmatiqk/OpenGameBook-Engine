@@ -16,6 +16,7 @@ import { GameEngineRolls } from './GameEngineRolls'
 import { GameEngineDuel } from './GameEngineDuel'
 import { GameEngineMonstres } from './GameEngineMonstres'
 import { GameEngineEffects } from './GameEngineEffects'
+import { GameEngineInventaire } from './GameEngineInventaire'
 
 export class GameEngine {
   private adventure: Adventure | null = null
@@ -108,13 +109,14 @@ export class GameEngine {
    * À appeler après que la section initiale soit chargée.
    */
   applyDebugNavHistory(): void {
-    // Alimente hero.sectionsVisitees avec tous les sn* disponibles (sans limite)
-    // C'est la seule source de vérité pour l'historique de navigation
     if (this.hero) {
       const allSections = initDebugNavHistory(999)
       if (allSections.length > 0) {
-        if (!this.hero.sectionsVisitees) this.hero.sectionsVisitees = []
-        this.hero.sectionsVisitees.push(...allSections)
+        if (!this.hero.journal) this.hero.journal = []
+        let ts = Date.now()
+        for (const sn of allSections) {
+          this.hero.journal.push({ timestamp: ts++, section: sn, name: 'numero', value_number: sn, tags: ['section'] })
+        }
       }
     }
   }
@@ -211,47 +213,14 @@ export class GameEngine {
     GameEngineHero.applyChoixInitial(this.hero, option)
   }
 
-  /**
-   * Retourne la liste mélangée des items de départ (inventaire + équipement).
-   * Chaque entrée est { item, isEquipement }.
-   * Ne retourne rien (tableau vide) si 0 ou 1 item distinct — pas besoin d'écran de ramassage.
-   */
   getInventaireDepart(): Array<{ item: import('../types').InventaireItem; isEquipement: boolean }> {
     if (!this.adventure) return []
-    const result: Array<{ item: import('../types').InventaireItem; isEquipement: boolean }> = []
-
-    for (const entry of this.adventure.personnage.inventaire) {
-      if (typeof entry === 'string') continue
-      result.push({ item: entry, isEquipement: false })
-    }
-    for (const item of (this.adventure.personnage.equipement ?? [])) {
-      result.push({ item, isEquipement: true })
-    }
-
-    if (result.length <= 1) return []
-
-    // Mélange aléatoire (Fisher-Yates)
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]]
-    }
-    return result
+    return GameEngineHero.getInventaireDepart(this.adventure)
   }
 
-  /**
-   * Applique un item de départ ramassé par le joueur.
-   * - isEquipement: true → équipe directement dans le bon slot
-   * - isEquipement: false → ajoute à l'inventaire via applyItemEffect
-   * Dans les deux cas alimente acquisition_log.
-   */
   applyItemDepart(item: import('../types').InventaireItem, isEquipement: boolean): void {
     if (!this.hero || !this.adventure) throw new Error('No active hero.')
-    const emplacements = this.adventure.personnage.emplacements_equipement ?? {}
-    if (isEquipement) {
-      GameEngineHero.equiperItemDepart(this.hero, item, emplacements)
-    } else {
-      GameEngineHero.addItemGain(this.hero, { name: item.label, id: item.id, ...item }, emplacements)
-    }
+    GameEngineHero.applyItemDepart(this.hero, this.adventure, item, isEquipement)
   }
 
   // ─── Navigation ───────────────────────────────────────────────────────────
@@ -439,7 +408,8 @@ export class GameEngine {
                 this.hero.inventaire.splice(this.hero.inventaire.indexOf(item), 1)
               }
               if (cout.raison) {
-                this.hero.historique.push({ timestamp: Date.now(), stat: cout.item_id, delta: cout.delta, raison: cout.raison })
+                if (!this.hero.journal) this.hero.journal = []
+                this.hero.journal.push({ timestamp: Date.now(), section: this.currentSection, name: cout.item_id, value_number: cout.delta, tags: cout.delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: cout.raison })
               }
             }
           }
@@ -998,110 +968,30 @@ export class GameEngine {
    */
   dropItem(itemId: string): { success: boolean; message: string } {
     if (!this.hero || !this.adventure) return { success: false, message: 'Pas de héros actif' }
-
-    const monnaiId = this.adventure.personnage.monnaie
-    if (monnaiId && itemId === monnaiId) {
-      return { success: false, message: 'La monnaie ne peut pas être jetée' }
-    }
-
-    const idx = this.hero.inventaire.findIndex(i =>
-      typeof i !== 'string' && i.id === itemId && !i.equipe
+    return GameEngineInventaire.dropItem(
+      this.hero, this.adventure, itemId, this.currentSection,
+      () => this.navigation.recordItemDrop(),
+      () => this.navigation.recordEquipementDrop()
     )
-    if (idx === -1) {
-      return { success: false, message: 'Item non trouvé ou équipé' }
-    }
-
-    const item = this.hero.inventaire[idx]
-
-    // Vérifie que l'item est droppable
-    if (typeof item !== 'string' && item.item_dropable === false) {
-      return { success: false, message: `${item.label} ne peut pas être jeté` }
-    }
-
-    const label = typeof item !== 'string' ? item.label : item
-
-    if (typeof item !== 'string' && item.quantite !== undefined && item.quantite > 1) {
-      item.quantite--
-    } else {
-      this.hero.inventaire.splice(idx, 1)
-    }
-
-    // Si l'item est équipable (a un type) et que equipement_drop est actif, déclenche equipement_dropped
-    const itemObj = typeof item !== 'string' ? item : null
-    if (itemObj?.type && this.isEquipementDropAllowed()) {
-      this.navigation.recordEquipementDrop()
-    } else {
-      this.navigation.recordItemDrop()
-    }
-    return { success: true, message: `${label} jeté` }
   }
 
-  /**
-   * Indique si le bouton Jeter doit être affiché pour la section courante.
-   * Basé sur regles.item_drop et la propriété item_dropable de la section.
-   * En mode debug, le param URL &item_dropable force le mode item_dropable.
-   */
   isDropAllowed(): boolean {
     if (!this.adventure) return false
-    const itemDrop = (this.adventure.regles as any).item_drop as { aventure?: boolean; section?: boolean } | undefined
-    if (!itemDrop) return false
-    if (itemDrop.aventure) return true
-    if (itemDrop.section) {
-      const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-      if (section?.item_dropable === true) return true
-      // Mode debug : &item_dropable force à true
-      const debugConds = initDebugConditions()
-      if (debugConds.item_dropable) return true
-    }
-    return false
+    return GameEngineInventaire.isDropAllowed(this.adventure, this.currentSection)
   }
 
-  /**
-   * Déséquipe un item équipé et le supprime (drop équipement).
-   * Déclenche le trigger "equipement_dropped".
-   */
   dropEquippedItem(slotName: string): { success: boolean; message: string } {
-    if (!this.hero || !this.adventure) return { success: false, message: 'Pas de héros actif' }
-
-    const item = this.hero.equipement[slotName]
-    if (!item) return { success: false, message: 'Aucun item dans ce slot' }
-
-    // Vérifie que l'item est droppable
-    if (item.item_dropable === false) {
-      return { success: false, message: `${item.label} ne peut pas être jeté` }
-    }
-
-    // Déséquipe et supprime sans remettre en inventaire
-    const label = item.label
-    GameEngineHero.unequipItem(this.hero, slotName)
-
-    // Retirer l'item de l'inventaire s'il y a été remis par unequipItem
-    const idx = this.hero.inventaire.findIndex(i => typeof i !== 'string' && i.id === item.id && !i.equipe)
-    if (idx !== -1) {
-      this.hero.inventaire.splice(idx, 1)
-    }
-
-    this.navigation.recordEquipementDrop()
-    return { success: true, message: `${label} jeté` }
+    if (!this.hero) return { success: false, message: 'Pas de héros actif' }
+    return GameEngineInventaire.dropEquippedItem(
+      this.hero, slotName, this.currentSection,
+      (h: import('../types').Hero, s: string) => GameEngineHero.unequipItem(h, s),
+      () => this.navigation.recordEquipementDrop()
+    )
   }
 
-  /**
-   * Indique si le bouton Jeter équipement doit être affiché pour la section courante.
-   * En mode debug, le param URL &item_dropable force le mode equipement_dropable aussi.
-   */
   isEquipementDropAllowed(): boolean {
     if (!this.adventure) return false
-    const equipDrop = this.adventure.regles.equipement_drop as { aventure?: boolean; section?: boolean } | undefined
-    if (!equipDrop) return false
-    if (equipDrop.aventure) return true
-    if (equipDrop.section) {
-      const section = this.adventure.sections.find(s => s.numero === this.currentSection)
-      if (section?.equipement_dropable === true) return true
-      // Mode debug : &item_dropable force à true
-      const debugConds = initDebugConditions()
-      if (debugConds.item_dropable) return true
-    }
-    return false
+    return GameEngineInventaire.isEquipementDropAllowed(this.adventure, this.currentSection)
   }
 
   equipItem(itemId: string): { success: boolean; message: string } {

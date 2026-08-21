@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const startVal = params.get(`${k}_start`)
         statsInitiales[k] = startVal !== null ? parseInt(startVal, 10) : stats[k]
       }
-      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: statsInitiales, inventaire: [], historique: [], equipement: {} }
+      ;(engine as any).hero = { statistiques: stats, statistiques_initiales: statsInitiales, inventaire: [], equipement: {}, journal: [] }
 
       // Injection d'items via ?item_id=pieces_or&item_count=5&item_type=monnaie
       // Supporte jusqu'à 3 items : ?item_id=...&item2_id=...&item3_id=...

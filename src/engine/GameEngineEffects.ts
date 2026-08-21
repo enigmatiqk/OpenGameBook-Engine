@@ -20,7 +20,8 @@ export class GameEngineEffects {
     if (isDebugIgnoreStatLimit) {
       if (hero.statistiques[normalizedStat] !== undefined) {
         hero.statistiques[normalizedStat] += delta
-        hero.historique.push({ timestamp: Date.now(), stat: normalizedStat, delta, raison })
+        if (!hero.journal) hero.journal = []
+        hero.journal.push({ timestamp: Date.now(), section: 0, name: normalizedStat, value_number: delta, tags: delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison })
       }
     } else {
       applyStatDelta(normalizedStat, delta, raison)
@@ -40,7 +41,8 @@ export class GameEngineEffects {
     } else {
       item.quantite = newQty
     }
-    hero.historique.push({ timestamp: Date.now(), stat: itemId, delta, raison })
+    if (!hero.journal) hero.journal = []
+    hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: delta, value_string: itemId, tags: ['item', ...(delta > 0 ? ['add'] : newQty <= 0 ? ['delete'] : ['remove'])], raison })
   }
 
   /**
@@ -69,7 +71,8 @@ export class GameEngineEffects {
           if (effectiveDelta !== 0) {
             if (effet.stat.ignore_max) {
               hero.statistiques[statName] = (hero.statistiques[statName] ?? 0) + effectiveDelta
-              hero.historique.push({ timestamp: Date.now(), stat: statName, delta: effectiveDelta, raison: effet.stat.raison ?? labelSource })
+              if (!hero.journal) hero.journal = []
+              hero.journal.push({ timestamp: Date.now(), section: 0, name: statName, value_number: effectiveDelta, tags: effectiveDelta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: effet.stat.raison ?? labelSource })
             } else {
               applyStatDeltaWithDebug(statName, effectiveDelta, effet.stat.raison ?? labelSource)
             }

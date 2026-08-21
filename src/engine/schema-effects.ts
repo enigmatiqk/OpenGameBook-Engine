@@ -2,15 +2,23 @@ import type { Hero, Effet, InventaireItem, EmplacementDefinition } from '../type
 import { parseDiceFormula, rollDice } from './CombatResolver'
 
 /**
- * Enregistre une acquisition d'item dans le journal du héros.
- * Le step est auto-incrémenté à partir du dernier entry du log.
+ * Enregistre une acquisition d'item dans le journal unifié du héros.
+ * isEquip = true si l'item a un type d'équipement.
  */
-function logAcquisition(hero: Hero, itemId: string): void {
-  if (!hero.acquisition_log) hero.acquisition_log = []
-  const lastStep = hero.acquisition_log.length > 0
-    ? hero.acquisition_log[hero.acquisition_log.length - 1].step
-    : 0
-  hero.acquisition_log.push({ step: lastStep + 1, item_id: itemId })
+function logItemAdd(hero: Hero, itemId: string, qty: number, isEquip: boolean, section = 0): void {
+  if (!hero.journal) hero.journal = []
+  const tags = isEquip ? ['item', 'equip', 'add'] : ['item', 'add']
+  hero.journal.push({ timestamp: Date.now(), section, name: 'item_id', value_number: qty, value_string: itemId, tags })
+}
+
+/**
+ * Enregistre une perte d'item dans le journal unifié du héros.
+ * isDelete = true si l'item est complètement supprimé (quantité tombe à 0).
+ */
+function logItemLoss(hero: Hero, itemId: string, qty: number, isEquip: boolean, isDelete: boolean, section = 0, raison?: string): void {
+  if (!hero.journal) hero.journal = []
+  const tags = ['item', ...(isEquip ? ['equip'] : []), isDelete ? 'delete' : 'remove']
+  hero.journal.push({ timestamp: Date.now(), section, name: 'item_id', value_number: qty, value_string: itemId, tags, raison })
 }
 
 /**
@@ -160,7 +168,7 @@ export function applyItemEffect(
 
       newItem.equipe = true
       hero.equipement[targetSlot] = newItem
-      logAcquisition(hero, itemId)
+      logItemAdd(hero, itemId, 1, !!item.type)
       if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
       return
     }
@@ -212,17 +220,17 @@ export function applyItemEffect(
       if (item.quantite !== undefined) {
         if (item.quantite !== 0) {
           existing.quantite = item.quantite
-          logAcquisition(hero, itemId)
+          logItemAdd(hero, itemId, item.quantite, !!item.type)
         }
       } else if (item.delta !== undefined) {
         if (item.delta !== 0) {
           existing.quantite = (existing.quantite ?? 1) + item.delta
-          if (item.delta > 0) logAcquisition(hero, itemId)
+          if (item.delta > 0) logItemAdd(hero, itemId, item.delta, !!item.type)
         }
       } else {
         // delta défaut = 1
         existing.quantite = (existing.quantite ?? 1) + 1
-        logAcquisition(hero, itemId)
+        logItemAdd(hero, itemId, 1, !!item.type)
       }
       if (existing.effets && applyItemEffects) applyItemEffects(hero, existing)
       return
@@ -230,7 +238,7 @@ export function applyItemEffect(
 
     // Ajoute dans l'inventaire (aucun doublon existant)
     hero.inventaire.push(newItem)
-    logAcquisition(hero, itemId)
+    logItemAdd(hero, itemId, newItem.quantite ?? 1, !!item.type)
     if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
     return
   }
@@ -241,8 +249,10 @@ export function applyItemEffect(
   if (existing && typeof existing !== 'string') {
     const newQty = (existing.quantite ?? 1) + delta
     if (newQty <= 0) {
+      logItemLoss(hero, itemId, delta, !!existing.type, true)
       hero.inventaire.splice(hero.inventaire.indexOf(existing), 1)
     } else {
+      logItemLoss(hero, itemId, delta, !!existing.type, false)
       existing.quantite = newQty
     }
   } else if (delta > 0) {
@@ -250,7 +260,7 @@ export function applyItemEffect(
     const newEntry: InventaireItem = { id: itemId, label: item.name, quantite: delta }
     if (item.item_dropable === false) newEntry.item_dropable = false
     hero.inventaire.push(newEntry)
-    logAcquisition(hero, itemId)
+    logItemAdd(hero, itemId, delta, false)
   }
   // delta négatif + item inexistant → erreur silencieuse (le héros ne peut pas tricher)
 }

@@ -493,16 +493,14 @@ export interface AdventureMetadata {
 
 // ─── Hero runtime state ───────────────────────────────────────────────────────
 
-export interface StatChange {
-  timestamp: number
-  stat: string
-  delta: number
-  raison: string
-}
-
-export interface AcquisitionLogEntry {
-  step: number      // numéro d'ordre global d'acquisition (1-based, incrémental)
-  item_id: string   // id de l'item acquis
+export interface JournalEntry {
+  timestamp: number       // Date.now() — si plusieurs items au même ms, +1ms par item
+  section: number         // section courante au moment de l'événement
+  name: string            // référence de l'événement (nom stat, "numero", item_id…)
+  value_number?: number   // valeur numérique (delta stat, delta quantité item, numéro section)
+  value_string?: string   // valeur string (item_id…) — exclusif avec value_number
+  tags: string[]          // "stat"|"section"|"item"|"equip"|"add"|"remove"|"delete"
+  raison?: string         // texte libre optionnel
 }
 
 export interface Hero {
@@ -510,10 +508,8 @@ export interface Hero {
   statistiques_initiales: Record<string, number>
   inventaire: InventaireEntree[]
   equipement: Record<string, InventaireItem>  // items équipés par slot (clé: nom du slot)
-  historique: StatChange[]
-  sectionsVisitees?: number[]        // historique complet de toutes les sections visitées
   monstres_stats?: Record<string, { habilete: number; endurance: number }>
-  acquisition_log?: AcquisitionLogEntry[]  // journal d'acquisition : historique ordonné de tous les items reçus
+  journal: JournalEntry[]           // journal unifié (stats, sections, items)
 }
 
 // ─── Persistence ──────────────────────────────────────────────────────────────

@@ -527,7 +527,8 @@ export class GameEngineActions {
       if (delta !== 0) {
         if (rule.ignore_max) {
           hero.statistiques[stat] = targetValue
-          hero.historique.push({ timestamp: Date.now(), stat, delta, raison: `action ${actionName}` })
+          if (!hero.journal) hero.journal = []
+          hero.journal.push({ timestamp: Date.now(), section: currentSection, name: stat, value_number: delta, tags: delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: `action ${actionName}` })
         } else {
           applyStatDeltaWithDebug(stat, delta, `action ${actionName}`)
         }
@@ -585,8 +586,7 @@ export class GameEngineActions {
     } else {
       hero.inventaire.push({ id: itemName, label: pending.itemLabel, quantite: total })
     }
-    hero.historique.push({ timestamp: Date.now(), stat: itemName, delta: total, raison: pending.raison })
-    
+    hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: total, value_string: itemName, tags: ['item', 'add'], raison: pending.raison })    
     return {
       targetSection: pending.targetSection,
       itemName,

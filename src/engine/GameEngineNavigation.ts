@@ -21,19 +21,22 @@ export class GameEngineNavigation {
   }
 
   /**
-   * Retourne l'historique de navigation (alias de hero.sectionsVisitees)
+   * Retourne l'historique de navigation — lit le journal.
    */
   getNavHistory(hero: Hero | null): number[] {
-    return [...(hero?.sectionsVisitees ?? [])]
+    if (!hero) return []
+    return (hero.journal ?? [])
+      .filter(e => e.tags.includes('section') && e.value_number !== undefined)
+      .map(e => e.value_number as number)
   }
 
   /**
-   * Enregistre la section courante dans hero.sectionsVisitees (avec doublons pour préserver l'ordre)
+   * Enregistre la section courante dans le journal.
    */
   updateNavHistory(currentSection: number, hero: Hero | null): void {
     if (!hero) return
-    if (!hero.sectionsVisitees) hero.sectionsVisitees = []
-    hero.sectionsVisitees.push(currentSection)
+    if (!hero.journal) hero.journal = []
+    hero.journal.push({ timestamp: Date.now(), section: currentSection, name: 'numero', value_number: currentSection, tags: ['section'] })
   }
 
   /**
@@ -125,19 +128,18 @@ export class GameEngineNavigation {
         }
       }
     } else if (cond.type === 'retour') {
-      // Vérifie si on revient à une section précédente
-      // - Si pas de section définie : section courante doit = sn2 (sectionsVisitees[-2])
-      // - Si section définie : section définie doit = sn1 (sectionsVisitees[-1])
-      const history = hero.sectionsVisitees ?? []
+      const sectionEntries = (hero.journal ?? []).filter(e => e.tags.includes('section'))
       let isReturn = false
 
       if (cond.section !== undefined) {
-        // Cas avec section définie : vérifier que sn1 = cond.section
-        const via = history[history.length - 1] // sn1
+        const via = sectionEntries.length > 0
+          ? sectionEntries[sectionEntries.length - 1].value_number
+          : undefined
         isReturn = via !== undefined && via === cond.section
       } else {
-        // Cas sans section définie : vérifier que section courante = sn2
-        const returnOrigin = history[history.length - 2] // sn2
+        const returnOrigin = sectionEntries.length > 1
+          ? sectionEntries[sectionEntries.length - 2].value_number
+          : undefined
         isReturn = returnOrigin !== undefined && returnOrigin === currentSection
       }
 
@@ -146,9 +148,13 @@ export class GameEngineNavigation {
         raison = 'Vous devez d\'abord explorer cette voie'
       }
     } else if (cond.type === 'first_visit') {
-      const history = hero.sectionsVisitees ?? []
-      const sn1 = history[history.length - 1]
-      const sn2 = history[history.length - 2]
+      const sectionEntries = (hero.journal ?? []).filter(e => e.tags.includes('section'))
+      const sn1 = sectionEntries.length > 0
+        ? sectionEntries[sectionEntries.length - 1].value_number
+        : undefined
+      const sn2 = sectionEntries.length > 1
+        ? sectionEntries[sectionEntries.length - 2].value_number
+        : undefined
       if (sn2 === sn1) {
         conditionOk = false
         raison = 'Vous avez déjà exploré cette voie'
@@ -301,17 +307,18 @@ export class GameEngineNavigation {
         conditionOk = false
         raison = 'Condition section-connue invalide : section courante inconnue'
       } else {
-        const visited = hero.sectionsVisitees ?? []
-        if (!visited.includes(target)) {
+        const visitedInJournal = (hero.journal ?? []).some(e => e.tags.includes('section') && e.value_number === target)
+        if (!visitedInJournal) {
           conditionOk = false
           raison = `Vous n'avez pas encore visité la section ${target}`
         }
       }
     } else if (cond.type === 'nth_item_acquired') {
       // Parmi les items de items_id, détermine lequel est en position n (1-based)
-      // selon order (asc/desc) et mode (first/last occurrence dans le log),
+      // selon order (asc/desc) et mode (first/last occurrence dans le journal),
       // puis vérifie que c'est bien item_id.
-      const log = hero.acquisition_log ?? []
+      const journalItems = (hero.journal ?? [])
+        .filter(e => e.tags.includes('item') && e.tags.includes('add') && e.value_string !== undefined)
       const candidates = cond.items_id ?? []
       const n = cond.n ?? 1
       const order = cond.order ?? 'asc'
@@ -321,24 +328,22 @@ export class GameEngineNavigation {
         conditionOk = false
         raison = 'Condition nth_item_acquired invalide : items_id ou item_id manquant'
       } else {
-        // Filtre le log sur les items candidats
-        const relevantEntries = log.filter(e => candidates.includes(e.item_id))
+        // Filtre sur les items candidats
+        const relevantEntries = journalItems.filter(e => candidates.includes(e.value_string!))
 
-        // Pour chaque item candidat, retient l'occurrence voulue (first/last)
+        // Pour chaque item candidat, retient l'occurrence voulue (first/last) via timestamp
         const byItem = new Map<string, number>()
         if (mode === 'first') {
-          // Parcours en ordre croissant : on garde la première fois qu'on voit chaque item
           for (const entry of relevantEntries) {
-            if (!byItem.has(entry.item_id)) byItem.set(entry.item_id, entry.step)
+            if (!byItem.has(entry.value_string!)) byItem.set(entry.value_string!, entry.timestamp)
           }
         } else {
-          // mode === 'last' : parcours en ordre décroissant (ou on écrase à chaque fois)
           for (const entry of relevantEntries) {
-            byItem.set(entry.item_id, entry.step)
+            byItem.set(entry.value_string!, entry.timestamp)
           }
         }
 
-        // Trie les items par leur step retenu
+        // Trie les items par timestamp
         const sorted = Array.from(byItem.entries()).sort((a, b) =>
           order === 'asc' ? a[1] - b[1] : b[1] - a[1]
         )
@@ -449,12 +454,8 @@ export class GameEngineNavigation {
           if (effectiveDelta !== 0) {
             if (effet.stat.ignore_max) {
               hero.statistiques[statName] = (hero.statistiques[statName] ?? 0) + effectiveDelta
-              hero.historique.push({
-                timestamp: Date.now(),
-                stat: statName,
-                delta: effectiveDelta,
-                raison: effet.stat.raison ?? `section ${section.numero}`,
-              })
+              if (!hero.journal) hero.journal = []
+              hero.journal.push({ timestamp: Date.now(), section: section.numero, name: statName, value_number: effectiveDelta, tags: effectiveDelta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: effet.stat.raison ?? `section ${section.numero}` })
             } else {
               applyStatDelta(statName, effectiveDelta, effet.stat.raison ?? `section ${section.numero}`)
             }
@@ -463,12 +464,8 @@ export class GameEngineNavigation {
           const delta = effet.stat.delta ?? 0
           if (hero.statistiques[statName] !== undefined) {
             hero.statistiques[statName] += delta
-            hero.historique.push({
-              timestamp: Date.now(),
-              stat: statName,
-              delta,
-              raison: effet.stat.raison ?? `section ${section.numero}`,
-            })
+            if (!hero.journal) hero.journal = []
+            hero.journal.push({ timestamp: Date.now(), section: section.numero, name: statName, value_number: delta, tags: delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: effet.stat.raison ?? `section ${section.numero}` })
           }
         } else {
           applyStatDelta(statName, effet.stat.delta ?? 0, effet.stat.raison ?? `section ${section.numero}`)
@@ -500,7 +497,8 @@ export class GameEngineNavigation {
                   item.quantite = newQty
                 }
                 if (cout.raison) {
-                  hero.historique.push({ timestamp: Date.now(), stat: cout.item_id, delta: cout.delta, raison: cout.raison })
+                  if (!hero.journal) hero.journal = []
+                  hero.journal.push({ timestamp: Date.now(), section: section.numero, name: cout.item_id, value_number: cout.delta, tags: cout.delta > 0 ? ['stat', 'add'] : ['stat', 'remove'], raison: cout.raison })
                 }
               }
             }
