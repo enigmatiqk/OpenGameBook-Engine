@@ -411,7 +411,7 @@ export class GameEngineActions {
     choice: Choice, 
     rolls: number[],
     resolveSection: (ref: import('../types').SectionRef) => number
-  ): { targetSection: number; effets?: Effet[] } {
+  ): { targetSection?: number; effets?: Effet[] } {
     const action = choice.action
     if (typeof action !== 'object' || !('type' in action) || action.type !== 'lancer_de') {
       throw new Error('Action n\'est pas de type lancer_de')
@@ -434,6 +434,14 @@ export class GameEngineActions {
           targetEffets = (value as any).effets
           break
         }
+      } else if (key.includes(',')) {
+        // Liste de valeurs (ex: "1,3,5")
+        const values = key.split(',').map(Number)
+        if (values.includes(total)) {
+          targetSection = (value as any).section !== undefined ? resolveSection((value as any).section) : undefined
+          targetEffets = (value as any).effets
+          break
+        }
       } else {
         // Valeur unique
         if (total === Number(key)) {
@@ -444,7 +452,7 @@ export class GameEngineActions {
       }
     }
     
-    if (targetSection === undefined) {
+    if (targetSection === undefined && !targetEffets) {
       throw new Error(`Aucun résultat trouvé pour ${total}`)
     }
 
@@ -623,6 +631,9 @@ export class GameEngineActions {
       if (effets && effets.length > 0) {
         applyEffets(effets, choice.texte)
       }
+      
+      // Enregistre l'action comme résolue pour les conditions action_resolved
+      recordActionResult('lancer_de', 'resolu')
       
       return { targetSection }
     }
