@@ -6,14 +6,19 @@ Le système d'acquisition d'items permet au héros de gagner des équipements lo
 
 Les items peuvent avoir des **effets liés** : quand le héros porte l'item, les effets sont appliqués. Quand il le retire, les effets sont retirés.
 
+Il n'existe qu'un seul type d'effet item (`EffetItem`), utilisé dans tous les contextes :
+- `section.effets` (via `type: "item"`)
+- `choix.items`
+- `si_reussi.items` / `si_echoue.items`
+
 ## Structure de base
 
-### Définition d'un item à gagner
+### Définition d'un item
 
 ```json
 {
   "id": "epee_magique",
-  "label": "Épée magique",
+  "name": "Épée magique",
   "type": "arme_1main",
   "poids": 2,
   "remplace": true,
@@ -40,18 +45,21 @@ Les items peuvent avoir des **effets liés** : quand le héros porte l'item, les
 
 | Propriété | Type | Obligatoire | Description |
 |-----------|------|-------------|-------------|
-| `id` | string | ✓ | Identifiant unique de l'item |
-| `label` | string | ✓ | Nom affiché de l'item |
-| `type` | string | | Type d'item (ex: `arme_1main`, `armure`, `casque`) — optionnel |
+| `id` | string | | Identifiant unique de l'item (dérivé de `name` si absent) |
+| `name` | string | ✓ | Nom affiché de l'item |
+| `type` | string | | Type d'item (ex: `arme_1main`, `armure`, `casque`) — requis pour `remplace: true` |
 | `poids` | number | | Poids de l'item (défaut: 1) |
-| `quantite` | number | | Quantité gagnée (défaut: 1) |
-| `delta_de` | string | | Quantité aléatoire déterminée par un lancé de dés (ex: `"2d6"`, `"1d6"`). Prioritaire sur `quantite` si les deux sont présents. |
-| `remplace` | boolean \| string | | Stratégie de remplacement (voir ci-dessous) |
+| `quantite` | number | | Fixe la quantité absolue de l'item. `0` = renommage seul (quantité inchangée) |
+| `delta` | number | | Quantité à ajouter/retirer par rapport à l'existant (défaut: 1). Négatif = retirer. `0` = renommage seul. Si positif et item inexistant → crée l'item |
+| `delta_de` | string | | Quantité aléatoire par lancé de dés (ex: `"2d6"`). Prioritaire sur `delta` |
+| `remplace` | boolean \| string | | Stratégie de remplacement (voir ci-dessous). Ignoré si `delta > 1` |
 | `image` | string | | Chemin vers l'image de l'item |
 | `image_ia` | string | | Chemin vers l'image IA de l'item |
 | `description` | string | | Description affichée au survol |
 | `bonus` | Record<string, number> | | Bonus de stats apportés quand équipé |
 | `effets` | Effet[] | | Effets appliqués quand l'item est porté (voir ci-dessous) |
+| `item_dropable` | boolean | | Si `false`, l'item ne peut pas être jeté (défaut: `true`) |
+| `item_unequip` | boolean | | Si `false`, l'item ne peut pas être déséquipé (défaut: `true`) |
 
 ## Stratégies de remplacement
 
@@ -61,24 +69,23 @@ L'item est simplement ajouté à l'inventaire.
 ```json
 {
   "id": "piece_or",
-  "label": "Pièce d'or",
-  "quantite": 5,
+  "name": "Pièce d'or",
+  "delta": 5,
   "remplace": false
 }
 ```
 
 ### `remplace: true`
 L'item est **équipé directement** dans le slot correspondant à son `type` (champ `type` obligatoire).
+Ignoré si `delta > 1` (on ne peut équiper qu'un exemplaire unique).
 
 - Si le slot est **vide** : l'item est équipé immédiatement.
 - Si le slot est **déjà occupé** : l'ancien item est déséquipé (retour dans l'inventaire) et le nouvel item prend sa place.
 
-> C'est le comportement attendu pour les armes et armures trouvées en cours d'aventure : le héros porte toujours quelque chose, et l'acquisition remplace ce qu'il avait.
-
 ```json
 {
   "id": "epee_magique",
-  "label": "Épée magique",
+  "name": "Épée magique",
   "type": "arme_1main",
   "remplace": true
 }
@@ -90,15 +97,29 @@ L'item remplace un item spécifique par son ID.
 ```json
 {
   "id": "armure_enchantee",
-  "label": "Armure enchantée",
+  "name": "Armure enchantée",
   "type": "armure",
   "remplace": "armure_cuir"
 }
 ```
 
+## Renommer un item existant
+
+Pour changer le nom d'un item déjà dans l'inventaire sans modifier sa quantité, utiliser `quantite: 0` ou `delta: 0`. L'item est identifié par son `id` et son `label` est mis à jour avec le nouveau `name`.
+
+```json
+{
+  "id": "parchemin",
+  "name": "Parchemin illisible",
+  "quantite": 0
+}
+```
+
+> Utile quand un item change de statut au fil de l'aventure (ex: parchemin → parchemin déchiffré).
+
 ## Quantité aléatoire par lancé de dés
 
-Quand la quantité d'un item doit être déterminée par un lancé de dés (ex: "lancez 2 dés pour savoir combien de Pièces d'Or vous gagnez"), utiliser `delta_de` à la place de `quantite`.
+Quand la quantité d'un item doit être déterminée par un lancé de dés, utiliser `delta_de` à la place de `delta`.
 
 ### Syntaxe
 
@@ -110,7 +131,8 @@ Quand la quantité d'un item doit être déterminée par un lancé de dés (ex: 
 {
   "type": "item",
   "item": {
-    "name": "pieces d'or",
+    "id": "piece-or",
+    "name": "Pièces d'or",
     "delta_de": "2d6",
     "raison": "gain par la triche"
   }
@@ -119,7 +141,7 @@ Quand la quantité d'un item doit être déterminée par un lancé de dés (ex: 
 
 Le moteur lance les dés au moment de l'exécution de l'effet et ajoute le résultat obtenu à l'inventaire.
 
-> Si `delta_de` et `quantite` sont tous les deux présents, `delta_de` est prioritaire.
+> Si `delta_de` et `delta` sont tous les deux présents, `delta_de` est prioritaire.
 
 ## Effets d'items
 
@@ -180,7 +202,7 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 ```json
 {
   "id": "epee_magique",
-  "label": "Épée magique",
+  "name": "Épée magique",
   "type": "arme_1main",
   "poids": 1,
   "remplace": true,
@@ -217,17 +239,21 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 
 Pour utiliser les items dans les sections :
 
-- **Gain via un choix** : utiliser `choix.items` → voir [section/choix.md](section/choix.md)
 - **Gain à l'arrivée** : utiliser `section.effets` avec `type: "item"` → voir [section/effets.md](section/effets.md)
+- **Gain via un choix** : utiliser `choix.items` → voir [section/choix.md](section/choix.md)
 
 ## Intégration avec le moteur
 
-Les items gagnés sont traités par la fonction `GameEngineHero.addItemGain()` qui :
+Les items sont traités par la fonction `applyItemEffect()` dans `schema-effects.ts`, point d'entrée unique pour tous les contextes. Elle :
 
-1. Crée un nouvel item avec toutes les propriétés fournies
-2. Gère le remplacement d'items selon la stratégie définie
-3. Ajoute l'item à l'inventaire du héros
-4. Retourne un message de confirmation
+1. Résout l'id (depuis `id` ou dérivé de `name`)
+2. Si l'item est riche (possède `type`, `remplace`, `effets`…) → crée un item complet et gère l'équipement
+3. Si un item avec le même `id` existe déjà dans l'inventaire → met à jour ses propriétés (le `name` du dernier effet traité prend la priorité) et ajuste la quantité :
+   - `quantite: 0` ou `delta: 0` → renommage seul, quantité inchangée
+   - `quantite: N` → fixe la quantité à N (valeur absolue)
+   - `delta: N` ou absent (défaut 1) → incrémente/décrémente la quantité de N
+4. Sinon → ajuste la quantité d'un item existant (`delta`). Si `delta` positif et item inexistant → crée l'item
+5. `delta` négatif sur item inexistant → ignoré silencieusement (le héros ne peut pas tricher)
 
 ## Exemple complet
 
@@ -254,19 +280,16 @@ Les items gagnés sont traités par la fonction `GameEngineHero.addItemGain()` q
       "items": [
         {
           "id": "armure_legendaire",
-          "label": "Armure légendaire",
+          "name": "Armure légendaire",
           "type": "armure",
           "poids": 3,
           "remplace": true,
-          "description": "Une armure ancienne qui brille d'une lumière mystérieuse",
-          "bonus": {
-            "endurance": 3
-          }
+          "description": "Une armure ancienne qui brille d'une lumière mystérieuse"
         },
         {
           "id": "piece_or",
-          "label": "Pièces d'or",
-          "quantite": 25
+          "name": "Pièces d'or",
+          "delta": 25
         }
       ]
     },

@@ -203,3 +203,19 @@ export async function testRoundSuivant(page: Page) {
   await page.click('button.combat-next-btn')
   await page.waitForSelector('.combat-log', { timeout: 5000 })
 }
+
+/**
+ * Passe au round suivant du combat
+ * @param page - La page Playwright
+ */
+export async function CombatMonstreSuivant(page: Page) {
+  await page.click('button.combat-next-btn')
+}
+
+/**
+ * Passe au round suivant du combat
+ * @param page - La page Playwright
+ */
+export async function CombatResultat(page: Page) {
+  await page.click('button.combat-next-btn')
+}

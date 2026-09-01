@@ -92,6 +92,41 @@ Aucun champ supplémentaire. La condition est vraie si le joueur n'est pas en tr
 
 ---
 
+## `section-connue` — section déjà visitée
+
+Vérifie que le joueur a déjà visité une section au cours de sa partie.
+
+```json
+{ "type": "section-connue", "section": 45 }
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `section` | — | Numéro de la section à vérifier. Si absent, vérifie la section **courante**. |
+| `not` | — | Si `true`, inverse la condition (vrai si la section n'a **pas** encore été visitée) |
+
+**Exemple — choix disponible uniquement si on a déjà visité la section 45 :**
+```json
+{
+  "texte": "Vous vous souvenez du passage secret",
+  "section": 100,
+  "condition": { "type": "section-connue", "section": 45 }
+}
+```
+
+**Exemple — choix disponible uniquement si c'est la première fois qu'on arrive ici :**
+```json
+{
+  "texte": "Découvrir la salle pour la première fois",
+  "section": 200,
+  "condition": { "type": "section-connue", "not": true }
+}
+```
+
+> **Note :** L'historique des sections visitées est persisté en sauvegarde. Les paramètres `sn1`, `sn2`… du mode debug permettent de simuler cet historique.
+
+---
+
 ## `action_resolved` — action déjà tentée
 
 Vérifie qu'une action spécifique a été tentée dans la section courante (peu importe son résultat).
@@ -412,6 +447,37 @@ Lecture : la condition est vraie si aucun item équipé ne contient "argent" →
 
 ---
 
+## `item_name` — item en inventaire par nom
+
+Vérifie qu'un item de l'**inventaire** (non équipé) correspond à un critère sur son `label` ou son `id`.
+
+Fonctionne exactement comme `item_equipe_name` mais cherche dans l'inventaire plutôt que dans l'équipement.
+
+```json
+{
+  "type":     "item_name",
+  "texte":    "clé",
+  "contains": true
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `texte` | ★ | Texte à rechercher dans le label ou l'id de l'item |
+| `contains` | — | `true` = recherche par inclusion (défaut), `false` = égalité stricte |
+| `not` | — | Si `true`, inverse le résultat — vrai si **aucun** item de l'inventaire ne correspond |
+
+**Exemple — choix disponible uniquement si le héros possède une clé :**
+```json
+{
+  "texte": "Utiliser la clé",
+  "section": 87,
+  "condition": { "type": "item_name", "texte": "clé", "contains": true }
+}
+```
+
+---
+
 ## `and` / `or` — conditions composées
 
 Permet de combiner plusieurs conditions avec un opérateur logique.
@@ -471,6 +537,7 @@ Les sous-conditions peuvent elles-mêmes être des `and`/`or`, permettant des co
 | `item_quantite` | choix, effet | Possession d'un item ou d'une stat |
 | `retour` | choix | Retour depuis une section précise |
 | `first_visit` | choix | Première arrivée dans la section |
+| `section-connue` | choix | Une section a déjà été visitée dans la partie |
 | `action_resolved` | choix | Une action a été tentée |
 | `combat_victoire` | choix | Le dernier combat a été gagné |
 | `combat_degats_monstre` | choix | Dégâts infligés au monstre dans une plage |
@@ -482,3 +549,4 @@ Les sous-conditions peuvent elles-mêmes être des `and`/`or`, permettant des co
 | `and` | choix, effet, combat | Toutes les sous-conditions doivent être vraies |
 | `or` | choix, effet, combat | Au moins une sous-condition doit être vraie |
 | `item_equipe_name` | effet monstre | Un item équipé correspond à un critère sur son nom |
+| `item_name` | choix, effet | Un item de l'inventaire correspond à un critère sur son nom |

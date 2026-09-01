@@ -150,10 +150,28 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 |-------|-------------|
 | `section` | Section vers laquelle fuir. Peut être un numéro fixe, `-1`, ou `{ "param": "nom" }` |
 | `avant` | Si `true`, la fuite est possible avant même de commencer le combat |
+| `fuite_directe` | Si `false`, masque le bouton "🏃 Fuir directement" (défaut : `true`) |
+| `fuite_chance` | Si `false`, masque le bouton "🎲 Tenter sa chance pour fuir" (défaut : `true`) |
 
 > Le bouton fuite s'affiche pendant le combat uniquement si `combat.fuite` est défini **ou** si un event de type `"btn_fuite"` est déclenché au round courant. Dans les deux cas, le héros doit être encore en vie.
 >
 > Le coût de la fuite (ex : `-2 endurance`) est défini dans `regles.combat.fuite.cout`.
+
+**Exemple — autoriser uniquement la fuite avec chance (pas de fuite directe) :**
+```json
+"fuite": {
+  "section": 360,
+  "fuite_directe": false
+}
+```
+
+**Exemple — autoriser uniquement la fuite directe (pas de fuite avec chance) :**
+```json
+"fuite": {
+  "section": 360,
+  "fuite_chance": false
+}
+```
 
 ---
 

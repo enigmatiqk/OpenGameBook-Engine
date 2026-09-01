@@ -33,6 +33,7 @@ Les stats sont initialisées à `10` par défaut. Chaque stat définie dans l'av
 | `endurance` | `&endurance=24` | Force la valeur de la stat `endurance` |
 | `chance` | `&chance=8` | Force la valeur de la stat `chance` |
 | `ignore_stat_limit` | `&ignore_stat_limit=1` | Permet aux effets de section de dépasser les limites de stat (utile pour tester les augmentations de stat) |
+| `item_dropable` | `&item_dropable` | Force le mode "jeter" (item_dropable: true) sur la section courante, pour les inventaires et équipements |
 
 ### Inventaire
 
@@ -84,6 +85,27 @@ http://localhost:5173/?section=27&adventure=1&equip=arme_1main_Épée normale&eq
 | `monstre_habilete` | `&monstre_habilete=5` | Force l'habileté du monstre (si la section a un combat) |
 | `monstre_endurance` | `&monstre_endurance=1` | Force l'endurance du monstre |
 | `lance_de` | `&lance_de=5` | Force tous les dés lancés à retourner cette valeur (utile pour les tests déterministes) |
+
+### Historique de navigation
+
+Permet d'injecter un historique de sections visitées avant la section courante. Utilisé pour tester les conditions `retour`, `first_visit` et `section-connue`.
+
+| Paramètre | Exemple | Description |
+|-----------|---------|-------------|
+| `sn1` | `&sn1=45` | Section visitée juste avant (N-1) |
+| `sn2` | `&sn2=12` | Section visitée avant sn1 (N-2) |
+| `sn3`… | `&sn3=7` | Sections plus anciennes, jusqu'à `sn9` |
+
+Ces paramètres alimentent `hero.sectionsVisitees` (source de vérité unique pour toutes les conditions de navigation). `sn1` est la section la plus récente, `sn2` l'avant-dernière, etc.
+
+**Exemple :**
+```
+# Tester section 206 en simulant qu'on vient de la section 45
+http://localhost:5173/?section=206&adventure=1&sn1=45
+
+# Tester section-connue (section 12 déjà visitée)
+http://localhost:5173/?section=206&adventure=1&sn1=12&sn2=45
+```
 
 ---
 

@@ -49,7 +49,7 @@ Système de combat : monstres, rounds, fuite, événements de combat.
 Types d'effets (`stat`, `stat_total`, `item`), effets conditionnels, triggers.
 
 ### [08-section-04 - Conditions](08-section-04-conditions.md)
-Référence complète de tous les types de conditions : `item_quantite`, `retour`, `action_resolved`, `combat_victoire`, `item_dropped`, `no_droppable_item`, etc.
+Référence complète de tous les types de conditions : `item_quantite`, `retour`, `first_visit`, `section-connue`, `action_resolved`, `combat_victoire`, `item_dropped`, `no_droppable_item`, etc.
 
 ---
 
