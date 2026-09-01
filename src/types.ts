@@ -264,6 +264,10 @@ export interface CombatData {
     section: SectionRef
     effets?: Effet[]           // effets appliqués après la victoire
   }
+  mort?: {
+    section?: SectionRef       // section vers laquelle naviguer si le héros meurt au combat
+    end?: "defaite" | "victoire"  // si absent et pas de section, défaut: "defaite"
+  }
   fuite?: { 
     section: SectionRef
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant

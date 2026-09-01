@@ -232,14 +232,14 @@ export function applyItemEffect(
         existing.quantite = (existing.quantite ?? 1) + 1
         logItemAdd(hero, itemId, 1, !!item.type)
       }
-      if (existing.effets && applyItemEffects) applyItemEffects(hero, existing)
+      if (existing.effets && applyItemEffects && existing.equipe) applyItemEffects(hero, existing)
       return
     }
 
     // Ajoute dans l'inventaire (aucun doublon existant)
     hero.inventaire.push(newItem)
     logItemAdd(hero, itemId, newItem.quantite ?? 1, !!item.type)
-    if (newItem.effets && applyItemEffects) applyItemEffects(hero, newItem)
+    // Les effets ne s'appliquent que si l'item est directement équipé (remplace: true géré plus haut)
     return
   }
 

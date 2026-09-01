@@ -848,8 +848,27 @@ export class GameEngine {
       this.navigation.recordCombatState(this.combatState)
       
       if (!victoire) {
+        const section = this.adventure?.sections.find(s => s.numero === this.currentSection)
+        const combatMort = this.combatState.combatData?.mort ?? section?.combat?.mort
+
+        // Synchronise l'endurance avant tout (section de mort ou gameOver)
+        if (this.hero && this.adventure) {
+          const statVie = this.adventure.regles.combat.formule_vie
+          const current = this.hero.statistiques[statVie] ?? 0
+          const delta = heroEnduranceFinale - current
+          if (delta !== 0) this.applyStatDelta(statVie, delta, 'fin de combat')
+        }
+
+        if (combatMort?.section !== undefined) {
+          // Navigation explicite vers une section (ex: section 64)
+          this.navigateTo(this.resolveSection(combatMort.section))
+          this.combatState = null
+          return
+        }
+        // Pas de section → appliquer end (défaut: "defaite")
+        const endValue = combatMort?.end ?? 'defaite'
         this.gameOver = true
-        this.victory = false
+        this.victory = endValue === 'victoire'
       } else if (this.adventure) {
         const section = this.adventure.sections.find(s => s.numero === this.currentSection)
         // Utilise la victoire résolue de la phase courante (surcharge possible par phase)
@@ -868,8 +887,8 @@ export class GameEngine {
           this.navigateTo(this.resolveSection(sectionVictoire.section))
         }
       }
-      // Synchronise l'endurance finale
-      if (this.hero && this.adventure) {
+      // Synchronise l'endurance finale (victoire uniquement — la défaite le fait plus haut)
+      if (victoire && this.hero && this.adventure) {
         const statVie = this.adventure.regles.combat.formule_vie
         const current = this.hero.statistiques[statVie] ?? 0
         const delta = heroEnduranceFinale - current

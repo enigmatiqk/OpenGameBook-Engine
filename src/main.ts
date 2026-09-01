@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const entry: Record<string, unknown> = { id: itemId, label: itemId, quantite: itemCount }
         if (itemType) entry.type = itemType
         hero.inventaire.push(entry)
+        hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: itemCount, value_string: itemId, tags: ['item', ...(itemType ? ['equip'] : []), 'add'] })
       }
       for (let n = 2; n <= 3; n++) {
         const nId = params.get(`item${n}_id`)
@@ -312,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const entry: Record<string, unknown> = { id: nId, label: nId, quantite: nCount }
         if (nType) entry.type = nType
         hero.inventaire.push(entry)
+        hero.journal.push({ timestamp: Date.now() + n, section: 0, name: 'item_id', value_number: nCount, value_string: nId, tags: ['item', ...(nType ? ['equip'] : []), 'add'] })
       }
 
       // Injection d'items équipés via ?equip=<type>_<label> (ex: equip=arme_1main_Épée en argent)
