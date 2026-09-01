@@ -951,7 +951,8 @@ export class GameEngine {
     const realDelta = GameEngineHero.applyStatDelta(this.hero, this.adventure, stat, delta, raison)
 
     // Vérifie si la stat de vie est tombée sous le seuil de défaite
-    if (!this.gameOver) {
+    // (ignoré pendant un combat : c'est advanceCombat() qui gère la fin de combat)
+    if (!this.gameOver && !this.combatState) {
       const statVie = this.adventure.regles.combat?.formule_vie
       const enduranceMin = (this.adventure.regles.defaite as any)?.endurance_min ?? 0
       const normalizedStat = GameEngineHero.normalizeStat(stat, this.hero)

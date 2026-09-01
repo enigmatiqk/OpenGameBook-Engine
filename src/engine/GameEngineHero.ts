@@ -9,7 +9,7 @@ export class GameEngineHero {
   /**
    * Crée un nouveau héros avec les stats initiales de l'aventure
    */
-  static createHero(adventure: Adventure, statistiques: Record<string, number>): Hero {
+  static createHero(_adventure: Adventure, statistiques: Record<string, number>): Hero {
     const hero: Hero = {
       statistiques: { ...statistiques },
       statistiques_initiales: { ...statistiques },

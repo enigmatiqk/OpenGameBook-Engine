@@ -542,7 +542,14 @@ export class GameView {
     container.innerHTML = ''
     const combatView = new CombatView(this.engine, () => {
       const state = this.engine.getGameState()
-      if (state.gameOver && !state.victory) { this.callbacks.onDefeat(); return }
+      if (state.gameOver && !state.victory) {
+        // Si on a navigué vers une section avec end: "defaite" (ex: combat.mort.section),
+        // laisser _render() afficher la section et son bouton défaite.
+        const sectionNum = this.engine.getCurrentSection()
+        const currentSection = state.adventure?.sections.find(s => s.numero === sectionNum)
+        if (currentSection?.end === 'defaite') { this._render(); return }
+        this.callbacks.onDefeat(); return
+      }
       this._render()
     })
     combatView.render(container)

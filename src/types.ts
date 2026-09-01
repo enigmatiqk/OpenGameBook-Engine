@@ -298,6 +298,7 @@ export interface EffetItem {
   delta_de?: string        // quantité aléatoire par lancé de dés (ex: "2d6") — prioritaire sur delta
   raison?: string          // raison pour l'historique
   item_dropable?: boolean  // si false, l'item ne peut pas être jeté/retiré par le joueur (défaut: true)
+  item_unequip?: boolean   // si false, l'item ne peut pas être déséquipé par le joueur (défaut: true)
   // Champs pour la création/équipement d'un item complet
   type?: string            // type d'item (ex: "casque", "armure") — requis pour remplace: true
   remplace?: boolean | string  // true = équipe dans le slot du type ; string = remplace l'item avec cet id
