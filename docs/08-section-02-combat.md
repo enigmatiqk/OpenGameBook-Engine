@@ -341,3 +341,185 @@ Les paramètres généraux du combat sont définis dans `regles.combat` (voir [1
 - `degats_victoire` / `degats_defaite` : dégâts par round
 - `fuite.possible` / `fuite.cout` : règles de fuite globales
 - `events.attaque` / `events.defense` / `events.fuite` : règles déclenchables après chaque round
+
+---
+
+## Attaque spéciale d'un monstre (`attaque_speciale`)
+
+Un monstre peut porter une attaque spéciale déclenchée à chaque round selon les mêmes critères que les `events`. Elle est définie directement sur le monstre dans `monstres[]`, pas au niveau du combat.
+
+Contrairement aux `events` (qui ne se déclenchent qu'une seule fois), l'attaque spéciale peut se répéter à chaque occurrence correspondante.
+
+### Structure de base
+
+```json
+{
+  "nom": "CHIEN",
+  "habilete": 7,
+  "endurance": 6,
+  "attaque_speciale": {
+    "declencheur": "attaque_monstre",
+    "round": 1,
+    "texte": "Le chien vous lance son souffle de feu !",
+    "type": "lancer_de",
+    "lancer_de": {
+      "formule": "1d6",
+      "resultats": {
+        "1,2": {
+          "effets": [
+            { "type": "stat", "stat": { "name": "endurance", "delta": -1, "raison": "Souffle de feu" } }
+          ]
+        }
+      }
+    },
+    "parade": {
+      "choix": [
+        {
+          "texte": "Esquiver",
+          "action": {
+            "type": "lancer_de",
+            "lancer_de": {
+              "formule": "1d6",
+              "resultats": {
+                "3-6": { "parade": true }
+              }
+            }
+          }
+        },
+        {
+          "texte": "Tenter ma chance",
+          "action": {
+            "name": "tenter_chance",
+            "si_reussi": { "parade": true }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Champs de `attaque_speciale`
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `declencheur` | ★ | Même enum que les `events` — voir [Types de déclencheur](#types-de-déclencheur-declencheur) |
+| `round` | ★ | Numéro d'occurrence ou de round (même sémantique que les `events`) |
+| `texte` | — | Message affiché au joueur quand l'attaque se déclenche |
+| `type` | ★ | `"lancer_de"` ou `"instant"` |
+| `lancer_de` | si `type="lancer_de"` | Jet de dé pour déterminer si les effets s'appliquent |
+| `instant` | si `type="instant"` | Effets appliqués systématiquement |
+| `parade` | — | Options de parade proposées au joueur (optionnel — si absent, l'attaque est inévitable) |
+
+### Type `lancer_de`
+
+Un jet de dé détermine si les effets s'appliquent. Les clés de `resultats` supportent les valeurs exactes (`"1"`), les plages (`"1-3"`) et les listes (`"1,2"`). Les entrées qui portent des `effets` déclenchent l'attaque.
+
+```json
+"type": "lancer_de",
+"lancer_de": {
+  "formule": "1d6",
+  "resultats": {
+    "1,2": {
+      "effets": [
+        { "type": "stat", "stat": { "name": "endurance", "delta": -2, "raison": "Double frappe" } }
+      ]
+    }
+  }
+}
+```
+
+### Type `instant`
+
+Les effets s'appliquent systématiquement à chaque déclenchement, sans jet de dé conditionnel.
+
+```json
+"type": "instant",
+"instant": {
+  "effets": [
+    { "type": "stat", "stat": { "name": "endurance", "delta": -2, "raison": "Double frappe" } }
+  ]
+}
+```
+
+### Parade (`parade`)
+
+Si `parade` est défini, le joueur peut tenter de contrer l'attaque. La parade est une liste de `choix` — chaque entrée est un bouton d'action.
+
+- **Un seul choix** : la parade est automatique (le bouton est résolu sans sélection du joueur).
+- **Plusieurs choix** : le joueur sélectionne son option. Un bouton "Subir l'attaque" est aussi affiché.
+
+```json
+"parade": {
+  "choix": [
+    {
+      "texte": "Esquiver",
+      "action": {
+        "type": "lancer_de",
+        "lancer_de": {
+          "formule": "1d6",
+          "resultats": {
+            "3-6": { "parade": true }
+          }
+        }
+      }
+    },
+    {
+      "texte": "Tenter ma chance",
+      "action": {
+        "name": "tenter_chance",
+        "si_reussi": { "parade": true }
+      }
+    }
+  ]
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `texte` | Libellé du bouton |
+| `action` | Action à résoudre — format `lancer_de` (avec `type: "lancer_de"`) ou règle nommée (avec `name`) |
+| `parade: true` | Dans les `resultats` du `lancer_de` ou dans `si_reussi` : indique que la parade réussit et annule les effets |
+
+### Exemples complémentaires
+
+**Attaque un round sur deux, inévitable :**
+```json
+"attaque_speciale": {
+  "declencheur": "round",
+  "round": 2,
+  "texte": "Il frappe deux fois ce round !",
+  "type": "instant",
+  "instant": {
+    "effets": [
+      { "type": "stat", "stat": { "name": "endurance", "delta": -2, "raison": "Double frappe" } }
+    ]
+  }
+}
+```
+
+**Attaque qui ronge la chance, parade via tenter_chance uniquement :**
+```json
+"attaque_speciale": {
+  "declencheur": "attaque_monstre",
+  "round": 1,
+  "texte": "Le sort ronge votre volonté...",
+  "type": "instant",
+  "instant": {
+    "effets": [
+      { "type": "stat", "stat": { "name": "chance", "delta": -1, "raison": "Sort de faiblesse" } }
+    ]
+  },
+  "parade": {
+    "choix": [
+      {
+        "texte": "Résister au sort",
+        "action": {
+          "name": "tenter_chance",
+          "si_reussi": { "parade": true }
+        }
+      }
+    ]
+  }
+}
+```

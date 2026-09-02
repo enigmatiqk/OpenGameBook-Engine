@@ -73,34 +73,35 @@ export function parseDiceFormula(formula: string): { count: number; sides: numbe
 }
 
 /**
+ * Provider de dés injecté depuis l'extérieur.
+ * En production : null (utilise Math.random).
+ * En développement : injecté depuis src/utils/debug.ts via main.ts.
+ */
+let _diceProvider: ((count: number, sides: number) => number[]) | null = null
+
+/**
+ * Injecte un provider de dés personnalisé.
+ * Appeler depuis main.ts uniquement en mode DEV.
+ */
+export function setDiceProvider(provider: ((count: number, sides: number) => number[]) | null): void {
+  _diceProvider = provider
+}
+
+/**
  * Lance N dés à D faces. Retourne les résultats individuels.
- * En mode debug avec le paramètre ?lance_de=X, tous les dés feront X.
+ * Délègue au provider injecté si présent, sinon utilise Math.random.
  */
 export function rollDice(count: number, sides: number): number[] {
-  // Vérifier si on est en mode debug avec le paramètre lance_de
-  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-  const debugValue = params.get('lance_de')
-  
-  if (debugValue) {
-    const fixedValue = Math.min(parseInt(debugValue, 10), sides)
-    return Array.from({ length: count }, () => fixedValue)
-  }
-  
+  if (_diceProvider) return _diceProvider(count, sides)
   return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
 }
 
 /**
- * Lance N dés à D faces pour l'adversaire (duel_de).
- * En mode debug, utilise ?lance_de2=X si défini, sinon ?lance_de=X.
+ * Lance N dés à D faces pour l'adversaire.
+ * Utilise le même provider que rollDice.
  */
 export function rollDiceAdversaire(count: number, sides: number): number[] {
-  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-  const debugValue = params.get('lance_de2') ?? params.get('lance_de')
-  if (debugValue) {
-    const fixedValue = Math.min(parseInt(debugValue, 10), sides)
-    return Array.from({ length: count }, () => fixedValue)
-  }
-  return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
+  return rollDice(count, sides)
 }
 
 /**
@@ -122,13 +123,18 @@ export function resolveResultatDe<T>(resultats: Record<string, T>, diceResult: n
   if (resultats[diceResult.toString()] !== undefined) {
     return resultats[diceResult.toString()]
   }
-  // Cherche dans les plages "min-max"
   for (const key of Object.keys(resultats)) {
-    const m = key.match(/^(\d+)-(\d+)$/)
-    if (m) {
-      const min = parseInt(m[1], 10)
-      const max = parseInt(m[2], 10)
+    // Plage "min-max"
+    const rangem = key.match(/^(\d+)-(\d+)$/)
+    if (rangem) {
+      const min = parseInt(rangem[1], 10)
+      const max = parseInt(rangem[2], 10)
       if (diceResult >= min && diceResult <= max) return resultats[key]
+    }
+    // Liste de valeurs séparées par virgule "1,2,5"
+    if (key.includes(',')) {
+      const values = key.split(',').map(v => parseInt(v.trim(), 10))
+      if (values.includes(diceResult)) return resultats[key]
     }
   }
   return undefined
@@ -181,7 +187,15 @@ function buildEnemy(monstre: MonstreData, statMods?: Array<{ name: string; delta
       if (mod.name === 'endurance') endurance = Math.max(0, endurance + mod.delta)
     }
   }
-  return { nom: monstre.nom ?? `monstre_${monstre.id ?? 'inconnu'}`, habilete, endurance, id: monstre.id, statMods, effets: monstre.effets }
+  return {
+    nom: monstre.nom ?? `monstre_${monstre.id ?? 'inconnu'}`,
+    habilete,
+    endurance,
+    id: monstre.id,
+    statMods,
+    effets: monstre.effets,
+    attaque_speciale: monstre.attaque_speciale,
+  }
 }
 
 /**
@@ -528,7 +542,137 @@ export class CombatResolver {
       return { ...newState, phase: { type: 'pending_defense', defenseData } }
     }
 
+    // Vérifier l'attaque spéciale après la défense
+    const attaqueSpecialeState = this._checkAttaqueSpeciale(newState, degatsHeros, degatsMonster, round.cible)
+    if (attaqueSpecialeState) return attaqueSpecialeState
+
     return { ...newState, phase: { type: 'round_result', round, availableActions } }
+  }
+
+  /**
+   * Vérifie si l'attaque spéciale doit se déclencher ce round.
+   * Retourne le nouvel état avec la phase appropriée, ou null si elle ne se déclenche pas.
+   */
+  private _checkAttaqueSpeciale(state: CombatState, degatsHeros: number, degatsMonster: number, cibleRound: 'hero' | 'ennemi'): CombatState | null {
+    const attaqueSpeciale: import('../types').AttaqueSpeciale | undefined = state.enemy.attaque_speciale
+    if (!attaqueSpeciale) return null
+
+    const heroARempoteLround = cibleRound === 'ennemi'
+    const monstreARempoteLround = cibleRound === 'hero'
+
+    let compteur = state.compteurAttaqueSpeciale ?? 0
+    let shouldTrigger = false
+
+    switch (attaqueSpeciale.declencheur) {
+      case 'round':
+        shouldTrigger = state.roundNumber === attaqueSpeciale.round
+        break
+      case 'degats_heros':
+        if (degatsHeros > 0) {
+          // Le compteur degatsHeros a déjà été mis à jour dans checkCombatEvents
+          shouldTrigger = (state.compteurDegatsHeros ?? 0) === attaqueSpeciale.round
+        }
+        break
+      case 'degats_monstre':
+        if (degatsMonster > 0) {
+          shouldTrigger = (state.compteurDegatsMonster ?? 0) === attaqueSpeciale.round
+        }
+        break
+      case 'degats':
+        if (degatsHeros > 0 || degatsMonster > 0) {
+          shouldTrigger = (state.compteurDegats ?? 0) === attaqueSpeciale.round
+        }
+        break
+      case 'attaque_heros':
+        if (heroARempoteLround) {
+          shouldTrigger = (state.compteurAttaqueHeros ?? 0) === attaqueSpeciale.round
+        }
+        break
+      case 'attaque_monstre':
+        if (monstreARempoteLround) {
+          compteur += 1
+          shouldTrigger = compteur === attaqueSpeciale.round
+        }
+        break
+    }
+
+    if (!shouldTrigger) return null
+
+    const newState: CombatState = { ...state, compteurAttaqueSpeciale: compteur }
+
+    if (attaqueSpeciale.type === 'lancer_de') {
+      // Phase de jet de dé pour déterminer si les effets s'appliquent
+      return { ...newState, phase: { type: 'pending_attaque_speciale_roll', attaqueSpeciale } }
+    }
+
+    // type === 'instant' : les effets sont déterminés directement
+    const effets = attaqueSpeciale.instant?.effets ?? []
+    return this._resolveAttaqueSpecialeEffets(newState, effets, attaqueSpeciale)
+  }
+
+  /**
+   * Résout les effets d'une attaque spéciale : si parade disponible → phase parade, sinon → applique directement.
+   */
+  private _resolveAttaqueSpecialeEffets(state: CombatState, effets: import('../types').Effet[], attaqueSpeciale: import('../types').AttaqueSpeciale): CombatState {
+    if (effets.length === 0) {
+      // Pas d'effets → retour au round_result sans rien appliquer
+      const lastRound = state.rounds[state.rounds.length - 1]
+      const availableActions: string[] = []
+      return { ...state, phase: { type: 'round_result', round: lastRound, availableActions } }
+    }
+
+    if (attaqueSpeciale.parade?.choix?.length) {
+      // Parade disponible → le joueur doit intervenir (ou parade automatique si 1 seul choix)
+      return { ...state, phase: { type: 'pending_attaque_speciale_parade', effets, attaqueSpeciale } }
+    }
+
+    // Pas de parade → les effets s'appliquent immédiatement (via GameEngine._applyEffets, pas ici)
+    // On stocke les effets dans la phase pour que le GameEngine puisse les appliquer
+    return { ...state, phase: { type: 'pending_attaque_speciale_parade', effets, attaqueSpeciale } }
+  }
+
+  /**
+   * Résout le jet de dé de déclenchement d'une attaque spéciale (type "lancer_de").
+   * Appelé depuis GameEngine après que l'UI a lancé les dés.
+   */
+  applyAttaqueSpecialeRoll(state: CombatState, rolls: number[]): CombatState {
+    if (state.phase.type !== 'pending_attaque_speciale_roll') throw new Error('Phase invalide')
+    const { attaqueSpeciale } = state.phase
+
+    const diceResult = rolls.reduce((a, b) => a + b, 0)
+    const resultats = attaqueSpeciale.lancer_de?.resultats ?? {}
+    const resultat = resolveResultatDe(resultats, diceResult)
+
+    const effets = resultat?.effets ?? []
+    return this._resolveAttaqueSpecialeEffets(state, effets, attaqueSpeciale)
+  }
+
+  /**
+   * Résout un lancer de dé de parade pour l'attaque spéciale.
+   * Appelé depuis GameEngine après que l'UI a lancé les dés de parade.
+   * Retourne { parade: true/false, state } — GameEngine applique les effets si parade === false.
+   */
+  applyAttaqueSpecialeParadeRoll(state: CombatState, rolls: number[], paradeAction: import('../types').ActionLancerDe): { parade: boolean; newState: CombatState } {
+    if (state.phase.type !== 'pending_attaque_speciale_parade') throw new Error('Phase invalide')
+
+    const diceResult = rolls.reduce((a, b) => a + b, 0)
+    const resultats = paradeAction.lancer_de.resultats as Record<string, any>
+    const resultat = resolveResultatDe(resultats, diceResult)
+    const parade = !!(resultat && resultat.parade === true)
+
+    const lastRound = state.rounds[state.rounds.length - 1]
+    const newState = { ...state, phase: { type: 'round_result' as const, round: lastRound, availableActions: [] as string[] } }
+    return { parade, newState }
+  }
+
+  /**
+   * Résout une parade de type "action" (ex: tenter_chance) démarrée pour l'attaque spéciale.
+   * Retourne le state en pending_attaque_speciale_action pour que l'UI lance les dés.
+   */
+  startAttaqueSpecialeParadeAction(state: CombatState, actionName: string): CombatState {
+    if (state.phase.type !== 'pending_attaque_speciale_parade') throw new Error('Phase invalide')
+    const { effets, attaqueSpeciale } = state.phase
+    return { ...state, phase: { type: 'pending_attaque_speciale_action', effets, attaqueSpeciale, action: actionName } }
   }
 
   /**
@@ -788,12 +932,15 @@ export class CombatResolver {
 
     const deltaModifier = resolveDeltaResultat(defenseData.resultats ?? {}, diceResult)
 
-    const newDegats = Math.max(0, lastRound.degats + deltaModifier)
+    const degatsAvant = lastRound.degats
+    const newDegats = Math.max(0, degatsAvant + deltaModifier)
     lastRound.degats = newDegats
     lastRound.defenseRoll = diceRolls
     lastRound.defenseModifier = deltaModifier
-    
-    const heroVie = state.heroVie + deltaModifier
+
+    // La vie a déjà été déduite des dégâts originaux avant la défense.
+    // On compense en rendant exactement la réduction obtenue.
+    const heroVie = state.heroVie + (degatsAvant - newDegats)
 
     const availableActions: string[] = []
     if (rules.events && newDegats > 0) {

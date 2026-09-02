@@ -57,7 +57,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   // Défense lancer_de : dé=1 → pas de clé → dégâts normaux (2)
   // habilete=1, lance_de=6 → héros: 1+6+2=9 vs sorcier: 11+6=17 → sorcier gagne → pending_defense
   test('Défense lancer_de=1 : subit 2 dégâts', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=6`)
+    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=1`)
     await page.waitForSelector('.section-text')
 
     await testCombatStart(page)
@@ -127,7 +127,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
     // endurance=10, dégâts=2-2=0 → round-defense affiche le modificateur
     const roundDefense = page.locator('.round-defense')
-    await expect(roundDefense).toContainText('DÉFENSE [6] → -2')
+    // await expect(roundDefense).toContainText('DÉFENSE [6] → -2')
     await expect(roundDefense).toContainText('DÉFENSE [6] → -2 (dégâts : 0)')
     // round-outcome affiche les dégâts finaux
     const roundOutcome = page.locator('.round-outcome')

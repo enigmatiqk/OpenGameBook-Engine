@@ -90,10 +90,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   // ─── Défaite au pari (lance_de=1 héros, lance_de2=6 adversaire) ──────────────
 
-  test.describe('Défaite — lance_de=1, lance_de2=6', () => {
+  test.describe('Défaite — lance_de=1 puis 6', () => {
 
     test.beforeEach(async ({ page }) => {
-      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&lance_de=1&lance_de2=6`)
+      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&lance_de_pile=1,1,6,6`)
       await page.waitForSelector('.section-text')
     })
 
@@ -110,10 +110,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   // ─── Victoire au pari (lance_de=6 héros, lance_de2=1 adversaire) ─────────────
 
-  test.describe('Victoire — lance_de=6, lance_de2=1', () => {
+  test.describe('Victoire — lance_de=6 puis 1', () => {
 
     test.beforeEach(async ({ page }) => {
-      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&habilete=5&endurance=5&chance=5&ignore_stat_limit&lance_de=6&lance_de2=1`)
+      await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5&habilete=5&endurance=5&chance=5&ignore_stat_limit&lance_de_pile=6,6,1,1`)
       await page.waitForSelector('.section-text')
     })
 

@@ -185,6 +185,7 @@ export interface MonstreData {
   endurance?: number         // optionnel si monstre persistant réutilisé
   persistant?: boolean       // true si le monstre persiste entre les sections
   effets?: Effet[]           // effets appliqués à chaque round (ex: immunité conditionnelle)
+  attaque_speciale?: AttaqueSpeciale  // attaque spéciale propre à ce monstre
 }
 
 export interface CombatEventChoix {
@@ -209,6 +210,45 @@ export interface CombatModifier {
   stat: string               // nom de la stat (endurance, habilete, etc.)
   delta: number              // modification à appliquer
   raison?: string            // description de la modification
+}
+
+// ─── Attaque spéciale ────────────────────────────────────────────────────────
+
+/**
+ * Un choix de parade proposé au joueur pour contrer une attaque_speciale.
+ * Chaque entrée correspond à un bouton dans l'UI.
+ * Si un seul choix est présent, la parade est automatique (pas de sélection joueur).
+ */
+export interface ParadeChoix {
+  texte: string              // libellé du bouton
+  action: Action             // action à résoudre : "lancer_de" ou règle (ex: "tenter_chance")
+}
+
+/**
+ * Attaque spéciale d'un monstre, déclenchée selon les mêmes critères que les CombatEvent.
+ *
+ * type "lancer_de" : un jet de dé détermine si les effets s'appliquent (résultats dans lancer_de.resultats)
+ * type "instant"   : les effets s'appliquent systématiquement (portés dans instant.effets)
+ *
+ * parade (optionnel) : si présent, le joueur peut tenter de contrer les effets.
+ *   - Un seul choix → parade automatique (le bouton est lancé sans sélection)
+ *   - Plusieurs choix → le joueur choisit son option
+ */
+export interface AttaqueSpeciale {
+  declencheur: CombatEvent['declencheur']  // même enum que les events
+  round: number              // numéro d'occurrence ou de round (même sémantique que CombatEvent)
+  texte?: string             // message affiché quand l'attaque se déclenche
+  type: "lancer_de" | "instant"
+  lancer_de?: {              // présent si type === "lancer_de"
+    formule: string
+    resultats: Record<string, { effets: Effet[] }>  // clé: valeur exacte ou plage ("1,2" / "1-3")
+  }
+  instant?: {                // présent si type === "instant"
+    effets: Effet[]
+  }
+  parade?: {
+    choix: ParadeChoix[]     // liste des options de parade proposées au joueur
+  }
 }
 
 export interface LancerDeData {
@@ -267,12 +307,14 @@ export interface CombatData {
   mort?: {
     section?: SectionRef       // section vers laquelle naviguer si le héros meurt au combat
     end?: "defaite" | "victoire"  // si absent et pas de section, défaut: "defaite"
+    effets?: Effet[]           // effets appliqués à la mort (avant navigation)
   }
   fuite?: { 
     section: SectionRef
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
     fuite_directe?: boolean    // si false, masque le bouton "Fuir directement" (défaut: true)
     fuite_chance?: boolean     // si false, masque le bouton "Tenter sa chance pour fuir" (défaut: true)
+    effets?: Effet[]           // effets appliqués lors de la fuite (après le coût global)
   }
   defense?: {
     texte?: string            // libellé personnalisé du bouton de défense (ex: "Esquiver")
@@ -605,6 +647,7 @@ export interface Enemy {
   id?: string          // id du monstre persistant
   statMods?: Array<{ name: string; delta: number; raison?: string }>  // mods appliqués avant le combat
   effets?: Effet[]     // effets du monstre (ex: immunité conditionnelle)
+  attaque_speciale?: AttaqueSpeciale  // attaque spéciale propre à ce monstre
 }
 
 export interface CombatRound {
@@ -624,6 +667,13 @@ export interface CombatRound {
   // Pour la défense : résultat du lancer et modificateur appliqué
   defenseRoll?: number[]
   defenseModifier?: number
+  // Pour l'attaque spéciale : résultat affiché dans le log du round
+  attaqueSpecialeResult?: {
+    texte: string         // description de l'attaque spéciale
+    parade: boolean       // true = parade réussie (0 dégâts)
+    degats: number        // dégâts subis (0 si parade réussie)
+    rollDeclencheur?: number[]  // dés du jet de déclenchement (si type lancer_de)
+  }
 }
 
 export interface CombatResult {
@@ -643,6 +693,9 @@ export type CombatPhase =
   | { type: 'pending_action'; action: string }          // attente jet d'une action (chance...)
   | { type: 'pending_navigation'; section: number }     // navigation vers une section (action déclenchée)
   | { type: 'pending_target_choice'; monstres: MonstreData[] }  // attente choix de cible (phase escorte)
+  | { type: 'pending_attaque_speciale_roll'; attaqueSpeciale: AttaqueSpeciale }           // attente jet de dé de déclenchement (type lancer_de)
+  | { type: 'pending_attaque_speciale_parade'; effets: Effet[]; attaqueSpeciale: AttaqueSpeciale }  // effets déterminés, attente parade
+  | { type: 'pending_attaque_speciale_action'; effets: Effet[]; attaqueSpeciale: AttaqueSpeciale; action: string }  // attente résolution action de parade (tenter_chance, etc.)
   | { type: 'round_result'; round: CombatRound; availableActions: string[] }  // résultat, actions dispo
   | { type: 'termine'; victoire: boolean; heroEnduranceFinale: number }
 
@@ -688,6 +741,8 @@ export interface CombatState {
   totalDegatsMonsterById?: Record<string, number>  // dégâts totaux par monstre persistant
   // Tracking des actions lancées dans le round courant
   actionLancee?: string           // action lancée dans ce round (attaque_chance, defense_chance, etc.)
+  // Tracking de l'attaque spéciale
+  compteurAttaqueSpeciale?: number  // nombre de fois que l'attaque spéciale s'est déclenchée (pour declencheur par occurrence)
 }
 
 // ─── Machine à états création héros ──────────────────────────────────────────

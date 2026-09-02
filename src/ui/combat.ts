@@ -1,6 +1,6 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { CombatState, CombatRound } from '../types'
-import { parseDiceFormula, rollDice, parseAttackFormula, resolveLancerDeFormule } from '../engine/CombatResolver'
+import { parseDiceFormula, rollDice, parseAttackFormula, resolveLancerDeFormule, resolveResultatDe } from '../engine/CombatResolver'
 
 export class CombatView {
   private engine: GameEngine
@@ -169,7 +169,7 @@ export class CombatView {
         const rolls = rollDice(count, sides)
         this.engine.resolveCombatHeroRoll(rolls)
         const newState = this.engine.getCombatState()
-        if (newState?.phase.type === 'round_result') {
+        if (newState) {
           this._showRoundResult(newState, rolls)
         } else {
           this._render()
@@ -216,11 +216,111 @@ export class CombatView {
         const rolls = rollDice(count, sides)
         this.engine.resolveCombatSecondaireHeroRoll(rolls)
         const newState = this.engine.getCombatState()
-        if (newState?.phase.type === 'round_result') {
+        if (newState) {
           this._showRoundResult(newState, rolls)
         } else {
           this._render()
         }
+      }))
+    }
+
+    // ── Attaque spéciale : jet de déclenchement (type lancer_de) ────────────
+    else if (phase.type === 'pending_attaque_speciale_roll') {
+      const { attaqueSpeciale } = phase
+      const formule = attaqueSpeciale.lancer_de!.formule
+      const { count, sides } = parseDiceFormula(formule)
+
+      if (attaqueSpeciale.texte) {
+        const msg = document.createElement('p')
+        msg.className = 'combat-attaque-speciale-texte'
+        msg.textContent = `⚡ ${attaqueSpeciale.texte}`
+        el.appendChild(msg)
+      }
+
+      el.appendChild(this._rollBtn(`🎲 Lancer le dé (${formule})`, () => {
+        const rolls = rollDice(count, sides)
+        const total = rolls.reduce((a, b) => a + b, 0)
+
+        // Affiche le résultat du jet avant de résoudre
+        const resEl = document.createElement('div')
+        resEl.className = 'combat-action-result'
+        resEl.innerHTML = `<div class="action-resultat">🎲 [${rolls.join(', ')}] = ${total}</div>`
+        el.appendChild(resEl)
+
+        this.engine.resolveCombatAttaqueSpecialeRoll(rolls)
+        const newState = this.engine.getCombatState()
+
+        // Si pas d'effets déclenchés (aucune parade, retour direct en round_result) → render rapide
+        // Sinon → délai pour que le joueur voie le résultat avant la parade
+        if (newState?.phase.type === 'pending_attaque_speciale_parade' && (newState.phase.effets.length > 0)) {
+          setTimeout(() => this._render(), 1500)
+        } else {
+          setTimeout(() => this._render(), 1000)
+        }
+      }))
+    }
+
+    // ── Attaque spéciale : parade (effets déterminés, joueur peut parer) ─────
+    else if (phase.type === 'pending_attaque_speciale_parade') {
+      const { effets, attaqueSpeciale } = phase
+      const parades = attaqueSpeciale.parade?.choix ?? []
+
+      if (attaqueSpeciale.texte) {
+        const msg = document.createElement('p')
+        msg.className = 'combat-attaque-speciale-texte'
+        msg.textContent = `⚡ ${attaqueSpeciale.texte}`
+        el.appendChild(msg)
+      }
+
+      if (parades.length === 0) {
+        // Pas de parade → applique les effets directement et retourne au round_result
+        this.engine.applyAttaqueSpecialeEffets(effets)
+        this._render()
+        return el
+      }
+
+      if (parades.length === 1) {
+        // Un seul choix → parade automatique (lance ou déclenche sans sélection)
+        const parade = parades[0]
+        this._buildParadeChoix(el, parade, effets, true)
+      } else {
+        // Plusieurs choix → le joueur sélectionne
+        const lbl = document.createElement('p')
+        lbl.className = 'combat-parade-label'
+        lbl.textContent = 'Voulez-vous tenter de parer cette attaque ?'
+        el.appendChild(lbl)
+        for (const parade of parades) {
+          this._buildParadeChoix(el, parade, effets, false)
+        }
+      }
+    }
+
+    // ── Attaque spéciale : action de parade en cours (ex: tenter_chance) ─────
+    else if (phase.type === 'pending_attaque_speciale_action') {
+      const { action } = phase
+      const pending = this.engine.getCombatPendingRoll()
+      if (!pending) return el
+
+      const info = this.engine.getTestStatInfo(action)
+      if (info) {
+        const condEl = document.createElement('div')
+        condEl.className = 'action-roll-condition'
+        condEl.textContent = `${info.jet} ${info.condition} ${info.stat} (${info.statValeur})`
+        el.appendChild(condEl)
+      }
+
+      const { count, sides } = parseDiceFormula(pending.formula)
+      el.appendChild(this._rollBtn(`🎲 Lancer — ${action} (${pending.formula})`, () => {
+        const rolls = rollDice(count, sides)
+        const total = rolls.reduce((a, b) => a + b, 0)
+        const { resultat, parade } = this.engine.resolveCombatAttaqueSpecialeParadeAction(action, rolls)
+
+        const resEl = document.createElement('div')
+        resEl.className = `combat-action-result combat-action-result--${parade ? 'reussi' : 'echoue'}`
+        resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total} → ${_esc(resultat)}${parade ? ' — attaque parée !' : ''}</div>`
+        el.appendChild(resEl)
+
+        setTimeout(() => this._render(), 1500)
       }))
     }
 
@@ -478,7 +578,20 @@ export class CombatView {
     if (!container) return
 
     const phase = state.phase
-    if (phase.type !== 'round_result') { this._render(); return }
+    // Récupère le round à afficher : soit depuis round_result, soit depuis le dernier round loggé
+    // (cas où l'attaque spéciale a intercepté la phase avant round_result)
+    let roundToShow: import('../types').CombatRound | null = null
+    if (phase.type === 'round_result') {
+      roundToShow = phase.round
+    } else if (state.rounds.length > 0 && (
+      phase.type === 'pending_attaque_speciale_roll' ||
+      phase.type === 'pending_attaque_speciale_parade' ||
+      phase.type === 'pending_attaque_speciale_action'
+    )) {
+      roundToShow = state.rounds[state.rounds.length - 1]
+    }
+
+    if (!roundToShow) { this._render(); return }
 
     container.innerHTML = ''
     const wrap = document.createElement('div')
@@ -487,7 +600,7 @@ export class CombatView {
     wrap.appendChild(this._buildStats(state))
 
     // Réutilise _buildRound pour avoir exactement le même affichage que dans le log
-    const roundEl = this._buildRound(phase.round, state.enemy.nom)
+    const roundEl = this._buildRound(roundToShow, state.enemy.nom)
     roundEl.classList.add('combat-round-flash')
     wrap.appendChild(roundEl)
 
@@ -558,15 +671,91 @@ export class CombatView {
       ? `<div class="round-defense">DÉFENSE [${round.defenseRoll.join(', ')}] → ${round.defenseModifier !== undefined ? (round.defenseModifier > 0 ? '+' : '') + round.defenseModifier : '0'} (dégâts : ${round.degats})</div>`
       : ''
 
+    // Attaque spéciale (si présente)
+    const asResult = (round as any).attaqueSpecialeResult as import('../types').CombatRound['attaqueSpecialeResult'] | undefined
+    let attaqueSpecialeHtml = ''
+    if (asResult) {
+      const rollPart = asResult.rollDeclencheur ? ` [${asResult.rollDeclencheur.join(', ')}]` : ''
+      if (asResult.parade) {
+        attaqueSpecialeHtml = `<div class="round-attaque-speciale round-attaque-speciale--parade">⚡ ${_esc(asResult.texte)}${rollPart} → esquivé !</div>`
+      } else {
+        attaqueSpecialeHtml = `<div class="round-attaque-speciale round-attaque-speciale--touche">⚡ ${_esc(asResult.texte)}${rollPart} → −${asResult.degats}</div>`
+      }
+    }
+
     el.innerHTML = `
       <div class="round-header">Round ${round.numero}</div>
       <div class="round-roll round-roll--ennemi">${enemyLine}</div>
       <div class="round-roll round-roll--heros">${heroLine}</div>
       ${secondairesHtml}
       ${defenseHtml}
+      ${attaqueSpecialeHtml}
       ${outcomeHtml}
     `
     return el
+  }
+
+  /**
+   * Construit et attache à `container` un bouton de parade pour un choix donné.
+   * Si `auto` est true, déclenche l'action immédiatement sans bouton de sélection intermédiaire.
+   */
+  private _buildParadeChoix(container: HTMLElement, parade: import('../types').ParadeChoix, effets: import('../types').Effet[], auto: boolean): void {
+    const action = parade.action as any
+
+    if (action.type === 'lancer_de') {
+      // Parade par lancer de dé
+      const ld = action.lancer_de as { formule: string; resultats: Record<string, any> }
+      const { count, sides } = parseDiceFormula(ld.formule)
+      const label = `🎲 ${parade.texte} (${ld.formule})`
+
+      const doRoll = (container: HTMLElement) => {
+        const rolls = rollDice(count, sides)
+        const total = rolls.reduce((a, b) => a + b, 0)
+        this.engine.resolveCombatAttaqueSpecialeParadeRoll(rolls, action, effets)
+
+        const resEl = document.createElement('div')
+        resEl.className = 'combat-action-result'
+        // Vérifie si le résultat indique une parade réussie
+        const res = resolveResultatDe(ld.resultats, total)
+        const parade_ok = !!(res && (res as any).parade === true)
+        resEl.className += parade_ok ? ' combat-action-result--reussi' : ' combat-action-result--echoue'
+        resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total}${parade_ok ? ' — attaque parée !' : ''}</div>`
+        container.appendChild(resEl)
+
+        setTimeout(() => this._render(), 1500)
+      }
+
+      if (auto) {
+        doRoll(container)
+      } else {
+        const btn = document.createElement('button')
+        btn.className = 'btn btn-secondary combat-parade-btn'
+        btn.type = 'button'
+        btn.textContent = label
+        btn.addEventListener('click', () => doRoll(container))
+        container.appendChild(btn)
+      }
+    } else if (action.name) {
+      // Parade par règle (ex: tenter_chance)
+      const actionName: string = action.name
+      const label = `🎲 ${parade.texte}`
+
+      const doAction = () => {
+        this.engine.startCombatAttaqueSpecialeParadeAction(actionName)
+        this._render()
+      }
+
+      if (auto) {
+        doAction()
+      } else {
+        const btn = document.createElement('button')
+        btn.className = 'btn btn-secondary combat-parade-btn'
+        btn.type = 'button'
+        btn.textContent = label
+        btn.addEventListener('click', doAction)
+        container.appendChild(btn)
+      }
+    }
   }
 
   /**

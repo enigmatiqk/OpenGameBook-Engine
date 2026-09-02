@@ -1,5 +1,5 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testCombatStart, testCombatRound, screenshotOnFailure, tenterChance } from '../../helpers/commonTests'
+import { testSection, testCombatStart, testCombatRound, screenshotOnFailure, tenterChance, CombatResultat } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
@@ -47,6 +47,8 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testCombatStart(page)
     await page.click('button.combat-roll-btn')
     await page.click('button.combat-roll-btn')
+
+    await CombatResultat(page)
 
     await page.waitForSelector('#view-defeat', { timeout: 5000 })
     await expect(page.locator('#view-defeat')).toBeVisible()

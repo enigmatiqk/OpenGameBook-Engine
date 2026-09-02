@@ -268,9 +268,12 @@ export class GameEngine {
     this.currentSectionParams = sectionParams ?? {}
 
     // section: -1 = retour à la section précédente
+    // section:  0 = rester sur la section courante
     const target = sectionNumber === -1
       ? (this.navigation.getNavHistory(this.hero)[this.navigation.getNavHistory(this.hero).length - 1] ?? 1)
-      : sectionNumber
+      : sectionNumber === 0
+        ? this.currentSection
+        : sectionNumber
 
     const section = this.adventure.sections.find(s => s.numero === target)
     if (!section) throw new Error(`Section ${target} introuvable`)
@@ -674,6 +677,18 @@ export class GameEngine {
         }
       }
     }
+    if (phase.type === 'pending_attaque_speciale_action') {
+      const regle = GameEngineActions.getRegle(this.adventure, phase.action)
+      if (regle?.type === 'test_stat' || regle?.type === 'composite') {
+        const jetFormula = GameEngineActions.getActionFormula(this.adventure, phase.action)
+        return {
+          id: GameEngineRolls.newRollId(),
+          label: `Tenter — ${phase.action}`,
+          formula: jetFormula,
+          context: `combat:attaque_speciale:${phase.action}`,
+        }
+      }
+    }
     return null
   }
 
@@ -830,6 +845,132 @@ export class GameEngine {
     return { resultat, effets }
   }
 
+  /**
+   * Résout le jet de dé de déclenchement d'une attaque spéciale (type "lancer_de").
+   */
+  resolveCombatAttaqueSpecialeRoll(rolls: number[]): void {
+    if (!this.combatState) throw new Error('Pas de combat en cours.')
+    this.combatState = this.combatResolver.applyAttaqueSpecialeRoll(this.combatState, rolls)
+  }
+
+  /**
+   * Résout un lancer de dé de parade pour l'attaque spéciale.
+   * Si parade=false, applique les effets sur le héros.
+   */
+  resolveCombatAttaqueSpecialeParadeRoll(rolls: number[], paradeAction: import('../types').ActionLancerDe, effets: import('../types').Effet[]): void {
+    if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
+    const { parade, newState } = this.combatResolver.applyAttaqueSpecialeParadeRoll(
+      this.combatState, rolls, paradeAction
+    )
+    this.combatState = newState
+    if (!parade) {
+      this.applyAttaqueSpecialeEffets(effets, rolls)
+    } else {
+      // Parade réussie : enregistre 0 dégâts dans le round
+      this._recordAttaqueSpecialeResult(true, 0, rolls)
+    }
+  }
+
+  /**
+   * Démarre une action de parade (ex: tenter_chance) pour l'attaque spéciale.
+   */
+  startCombatAttaqueSpecialeParadeAction(actionName: string): void {
+    if (!this.combatState) throw new Error('Pas de combat en cours.')
+    this.combatState = this.combatResolver.startAttaqueSpecialeParadeAction(this.combatState, actionName)
+  }
+
+  /**
+   * Résout l'action de parade tenter_chance pour l'attaque spéciale.
+   * Si parade=false (échec), applique les effets sur le héros.
+   * Si parade=true (succès), les effets sont ignorés.
+   */
+  resolveCombatAttaqueSpecialeParadeAction(action: string, rolls: number[]): { resultat: string; parade: boolean } {
+    if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
+    if (this.combatState.phase.type !== 'pending_attaque_speciale_action') throw new Error('Phase invalide')
+
+    const { effets, attaqueSpeciale } = this.combatState.phase
+
+    // Réutilise resolveCombatAction pour la résolution complète de la règle
+    // (effets toujours, effets par résultat, effets composite — tout est géré)
+    // resolveCombatAction remet la phase en round_result — on restaure ensuite
+    const { resultat } = this.resolveCombatAction(action, rolls)
+
+    const succesKey = GameEngineActions.getRegleSuccesKey(this.adventure, action)
+    const parade = resultat === succesKey
+
+    if (!parade) {
+      // Parade ratée → applique les effets de l'attaque spéciale
+      this._applyEffets(effets, 'attaque_speciale')
+      if (this.hero && this.adventure) {
+        const statVie = this.adventure.regles.combat.formule_vie
+        this.combatState = {
+          ...this.combatState,
+          heroVie: this.hero.statistiques[statVie] ?? this.combatState.heroVie,
+        }
+      }
+    }
+
+    // Enregistre le résultat dans le round pour affichage
+    const degats = parade ? 0 : effets.reduce((acc, e) => {
+      if (e.type === 'stat' && e.stat && (e.stat.delta ?? 0) < 0) return acc + Math.abs(e.stat.delta ?? 0)
+      return acc
+    }, 0)
+    this._recordAttaqueSpecialeResult(parade, degats)
+
+    const lastRound = this.combatState.rounds[this.combatState.rounds.length - 1]
+    this.combatState = {
+      ...this.combatState,
+      phase: { type: 'round_result', round: lastRound, availableActions: [] },
+    }
+
+    return { resultat, parade }
+  }
+
+  /**
+   * Applique directement les effets d'une attaque spéciale sans parade (ou parade ratée lancer_de).
+   * Synchronise ensuite heroVie dans combatState.
+   */
+  applyAttaqueSpecialeEffets(effets: import('../types').Effet[], rollDeclencheur?: number[]): void {
+    if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
+    this._applyEffets(effets, 'attaque_speciale')
+    const statVie = this.adventure.regles.combat.formule_vie
+    this.combatState = {
+      ...this.combatState,
+      heroVie: this.hero.statistiques[statVie] ?? this.combatState.heroVie,
+    }
+    // Calcule les dégâts totaux en endurance depuis les effets stat
+    const degats = effets.reduce((acc, e) => {
+      if (e.type === 'stat' && e.stat?.name === statVie && (e.stat.delta ?? 0) < 0) {
+        return acc + Math.abs(e.stat.delta ?? 0)
+      }
+      return acc
+    }, 0)
+    this._recordAttaqueSpecialeResult(false, degats, rollDeclencheur)
+  }
+
+  /**
+   * Enregistre le résultat de l'attaque spéciale dans le dernier round pour l'affichage.
+   */
+  private _recordAttaqueSpecialeResult(parade: boolean, degats: number, rollDeclencheur?: number[]): void {
+    if (!this.combatState) return
+    const rounds = this.combatState.rounds
+    if (rounds.length === 0) return
+    const lastRound = { ...rounds[rounds.length - 1] }
+    const phase = this.combatState.phase
+    const attaqueSpeciale: import('../types').AttaqueSpeciale | undefined =
+      (phase as any).attaqueSpeciale ?? this.combatState.enemy.attaque_speciale
+    lastRound.attaqueSpecialeResult = {
+      texte: attaqueSpeciale?.texte ?? 'Attaque spéciale',
+      parade,
+      degats,
+      rollDeclencheur,
+    }
+    this.combatState = {
+      ...this.combatState,
+      rounds: [...rounds.slice(0, -1), lastRound],
+    }
+  }
+
   advanceCombat(): void {
     if (!this.combatState) throw new Error('Pas de combat en cours.')
     this.combatState = this.combatResolver.nextRound(this.combatState)
@@ -859,6 +1000,11 @@ export class GameEngine {
           if (delta !== 0) this.applyStatDelta(statVie, delta, 'fin de combat')
         }
 
+        // Applique les effets de mort
+        if (combatMort?.effets && this.hero) {
+          this._applyEffets(combatMort.effets, 'mort au combat')
+        }
+
         if (combatMort?.section !== undefined) {
           // Navigation explicite vers une section (ex: section 64)
           this.navigateTo(this.resolveSection(combatMort.section))
@@ -873,16 +1019,12 @@ export class GameEngine {
         const section = this.adventure.sections.find(s => s.numero === this.currentSection)
         // Utilise la victoire résolue de la phase courante (surcharge possible par phase)
         const sectionVictoire = this.combatState.combatData?.victoire ?? section?.combat?.victoire
-        
-        // Applique les effets de victoire
+
+        // Applique les effets de victoire (tous types via _applyEffets)
         if (sectionVictoire?.effets && this.hero) {
-          for (const effet of sectionVictoire.effets) {
-            if (effet.type === 'stat' && effet.stat) {
-              this.applyStatDelta(effet.stat.name, effet.stat.delta ?? 0, effet.stat.raison ?? 'Victoire au combat')
-            }
-          }
+          this._applyEffets(sectionVictoire.effets, 'victoire au combat')
         }
-        
+
         if (sectionVictoire?.section !== undefined) {
           this.navigateTo(this.resolveSection(sectionVictoire.section))
         }
@@ -1074,13 +1216,19 @@ export class GameEngine {
     if (!this.adventure || !this.hero) return
     const fuiteRule = this.adventure.regles.combat.fuite
     if (fuiteRule?.cout) {
-      // Applique le coût de fuite (ex: "-2 endurance")
+      // Applique le coût de fuite global (ex: "-2 endurance")
       const m = fuiteRule.cout.match(/^([+-]\d+)\s+(\w+)$/)
       if (m) {
         const delta = parseInt(m[1], 10)
         const stat = m[2]
         this.applyStatDelta(stat, delta, 'Fuite')
       }
+    }
+    // Applique les effets de fuite définis sur la section courante
+    const section = this.adventure.sections.find(s => s.numero === this.currentSection)
+    const fuiteCombat = this.combatState?.combatData?.fuite ?? section?.combat?.fuite
+    if (fuiteCombat?.effets) {
+      this._applyEffets(fuiteCombat.effets, 'fuite')
     }
   }
 

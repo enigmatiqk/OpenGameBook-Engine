@@ -81,6 +81,27 @@ export class GameEngineCombat {
   }
 
   /**
+   * Résout le jet de dé de déclenchement d'une attaque spéciale (type "lancer_de")
+   */
+  applyAttaqueSpecialeRoll(state: CombatState, rolls: number[]): CombatState {
+    return this.combatResolver.applyAttaqueSpecialeRoll(state, rolls)
+  }
+
+  /**
+   * Résout un lancer de dé de parade pour l'attaque spéciale
+   */
+  applyAttaqueSpecialeParadeRoll(state: CombatState, rolls: number[], paradeAction: import('../types').ActionLancerDe): { parade: boolean; newState: CombatState } {
+    return this.combatResolver.applyAttaqueSpecialeParadeRoll(state, rolls, paradeAction)
+  }
+
+  /**
+   * Démarre une action de parade (ex: tenter_chance) pour l'attaque spéciale
+   */
+  startAttaqueSpecialeParadeAction(state: CombatState, actionName: string): CombatState {
+    return this.combatResolver.startAttaqueSpecialeParadeAction(state, actionName)
+  }
+
+  /**
    * Vérifie si le combat est terminé
    */
   isCombatTerminated(state: CombatState): boolean {
