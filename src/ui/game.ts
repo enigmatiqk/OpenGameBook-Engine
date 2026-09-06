@@ -324,15 +324,22 @@ export class GameView {
               return
             }
 
+            const multiParams = this.engine.getMultiRollParams(choice)
+            const progression1 = multiParams
+              ? { tentativeCourante: 1, tentativesTotal: multiParams.tentativesTotal, reussitesObtenues: 0, reussitesRequises: multiParams.reussitesRequises }
+              : undefined
+
             this._showActionRoll(pending, (rolls) => {
               const result = this.engine.resolveActionChoice(choice, rolls)
               // Vérifie si un jet de gain secondaire est requis (delta_de)
               if (result && typeof result === 'object' && 'pendingGainRoll' in result) {
                 this._showGainRoll((result as any).pendingGainRoll, () => this._render())
+              } else if (result && typeof result === 'object' && 'pendingMultiRoll' in result) {
+                this._showMultiRoll((result as any).pendingMultiRoll, () => this._render())
               } else {
                 this._render()
               }
-            })
+            }, progression1)
           })
         } else if ((choice as any).libre || choice.section_saisie) {
           // Saisie utilisateur du numéro de section (section_saisie) — libre est déprécié
@@ -514,7 +521,7 @@ export class GameView {
     if (!pending) return
     
     this._showActionRoll(pending, (rolls) => {
-      const effets = this.engine.resolveFuiteAction(rolls)
+      const { log: effets, resultat: fuiteResultat } = this.engine.resolveFuiteAction(rolls)
       
       // Affiche le résultat
       const total = rolls.reduce((a, b) => a + b, 0)
@@ -528,11 +535,14 @@ export class GameView {
         container.appendChild(resEl)
       }
       
-      // Fuit après le résultat
-      setTimeout(() => {
-        this.engine.navigateTo(sectionFuite)
-        this._render()
-      }, 1500)
+      // Ne fuit que si chanceux
+      if (fuiteResultat === 'chanceux') {
+        setTimeout(() => {
+          this.engine.navigateTo(sectionFuite)
+          this._render()
+        }, 1500)
+      }
+      // Si malchanceux : on reste dans la section, le joueur continue
     })
   }
 
@@ -594,7 +604,7 @@ export class GameView {
     content += '</div>' // ferme hero-layout
 
     // Section Effets d'équipement (en bas)
-    const equipmentEffects: { source: string; stat: string; delta: number; raison?: string }[] = []
+    const equipmentEffects: { source: string; stat: string; delta: number; raison?: string; combat?: boolean }[] = []
     for (const item of Object.values(hero.equipement)) {
       if (!item.effets) continue
       for (const effet of item.effets) {
@@ -603,14 +613,30 @@ export class GameView {
           if (delta !== 0) {
             equipmentEffects.push({ source: item.label, stat: effet.stat.name, delta, raison: effet.stat.raison })
           }
+        } else if (effet.type === 'stat_combat' && effet.stat_combat) {
+          const { name, delta, valeur, raison } = effet.stat_combat
+          if (valeur !== undefined) {
+            equipmentEffects.push({ source: item.label, stat: name, delta: valeur, raison, combat: true })
+          } else if (delta !== undefined && delta !== 0) {
+            equipmentEffects.push({ source: item.label, stat: name, delta, raison, combat: true })
+          }
         }
       }
     }
     if (equipmentEffects.length > 0) {
       const statLabels = adventure.personnage.statistiques
+      const combatStatLabels: Record<string, string> = {
+        attaque_heros: 'Attaque (héros)',
+        attaque_monstre: 'Attaque (monstre)',
+        degats_heros: 'Dégâts infligés',
+        degats_victoire: 'Dégâts victoire',
+        degats_defaite: 'Dégâts reçus',
+      }
       content += '<h3>Effets d\'équipement</h3><ul class="hero-equipment-effects">'
       for (const ef of equipmentEffects) {
-        const statLabel = statLabels[ef.stat]?.label ?? ef.stat
+        const statLabel = ef.combat
+          ? (combatStatLabels[ef.stat] ?? ef.stat)
+          : (statLabels[ef.stat]?.label ?? ef.stat)
         const sign = ef.delta >= 0 ? '+' : ''
         const raison = ef.raison ? ` (${this._escHtml(ef.raison)})` : ''
         content += `<li>${this._escHtml(ef.source)} : ${this._escHtml(statLabel)} ${sign}${ef.delta}${raison}</li>`
@@ -897,10 +923,10 @@ export class GameView {
     input.focus()
   }
 
-  private _showActionRoll(pending: import('../types').PendingRoll, onRolled: (rolls: number[]) => void): void {
+  private _showActionRoll(pending: import('../types').PendingRoll, onRolled: (rolls: number[]) => void, progression?: { tentativeCourante: number; tentativesTotal: number; reussitesObtenues: number; reussitesRequises: number }): void {
     const { count, sides } = parseDiceFormula(pending.formula)
 
-    // Récupère les infos de la règle pour l'affichage
+    // Récupère les infos de la règle pour l'affichage (relues en temps réel → valeur de stat actuelle)
     const actionNom = pending.context.replace('action:', '')
     const info = this.engine.getTestStatInfo(actionNom)
     const isLancerDe = actionNom === 'lancer_de'
@@ -912,18 +938,11 @@ export class GameView {
       ? `<p class="action-roll-condition">${this._escHtml(info.jet)} ${this._escHtml(info.condition)} ${this._escHtml(info.stat)} (${info.statValeur})</p>`
       : `<p class="action-roll-formula">${this._escHtml(pending.formula)}</p>`
 
-    overlay.innerHTML = `
-      <div class="modal-box action-roll-box">
-        <div class="modal-header">
-          <h2 class="modal-title">${this._escHtml(pending.label)}</h2>
-        </div>
-        <div class="modal-body">
-          ${conditionHtml}
-          <div class="action-roll-dice"></div>
-          <button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button>
-        </div>
-      </div>
-    `
+    const progressionHtml = progression
+      ? `<p class="multi-roll-progress">Tentative ${progression.tentativeCourante}/${progression.tentativesTotal} - Réussites ${progression.reussitesObtenues}/${progression.reussitesRequises}</p>`
+      : ''
+
+    overlay.innerHTML = `<div class="modal-box action-roll-box"><div class="modal-header"><h2 class="modal-title">${this._escHtml(pending.label)}</h2></div><div class="modal-body">${conditionHtml}${progressionHtml}<div class="action-roll-dice"></div><button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button></div></div>`
 
     const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
     const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
@@ -973,7 +992,7 @@ export class GameView {
   }
 
   private _showGainRoll(pending: import('../types').PendingGainRoll, onDone: () => void): void {
-    const { count, sides } = parseDiceFormula(pending.formula)
+    const { count, sides, negative } = parseDiceFormula(pending.formula)
 
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
@@ -997,20 +1016,21 @@ export class GameView {
     btn.addEventListener('click', () => {
       btn.disabled = true
       const rolls = rollDice(count, sides)
-      const total = rolls.reduce((a, b) => a + b, 0)
+      const rawTotal = rolls.reduce((a, b) => a + b, 0)
+      const total = negative ? -rawTotal : rawTotal
 
       // Affiche les dés
       diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
         `<span class="action-roll-total">= ${total}</span>`
 
-      // Affiche le gain après 800ms
+      // Affiche le gain/perte après 800ms
       setTimeout(() => {
         const resultEl = document.createElement('div')
-        resultEl.className = 'action-roll-result action-roll-result--gain'
-        resultEl.textContent = `+${total} ${this._escHtml(pending.itemLabel)}`
+        resultEl.className = `action-roll-result ${total >= 0 ? 'action-roll-result--gain' : 'action-roll-result--perte'}`
+        resultEl.textContent = `${total >= 0 ? '+' : ''}${total} ${this._escHtml(pending.itemLabel)}`
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
 
-        // Applique le gain et navigue après 2s
+        // Applique le gain et navigue après 2s (0 = rester sur la section courante)
         setTimeout(() => {
           overlay.remove()
           this.engine.resolveGainRoll(pending, rolls)
@@ -1020,6 +1040,40 @@ export class GameView {
     })
 
     document.body.appendChild(overlay)
+  }
+
+  /**
+   * Affiche une modale de jet répété pour les actions avec plusieurs tentatives.
+   * Enchaîne les jets jusqu'à ce que la séquence soit terminée (succès, échec, ou épuisement).
+   * Délègue à _showActionRoll pour l'affichage cohérent (règle, stat courante, résultat).
+   */
+  private _showMultiRoll(pending: import('../types').PendingMultiRoll, onDone: () => void): void {
+    const actionNom = typeof pending.choice.action === 'string'
+      ? pending.choice.action
+      : (pending.choice.action as any)?.name ?? ''
+
+    const fakePending: import('../types').PendingRoll = {
+      id: '',
+      label: pending.label,
+      formula: pending.formula,
+      context: `action:${actionNom}`,
+    }
+
+    const progression = {
+      tentativeCourante: pending.tentativeCourante,
+      tentativesTotal: pending.tentativesTotal,
+      reussitesObtenues: pending.reussitesRequises - pending.reussitesRestantes,
+      reussitesRequises: pending.reussitesRequises,
+    }
+
+    this._showActionRoll(fakePending, (rolls) => {
+      const result = this.engine.resolveMultiRoll(pending, rolls)
+      if (result && typeof result === 'object' && 'pendingMultiRoll' in result) {
+        this._showMultiRoll((result as any).pendingMultiRoll, onDone)
+      } else {
+        onDone()
+      }
+    }, progression)
   }
 
   private _showVictoryImages(adventure: Adventure, images: string[], onDone: () => void, type: 'victory' | 'defeat' = 'victory'): void {

@@ -8,8 +8,12 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 
 ```json
 "combat": {
-  "monstres": [
-    { "nom": "GOBELIN", "habilete": 5, "endurance": 4 }
+  "phases": [
+    {
+      "monstres": [
+        { "nom": "GOBELIN", "habilete": 5, "endurance": 4 }
+      ]
+    }
   ],
   "victoire": { "section": 55 },
   "fuite":    { "section": 12 }
@@ -20,17 +24,18 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
-| `monstres` | ★ | Liste des ennemis (au moins un) |
-| `mode` | — | Mode de combat : `"sequentiel"` (défaut) ou `"fusion"` |
-| `lancer_de` | — | Mode lancer de dé : `{ "choix": "1d6" }` — sélectionne un monstre aléatoire |
+| `phases` | ★ | Liste ordonnée des phases de combat (chacune contient ses `monstres`) |
+| `lancer_de` | — | Mode lancer de dé : `{ "choix": "1d6" }` — sélectionne une phase aléatoire |
 | `attaque_heros` | — | Modificateur de force d'attaque du héros pour ce combat (ex : `"+1"`) |
 | `attaque_monstre` | — | Modificateur de force d'attaque de l'ennemi (ex : `"-1"`) |
 | `degats_heros` | — | Bonus/malus aux dégâts infligés par le héros (ex : `"+1"`) |
-| `victoire` | — | Que se passe-t-il après victoire |
+| `victoire` | — | Que se passe-t-il après victoire (toutes phases terminées) |
+| `mort` | — | Que se passe-t-il si le héros meurt au combat |
 | `fuite` | — | Que se passe-t-il en cas de fuite |
 | `defense` | — | Règle de défense spéciale (lancer de dé pour réduire les dégâts reçus) |
 | `events` | — | Actions déclenchées à certains rounds ou occurrences de dégâts |
 | `modifier` | — | Modifications de stats appliquées avant le début du combat |
+| `condition` | — | Condition pour afficher le bouton de combat |
 
 ---
 
@@ -92,22 +97,19 @@ Un monstre peut avoir des effets qui modifient le déroulement du combat à chaq
 
 ## Modes de combat
 
-### `sequentiel` (défaut)
-Les monstres sont combattus un par un dans l'ordre. Le suivant apparaît quand le précédent est vaincu.
+Les modes de combat sont définis au niveau de chaque **phase** via le champ `type`. Voir [Phases de combat](#phases-de-combat-phases) pour le détail des types disponibles (`simple`, `sequentiel`, `groupe`, `escorte`).
 
-### `fusion`
-Les stats de tous les monstres sont combinées en un seul ennemi.
+### `lancer_de` — sélection de phase aléatoire
 
-### `lancer_de`
-Mode spécial où le joueur lance des dés pour déterminer quel ennemi il va affronter. Chaque monstre porte un champ `face` (numéro de face du dé). La formule de dés est définie dans `lancer_de.choix`.
+Quand `combat.lancer_de` est défini, le joueur lance un dé pour déterminer quelle phase jouer. Chaque phase porte un champ `face` correspondant à une face du dé.
 
 ```json
 "combat": {
   "lancer_de": { "choix": "1d6" },
-  "monstres": [
-    { "nom": "LUTIN",    "habilete": 5, "endurance": 3, "face": 1 },
-    { "nom": "FARFADET", "habilete": 6, "endurance": 3, "face": 2 },
-    { "nom": "TROLL",    "habilete": 8, "endurance": 4, "face": 6 }
+  "phases": [
+    { "face": 1, "monstres": [{ "nom": "LUTIN",    "habilete": 5, "endurance": 3 }] },
+    { "face": 2, "monstres": [{ "nom": "FARFADET", "habilete": 6, "endurance": 3 }] },
+    { "face": 6, "monstres": [{ "nom": "TROLL",    "habilete": 8, "endurance": 4 }] }
   ],
   "victoire": { "section": -1 }
 }
@@ -115,7 +117,7 @@ Mode spécial où le joueur lance des dés pour déterminer quel ennemi il va af
 
 > `combat.lancer_de` est le seul usage de `lancer_de` qui **ne porte pas** de champ `"type"` — la clé `lancer_de` sur le combat est elle-même le discriminant. Tous les autres usages (`action`, `defense`, `modifier`) utilisent `"type": "lancer_de"` avec les données dans un sous-objet `"lancer_de": { ... }`.
 
-Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lancer. Le résultat du dé sélectionne le monstre à combattre.
+Le moteur affiche un tableau récapitulatif des phases, puis un bouton de lancer. Le résultat du dé sélectionne la phase à jouer.
 
 ---
 
@@ -152,6 +154,7 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 | `avant` | Si `true`, la fuite est possible avant même de commencer le combat |
 | `fuite_directe` | Si `false`, masque le bouton "🏃 Fuir directement" (défaut : `true`) |
 | `fuite_chance` | Si `false`, masque le bouton "🎲 Tenter sa chance pour fuir" (défaut : `true`) |
+| `tenter_chance` | Comportements spéciaux du lancer de chance — voir [tenter_chance](#tenter_chance) |
 
 > Le bouton fuite s'affiche pendant le combat uniquement si `combat.fuite` est défini **ou** si un event de type `"btn_fuite"` est déclenché au round courant. Dans les deux cas, le héros doit être encore en vie.
 >
@@ -170,6 +173,53 @@ Le moteur affiche un tableau récapitulatif des monstres, puis un bouton de lanc
 "fuite": {
   "section": 360,
   "fuite_chance": false
+}
+```
+
+---
+
+### `tenter_chance`
+
+Configure des comportements spéciaux selon le résultat du 2d6 lors du lancer de chance pour fuir.
+
+```json
+"fuite": {
+  "section": 380,
+  "fuite_directe": false,
+  "tenter_chance": {
+    "echec_critique": {
+      "resultats": [11, 12],
+      "section": 224,
+      "effets": [
+        { "type": "stat", "stat": { "name": "endurance", "delta": -2, "raison": "Fuite ratée de justesse" } }
+      ]
+    },
+    "reussite_critique": {
+      "resultats": [2],
+      "section": 400,
+      "effets": []
+    }
+  }
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `echec_critique` | Comportement déclenché quand le résultat du 2d6 est dans `resultats` **et** que le lancer est raté |
+| `reussite_critique` | Comportement déclenché quand le résultat du 2d6 est dans `resultats` **et** que le lancer est réussi |
+| `resultats` | Liste de valeurs de dé (2d6) concernées (ex : `[11, 12]`) |
+| `section` | Section vers laquelle naviguer (remplace la section de fuite normale). Optionnel |
+| `effets` | Effets appliqués avant la navigation. Optionnel |
+
+> `echec_critique` et `reussite_critique` sont indépendants — on peut définir l'un, l'autre, ou les deux.
+
+**Exemple typique — échec critique à 11-12 navigue quand même (mais vers une autre section) :**
+```json
+"tenter_chance": {
+  "echec_critique": {
+    "resultats": [11, 12],
+    "section": 224
+  }
 }
 ```
 
@@ -234,6 +284,7 @@ Les events déclenchent des actions ou des boutons de choix à des moments préc
 | `ignorerDegats` | — | Si `true`, annule les dégâts du coup qui a déclenché l'event |
 | `condition` | — | Condition supplémentaire pour que l'event se déclenche |
 | `fin_combat` | — | Si `true`, cache le bouton "Round suivant" — le joueur doit choisir une option ou fuir, il ne peut pas continuer le combat |
+| `repeter` | — | Si `true`, l'event se redéclenche à chaque fois qu'il est atteint (non marqué comme déjà déclenché). Utile pour les events périodiques (ex : fuite possible tous les 6 rounds) |
 
 ### Types de déclencheur (`declencheur`)
 
@@ -277,6 +328,18 @@ Affiche les boutons de fuite **uniquement pendant le round courant**. À disting
 }
 ```
 
+**Exemple — fuite possible tous les 6 rounds (avec `repeter: true`) :**
+```json
+{
+  "declencheur": "round",
+  "round":       6,
+  "action":      "btn_fuite",
+  "repeter":     true
+}
+```
+
+> Avec `repeter: true`, l'event se redéclenche à chaque fois que le round atteint le multiple défini (6, 12, 18…). Sans `repeter`, l'event ne se déclenche qu'une seule fois.
+
 ---
 
 ### Choix multiples
@@ -305,6 +368,92 @@ Chaque entrée du tableau est un bouton indépendant qui navigue vers la section
 
 ---
 
+---
+
+## Mort du héros (`mort`)
+
+Par défaut, si le héros meurt au combat, la partie se termine en défaite. `mort` permet de personnaliser ce comportement : naviguer vers une section spéciale, appliquer des effets avant la mort, ou même transformer la mort en victoire narrative.
+
+```json
+"mort": {
+  "section": 64,
+  "effets": [
+    { "type": "stat", "stat": { "name": "endurance", "valeur": 0, "raison": "Mort au combat" } }
+  ]
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `section` | Section vers laquelle naviguer si le héros meurt. Si absent, la partie se termine |
+| `end` | `"defaite"` (défaut) ou `"victoire"` — résultat de fin de partie si pas de `section` |
+| `effets` | Effets appliqués avant la navigation (ou avant le game over) |
+
+---
+
+## Phases de combat (`phases`)
+
+Un combat peut être découpé en **phases successives**. Chaque phase possède ses propres monstres et peut surcharger n'importe quelle propriété globale du combat (`victoire`, `mort`, `fuite`, `attaque_heros`, `events`, etc.).
+
+Les phases sont jouées **dans l'ordre**, l'une après l'autre. Quand tous les monstres d'une phase sont vaincus, la phase suivante commence. La victoire globale n'est déclarée qu'une fois la dernière phase terminée.
+
+```json
+"combat": {
+  "phases": [
+    {
+      "monstres": [{ "nom": "GARDE", "habilete": 6, "endurance": 5 }],
+      "victoire": {
+        "effets": [
+          { "type": "stat", "stat": { "name": "endurance", "delta": 2, "raison": "Vous récupérez votre souffle" } }
+        ]
+      }
+    },
+    {
+      "monstres": [{ "nom": "CAPITAINE", "habilete": 9, "endurance": 8 }],
+      "victoire": { "section": 200 }
+    }
+  ]
+}
+```
+
+> Les propriétés globales (`attaque_heros`, `events`, `victoire`, `mort`, `fuite`, etc.) s'appliquent à toutes les phases sauf si une phase les surcharge.
+
+### Champs d'une phase
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `monstres` | ★ | Liste des monstres de cette phase |
+| `type` | — | Mode de la phase : `"simple"` (défaut si 1 monstre), `"sequentiel"`, `"groupe"`, `"escorte"` |
+| `face` | — | Face du dé pour sélection (uniquement si `combat.lancer_de` est défini) |
+| `victoire` | — | Surcharge la victoire globale pour cette phase (effets appliqués quand la phase est gagnée, avant de passer à la suivante) |
+| `mort` | — | Surcharge la mort globale pour cette phase |
+| `fuite` | — | Surcharge la fuite globale pour cette phase |
+| `attaque_heros` | — | Surcharge le modificateur d'attaque héros pour cette phase |
+| `attaque_monstre` | — | Surcharge le modificateur d'attaque monstre pour cette phase |
+| `degats_heros` | — | Surcharge le bonus de dégâts héros pour cette phase |
+| `events` | — | Events supplémentaires propres à cette phase (concaténés avec les events globaux) |
+| `modifier` | — | Modifications appliquées avant le début de cette phase |
+| `defense` | — | Surcharge la règle de défense pour cette phase |
+
+### Effets de fin de phase (`victoire.effets`)
+
+Si une phase intermédiaire définit `victoire.effets`, ces effets sont appliqués **immédiatement** quand la phase se termine (avant de démarrer la phase suivante). Ils ne sont pas réappliqués à la fin du combat global.
+
+```json
+{
+  "monstres": [{ "nom": "ESPRIT GARDIEN", "habilete": 7, "endurance": 6 }],
+  "victoire": {
+    "effets": [
+      { "type": "stat", "stat": { "name": "endurance", "delta": -2, "raison": "L'esprit vous blesse en mourant" } }
+    ]
+  }
+}
+```
+
+> `victoire.section` sur une phase intermédiaire est techniquement supporté (il redirige hors du combat) mais rarement utile — à réserver aux cas où vaincre un monstre intermédiaire doit mettre fin à tout le combat.
+
+---
+
 ## Exemple complet
 
 ```json
@@ -312,8 +461,12 @@ Chaque entrée du tableau est un bouton indépendant qui navigue vers la section
   "numero": 86,
   "texte":  "Un crocodile de trois mètres glisse vers vous...",
   "combat": {
-    "monstres": [
-      { "nom": "CROCODILE", "habilete": 7, "endurance": 6 }
+    "phases": [
+      {
+        "monstres": [
+          { "nom": "CROCODILE", "habilete": 7, "endurance": 6 }
+        ]
+      }
     ],
     "victoire": { "section": 259 },
     "events": [

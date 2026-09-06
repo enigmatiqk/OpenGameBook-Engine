@@ -58,7 +58,8 @@ export class GameEngineEffects {
     applyStatDeltaWithDebug: (stat: string, delta: number, raison: string) => void,
     addMonsterStatMod: (monsterId: string | null, mod: import('../types').EffetMonstreStat) => void,
     applyCombatEffect: (stat: string, delta: number) => void,
-    recordTrigger: (trigger: string) => void
+    recordTrigger: (trigger: string) => void,
+    context?: { resultat_de?: number }
   ): void {
     for (const effet of effets) {
       if (!checkEffectCondition(effet, hero)) continue
@@ -88,8 +89,60 @@ export class GameEngineEffects {
           hero,
           emplacements,
           (h, i) => GameEngineHero.removeItemEffects(h, i),
-          (h, i) => GameEngineHero.applyItemEffects(h, i)
+          (h, i) => GameEngineHero.applyItemEffects(h, i),
+          context
         )
+      } else if (effet.type === 'equiper' && effet.equiper) {
+        const emplacements = adventure?.personnage.emplacements_equipement ?? {}
+        const invIdx = hero.inventaire.findIndex(
+          i => typeof i !== 'string' && (i as import('../types').InventaireItem).id === effet.equiper!.id
+        )
+        if (invIdx !== -1) {
+          const item = hero.inventaire[invIdx] as import('../types').InventaireItem
+          let targetSlot: string | null = null
+          if (item.type) {
+            for (const [slotName, slotDef] of Object.entries(emplacements)) {
+              if (slotDef.types_acceptes.includes(item.type)) {
+                if (slotDef.capacite && slotDef.capacite > 1) {
+                  for (let s = 1; s <= slotDef.capacite; s++) {
+                    const sub = `${slotName}_${s}`
+                    if (!hero.equipement[sub]) { targetSlot = sub; break }
+                  }
+                  if (!targetSlot) targetSlot = `${slotName}_1`
+                } else {
+                  targetSlot = slotName
+                }
+                if (targetSlot) break
+              }
+            }
+          }
+          if (targetSlot) {
+            // Slot occupé → déséquipe l'occupant (Option B)
+            if (hero.equipement[targetSlot]) {
+              const occupant = hero.equipement[targetSlot]
+              GameEngineHero.removeItemEffects(hero, occupant)
+              occupant.equipe = false
+              hero.inventaire.push(occupant)
+              delete hero.equipement[targetSlot]
+            }
+            hero.inventaire.splice(invIdx, 1)
+            item.equipe = true
+            hero.equipement[targetSlot] = item
+            GameEngineHero.applyItemEffects(hero, item)
+          }
+        }
+      } else if (effet.type === 'desequiper' && effet.desequiper) {
+        const equipSlot = Object.entries(hero.equipement).find(([, e]) => e.id === effet.desequiper!.id)
+        if (equipSlot) {
+          const [slotName, equippedItem] = equipSlot
+          GameEngineHero.removeItemEffects(hero, equippedItem)
+          equippedItem.equipe = false
+          delete hero.equipement[slotName]
+          if (!effet.desequiper.jeter) {
+            hero.inventaire.push(equippedItem)
+          }
+        }
+        // Item non équipé → erreur silencieuse (Option A)
       } else if (effet.type === 'monstre_stat' && effet.monstre_stat) {
         addMonsterStatMod(effet.monstre_stat.monstre_id || null, effet.monstre_stat)
       } else if (effet.type === 'combat' && effet.combat) {

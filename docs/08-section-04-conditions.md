@@ -530,6 +530,27 @@ Les sous-conditions peuvent elles-mêmes être des `and`/`or`, permettant des co
 
 ---
 
+## `groupe_utilise` — un groupe de choix a été utilisé
+
+Vérifie que le joueur a déjà effectué au moins un choix appartenant au groupe spécifié dans la section courante.
+
+```json
+{ "type": "groupe_utilise", "groupe": "jeux" }
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `groupe` | ★ | Identifiant du groupe de choix à vérifier |
+
+> Utile pour débloquer un choix (ex : "Continuer") uniquement après qu'une action du groupe a été réalisée.
+
+**Exemple — section 346 : le bouton "Continuer" n'apparaît qu'après avoir joué :**
+```json
+{ "texte": "Continuer", "section": 131, "condition": { "type": "groupe_utilise", "groupe": "jeux" } }
+```
+
+---
+
 ## Référence rapide
 
 | Type | Contexte | Description courte |
@@ -550,3 +571,4 @@ Les sous-conditions peuvent elles-mêmes être des `and`/`or`, permettant des co
 | `or` | choix, effet, combat | Au moins une sous-condition doit être vraie |
 | `item_equipe_name` | effet monstre | Un item équipé correspond à un critère sur son nom |
 | `item_name` | choix, effet | Un item de l'inventaire correspond à un critère sur son nom |
+| `groupe_utilise` | choix | Un groupe de choix locaux a été utilisé au moins une fois |

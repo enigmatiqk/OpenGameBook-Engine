@@ -4,13 +4,13 @@ import { testSection, testCombatStart, testCombatRound, screenshotOnFailure } fr
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 116
-const SECTION_TEXT = "Les deux FARFADETS ivres"
+const SECTION_TEXT = "Les deux ORCS ivres"
 const SECTION_CHOICES = {
   0: 'Combattre (2 combats)',
 }
 
-// Premier FARFADET  : HABILETÉ 5, ENDURANCE 5
-// Deuxième FARFADET : HABILETÉ 4, ENDURANCE 5
+// Premier ORC  : HABILETÉ 5, ENDURANCE 5
+// Deuxième ORC : HABILETÉ 4, ENDURANCE 5
 // attaque_heros: "+1" → bonus +1 à la force d'attaque du héros à chaque round
 // victoire → 378  |  fuite → 42
 
@@ -43,20 +43,20 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await expect(roundRoll).toContainText('+ 1')
   })
 
-  // ── Combat séquentiel : passage au 2e FARFADET ────────────────────────────
-  test('Passage automatique au 2e FARFADET après victoire sur le 1er', async ({ page }) => {
+  // ── Combat séquentiel : passage au 2e ORC ────────────────────────────
+  test('Passage automatique au 2e ORC après victoire sur le 1er', async ({ page }) => {
     await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=50&monstre_endurance=1&lance_de=1`)
     await page.waitForSelector('.section-text')
 
     await testCombatStart(page)
-    // 1er FARFADET tué en 1 round
+    // 1er ORC tué en 1 round
     await testCombatRound(page)
     await page.click('button.combat-next-btn')
 
-    // Le titre du combat doit maintenant mentionner le 2e FARFADET
+    // Le titre du combat doit maintenant mentionner le 2e ORC
     await page.waitForSelector('.combat-title', { timeout: 5000 })
     const combatTitle = page.locator('.combat-title')
-    await expect(combatTitle).toContainText('FARFADET')
+    await expect(combatTitle).toContainText('ORC')
   })
 
   // ── Victoire → section 378 ────────────────────────────────────────────────
@@ -65,10 +65,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
 
     await testCombatStart(page)
-    // 1er FARFADET
+    // 1er
     await testCombatRound(page)
     await page.click('button.combat-next-btn')
-    // 2e FARFADET
+    // 2e
     await testCombatRound(page)
     await page.click('button.combat-next-btn')
 

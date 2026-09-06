@@ -10,6 +10,7 @@ export class GameEngineNavigation {
   private lastCombatVictory: boolean | null = null
   private lastCombatState: CombatState | null = null
   private activeTriggers: Set<string> = new Set()
+  private groupeUtilisations: Record<string, number> = {}
 
   /**
    * Initialise la navigation
@@ -18,6 +19,13 @@ export class GameEngineNavigation {
     this.sectionActionResults = {}
     this.lastCombatVictory = null
     this.lastCombatState = null
+  }
+
+  /**
+   * Met à jour les utilisations de groupe (appelé depuis GameEngine après chaque action de groupe)
+   */
+  setGroupeUtilisations(groupeUtilisations: Record<string, number>): void {
+    this.groupeUtilisations = groupeUtilisations
   }
 
   /**
@@ -357,6 +365,15 @@ export class GameEngineNavigation {
           conditionOk = false
           raison = `L'item en position ${n} est "${targetEntry[0]}", pas "${cond.item_id}"`
         }
+      }
+    } else if (cond.type === 'groupe_utilise') {
+      if (!cond.groupe) {
+        conditionOk = false
+        raison = 'Condition groupe_utilise invalide : groupe manquant'
+      } else {
+        const groupeKey = `${currentSection}-${cond.groupe}`
+        conditionOk = (this.groupeUtilisations[groupeKey] ?? 0) > 0
+        if (!conditionOk) raison = `Le groupe "${cond.groupe}" n'a pas encore été utilisé`
       }
     } else if (cond.type === 'and') {      // Toutes les sous-conditions doivent être vraies (ET logique)
       if (!cond.conditions || cond.conditions.length === 0) {

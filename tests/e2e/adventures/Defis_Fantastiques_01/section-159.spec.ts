@@ -6,7 +6,7 @@ const ADVENTURE_ID = 1
 const SECTION_NUMBER = 159
 const SECTION_TEXT = "Vous ouvrez la porte et vous découvrez une grande pièce"
 const SECTION_CHOICES_ATTAQUER = {
-  365: 'Attaquer les farfadets'
+  365: 'Attaquer les orcs'
 }
 const SECTION_CHOICES_CHANCE = {
   0: 'Tentez votre Chance pour fuir'

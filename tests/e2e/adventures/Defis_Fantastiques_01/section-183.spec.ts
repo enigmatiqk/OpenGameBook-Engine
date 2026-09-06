@@ -4,7 +4,7 @@ import { testSection, testChoiceButtons, navigationTests, testStat, screenshotOn
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 183
-const SECTION_TEXT = "Vous fouillez les corps des Farfadets morts"
+const SECTION_TEXT = "Vous fouillez les corps des Orcs morts"
 const SECTION_CHOICES = {
   266: 'Ouvrir la malette',
   237: 'Sortir par la porte sans la malette'

@@ -25,10 +25,17 @@ function logItemLoss(hero: Hero, itemId: string, qty: number, isEquip: boolean, 
  * Résout la quantité d'un effet item : delta_de (lancé de dés) prioritaire sur delta.
  * Par défaut : 1.
  */
-function resolveItemDelta(item: NonNullable<Effet['item']>): number {
+function resolveItemDelta(item: NonNullable<Effet['item']>, context?: { resultat_de?: number }): number {
   if (item.delta_de) {
-    const { count, sides, modifier } = parseDiceFormula(item.delta_de)
-    return rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
+    // {resultat_de} — réutilise le total du dernier jet sans relancer
+    const isResultatDe = item.delta_de.trim().replace(/^-/, '').trim() === '{resultat_de}'
+    if (isResultatDe) {
+      const val = context?.resultat_de ?? 0
+      return item.delta_de.trim().startsWith('-') ? -val : val
+    }
+    const { count, sides, modifier, negative } = parseDiceFormula(item.delta_de)
+    const total = rollDice(count, sides).reduce((a, b) => a + b, 0) + modifier
+    return negative ? -total : total
   }
   return item.delta ?? 1
 }
@@ -93,7 +100,8 @@ export function applyItemEffect(
   hero: Hero,
   emplacements: Record<string, EmplacementDefinition> = {},
   removeItemEffects?: (hero: Hero, item: InventaireItem) => void,
-  applyItemEffects?: (hero: Hero, item: InventaireItem) => void
+  applyItemEffects?: (hero: Hero, item: InventaireItem) => void,
+  context?: { resultat_de?: number }
 ): void {
   // Normalise l'id : si absent, le dériver du name via slugify
   const itemId = item.id ?? item.name
@@ -103,7 +111,7 @@ export function applyItemEffect(
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-  const delta = resolveItemDelta(item)
+  const delta = resolveItemDelta(item, context)
 
   // ── Cas "item riche" : possède type, remplace, effets, bonus, image… ──────
   const isRichItem = !!(item.type || item.remplace || item.effets || item.bonus ||
@@ -255,6 +263,17 @@ export function applyItemEffect(
       logItemLoss(hero, itemId, delta, !!existing.type, false)
       existing.quantite = newQty
     }
+  } else if (!existing && delta < 0) {
+    // Item absent de l'inventaire → cherche dans l'équipement
+    const equipSlot = Object.entries(hero.equipement).find(([, e]) => e.id === itemId)
+    if (equipSlot) {
+      const [slotName, equippedItem] = equipSlot
+      logItemLoss(hero, itemId, Math.abs(delta), !!equippedItem.type, true, 0, item.raison)
+      if (equippedItem.effets && removeItemEffects) removeItemEffects(hero, equippedItem)
+      equippedItem.equipe = false
+      delete hero.equipement[slotName]
+    }
+    // Sinon : item vraiment inexistant → erreur silencieuse (le héros ne peut pas tricher)
   } else if (delta > 0) {
     // Item inexistant + delta positif → crée l'item
     const newEntry: InventaireItem = { id: itemId, label: item.name, quantite: delta }
@@ -290,6 +309,67 @@ export function applyEffect(
     }
   } else if (effet.type === 'item' && effet.item) {
     applyItemEffect(effet.item, hero, emplacements, removeItemEffects, applyItemEffects)
+  } else if (effet.type === 'desequiper' && effet.desequiper) {
+    // Cherche l'item dans l'équipement
+    const equipSlot = Object.entries(hero.equipement).find(([, e]) => e.id === effet.desequiper!.id)
+    if (equipSlot) {
+      const [slotName, equippedItem] = equipSlot
+      // Retire les effets passifs de l'item
+      if (equippedItem.effets && removeItemEffects) removeItemEffects(hero, equippedItem)
+      equippedItem.equipe = false
+      delete hero.equipement[slotName]
+      if (effet.desequiper.jeter) {
+        // jeter: true → supprime définitivement, ne remet pas dans l'inventaire
+        logItemLoss(hero, equippedItem.id, 1, !!equippedItem.type, true)
+      } else {
+        // jeter absent/false → remet dans l'inventaire
+        hero.inventaire.push(equippedItem)
+      }
+    }
+    // Item non équipé → erreur silencieuse (Option A)
+  } else if (effet.type === 'equiper' && effet.equiper) {
+    // Cherche l'item dans l'inventaire (non équipé)
+    const invIdx = hero.inventaire.findIndex(
+      i => typeof i !== 'string' && (i as InventaireItem).id === effet.equiper!.id
+    )
+    if (invIdx !== -1) {
+      const item = hero.inventaire[invIdx] as InventaireItem
+      // Trouve le slot via le type de l'item
+      let targetSlot: string | null = null
+      if (item.type) {
+        for (const [slotName, slotDef] of Object.entries(emplacements)) {
+          if (slotDef.types_acceptes.includes(item.type)) {
+            if (slotDef.capacite && slotDef.capacite > 1) {
+              // Slot multi-capacité : cherche un slot libre, sinon prend le premier
+              for (let i = 1; i <= slotDef.capacite; i++) {
+                const sub = `${slotName}_${i}`
+                if (!hero.equipement[sub]) { targetSlot = sub; break }
+              }
+              if (!targetSlot) targetSlot = `${slotName}_1`
+            } else {
+              targetSlot = slotName
+            }
+            if (targetSlot) break
+          }
+        }
+      }
+      if (targetSlot) {
+        // Si le slot est occupé, déséquipe l'occupant → retour inventaire (Option B)
+        if (hero.equipement[targetSlot]) {
+          const occupant = hero.equipement[targetSlot]
+          if (occupant.effets && removeItemEffects) removeItemEffects(hero, occupant)
+          occupant.equipe = false
+          hero.inventaire.push(occupant)
+          delete hero.equipement[targetSlot]
+        }
+        hero.inventaire.splice(invIdx, 1)
+        item.equipe = true
+        hero.equipement[targetSlot] = item
+        if (item.effets && applyItemEffects) applyItemEffects(hero, item)
+      }
+      // Pas de slot trouvé (item sans type ou type inconnu) → erreur silencieuse
+    }
+    // Item absent de l'inventaire → erreur silencieuse
   }
 }
 

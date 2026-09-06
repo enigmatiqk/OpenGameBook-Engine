@@ -34,6 +34,8 @@ export class GameEngine {
 
   // Track des utilisations des choix locaux
   private choixUtilisations: Record<string, number> = {}
+  // Track des utilisations par groupe de choix (clé: "section-groupe_id")
+  private groupeUtilisations: Record<string, number> = {}
 
   // Paramètres transmis à la section courante via section_params du choix entrant
   private currentSectionParams: Record<string, number> = {}
@@ -77,6 +79,8 @@ export class GameEngine {
     this.finalTimeMs = null
     this.saveState = null
     this.combatState = null
+    this.choixUtilisations = {}
+    this.groupeUtilisations = {}
     this.timer.reset()
     this.navigation.init()
     this.rollsModule.resetHeroInit()
@@ -234,6 +238,11 @@ export class GameEngine {
     // Charger les utilisations des choix locaux
     if (save.choixUtilisations) {
       this.choixUtilisations = { ...save.choixUtilisations }
+    }
+    // Charger les utilisations des groupes
+    if (save.groupeUtilisations) {
+      this.groupeUtilisations = { ...save.groupeUtilisations }
+      this.navigation.setGroupeUtilisations(this.groupeUtilisations)
     }
     // Charger les utilisations des règles
     if (save.regleUtilisations) {
@@ -426,6 +435,13 @@ export class GameEngine {
       this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
     }
 
+    // Track les utilisations de groupe si défini
+    if (validChoice.local && validChoice.groupe) {
+      const groupeKey = `${this.currentSection}-${validChoice.groupe}`
+      this.groupeUtilisations[groupeKey] = (this.groupeUtilisations[groupeKey] ?? 0) + 1
+      this.navigation.setGroupeUtilisations(this.groupeUtilisations)
+    }
+
     // Si c'est un choix local, rester sur la même section. Sinon, naviguer
     if (validChoice.local) {
       return section
@@ -456,22 +472,54 @@ export class GameEngine {
   isChoiceAvailable(choixIndex: number): boolean {
     const section = this.adventure?.sections.find(s => s.numero === this.currentSection)
     if (!section || !section.choix[choixIndex]) return true
-    
+
     const choice = section.choix[choixIndex]
-    
-    // Si ce n'est pas un choix local ou pas de limite d'utilisations, toujours disponible
-    if (!choice.local || choice.utilisations === undefined) return true
-    
-    // Vérifier le nombre d'utilisations
-    const key = `${this.currentSection}-${choixIndex}`
-    const utilisations = this.choixUtilisations[key] ?? 0
-    
-    return utilisations < choice.utilisations
+
+    // Si ce n'est pas un choix local, toujours disponible (la condition est gérée ailleurs)
+    if (!choice.local) return true
+
+    // Vérification par groupe : si le groupe a déjà été utilisé, ce choix est épuisé
+    if (choice.groupe) {
+      const groupeKey = `${this.currentSection}-${choice.groupe}`
+      if ((this.groupeUtilisations[groupeKey] ?? 0) > 0) return false
+    }
+
+    // Vérification par utilisations individuelles
+    if (choice.utilisations !== undefined) {
+      const key = `${this.currentSection}-${choixIndex}`
+      const utilisations = this.choixUtilisations[key] ?? 0
+      return utilisations < choice.utilisations
+    }
+
+    return true
   }
 
   getActionPendingRoll(choice: Choice): PendingRoll | null {
     if (!this.adventure) return null
     return this.rollsModule.getActionPendingRoll(this.adventure, choice)
+  }
+
+  /**
+   * Retourne les paramètres multi-tentatives pour un choix action.
+   * Lit en priorité les propriétés de l'objet action (surcharge inline), puis regles.json.
+   * Retourne null si la règle n'est pas de type multi-tentatives (tentativesTotal === 1).
+   */
+  getMultiRollParams(choice: Choice): { tentativesTotal: number; reussitesRequises: number; consecutif: boolean } | null {
+    if (!this.adventure) return null
+    const action = choice.action
+    if (!action) return null
+
+    const actionProps = typeof action === 'object' ? (action as any) : {}
+    const actionName = typeof action === 'string' ? action : (action as any).name
+    const regle = GameEngineActions.getRegle(this.adventure, actionName) as any
+
+    const reussitesRequises: number = actionProps.reussites_requises ?? regle?.reussites_requises ?? 1
+    const consecutif: boolean = actionProps.consecutif ?? regle?.consecutif ?? true
+    const tentativesBrutes: number = actionProps.tentatives ?? regle?.tentatives ?? 1
+    const tentativesTotal = Math.max(tentativesBrutes, reussitesRequises)
+
+    if (tentativesTotal <= 1) return null
+    return { tentativesTotal, reussitesRequises, consecutif }
   }
 
   /**
@@ -552,17 +600,39 @@ export class GameEngine {
       this.hero,
       choice,
       rolls,
-      (effets, label) => this._applyEffets(effets, label),
+      (effets, label, context) => this._applyEffets(effets, label, context),
       (actionName, resultat) => this.navigation.recordActionResult(actionName, resultat),
       (trigger) => this.navigation.recordTrigger(trigger),
       (ref) => this.resolveSection(ref)
     )
+
+    // Track les utilisations si c'est un choix local avec limite (chemin action avec dés)
+    if (choice.local && choice.utilisations !== undefined) {
+      const choixIndex = this.adventure.sections
+        .find(s => s.numero === this.currentSection)
+        ?.choix.indexOf(choice as any) ?? -1
+      if (choixIndex >= 0) {
+        const key = `${this.currentSection}-${choixIndex}`
+        this.choixUtilisations[key] = (this.choixUtilisations[key] ?? 0) + 1
+      }
+    }
+
+    // Track les utilisations de groupe (chemin action avec dés)
+    if (choice.local && choice.groupe) {
+      const groupeKey = `${this.currentSection}-${choice.groupe}`
+      this.groupeUtilisations[groupeKey] = (this.groupeUtilisations[groupeKey] ?? 0) + 1
+      this.navigation.setGroupeUtilisations(this.groupeUtilisations)
+    }
 
     // Gère les différents types de résultats
     if (result.pendingGainRoll) {
       return {
         pendingGainRoll: result.pendingGainRoll
       } as any
+    }
+
+    if ((result as any).pendingMultiRoll) {
+      return { pendingMultiRoll: (result as any).pendingMultiRoll } as any
     }
 
     if (result.endValue) {
@@ -593,6 +663,47 @@ export class GameEngine {
     
     const result = this.actionsModule.resolveGainRoll(this.hero, pending, rolls)
     return this.navigateTo(result.targetSection)
+  }
+
+  /**
+   * Continue une séquence de multi-tentatives avec le résultat du jet courant.
+   * Retourne la section courante si d'autres tentatives sont nécessaires (pendingMultiRoll),
+   * ou navigue vers la section cible si la séquence est terminée.
+   */
+  resolveMultiRoll(pending: import('../types').PendingMultiRoll, rolls: number[]): Section {
+    if (!this.adventure || !this.hero) throw new Error('No active game.')
+
+    const result = this.actionsModule.resolveMultiRoll(
+      this.adventure,
+      this.hero,
+      pending,
+      rolls,
+      (effets, label) => this._applyEffets(effets, label),
+      (actionName, resultat) => this.navigation.recordActionResult(actionName, resultat),
+      (trigger) => this.navigation.recordTrigger(trigger),
+      (ref) => this.resolveSection(ref)
+    )
+
+    if ((result as any).pendingMultiRoll) {
+      return { pendingMultiRoll: (result as any).pendingMultiRoll } as any
+    }
+
+    if (result.endValue) {
+      this.gameOver = true
+      this.victory = result.endValue === 'victoire'
+      this.finalTimeMs = this.timer.getElapsedMs()
+      this.timer.pause()
+      if (result.endValue === 'defaite' && this.adventure) {
+        this.saveModule.deleteSave(this.adventure.titre)
+      }
+      return this.adventure.sections.find(s => s.numero === this.currentSection)!
+    }
+
+    if (result.targetSection !== undefined) {
+      return this.navigateTo(result.targetSection)
+    }
+
+    return this.adventure.sections.find(s => s.numero === this.currentSection)!
   }
 
   /**
@@ -888,7 +999,7 @@ export class GameEngine {
     if (!this.combatState || !this.adventure || !this.hero) throw new Error('Pas de combat en cours.')
     if (this.combatState.phase.type !== 'pending_attaque_speciale_action') throw new Error('Phase invalide')
 
-    const { effets, attaqueSpeciale } = this.combatState.phase
+    const { effets } = this.combatState.phase
 
     // Réutilise resolveCombatAction pour la résolution complète de la règle
     // (effets toujours, effets par résultat, effets composite — tout est géré)
@@ -975,6 +1086,15 @@ export class GameEngine {
     if (!this.combatState) throw new Error('Pas de combat en cours.')
     this.combatState = this.combatResolver.nextRound(this.combatState)
 
+    // Applique les effets de fin de phase (victoire d'une phase intermédiaire)
+    // Le resolver les a capturés avant d'écraser combatData avec la nouvelle phase
+    if (this.combatState.phaseEndEffects?.length) {
+      for (const { effets, label } of this.combatState.phaseEndEffects) {
+        this._applyEffets(effets, label)
+      }
+      this.combatState = { ...this.combatState, phaseEndEffects: undefined }
+    }
+
     if (this.combatState.phase.type === 'termine') {
       const { victoire, heroEnduranceFinale } = this.combatState.phase
       
@@ -1053,7 +1173,7 @@ export class GameEngine {
     this.effectsModule.applyItemDelta(this.hero, itemId, delta, raison)
   }
 
-  private _applyEffets(effets: import('../types').Effet[], labelSource: string): void {
+  private _applyEffets(effets: import('../types').Effet[], labelSource: string, context?: { resultat_de?: number }): void {
     if (!this.hero) return
     
     this.effectsModule.applyEffets(
@@ -1075,7 +1195,8 @@ export class GameEngine {
           )
         }
       },
-      (trigger) => this.navigation.recordTrigger(trigger)
+      (trigger) => this.navigation.recordTrigger(trigger),
+      context
     )
   }
 
@@ -1084,6 +1205,15 @@ export class GameEngine {
    */
   getPendingMonsterStatMods(): Record<string, import('../types').EffetMonstreStat[]> {
     return this.monstresModule.getPendingMonsterStatMods()
+  }
+
+  /**
+   * Applique une liste d'effets et retourne les messages de log.
+   * Méthode publique pour usage depuis l'UI (ex: effets d'un échec critique de fuite).
+   */
+  applyEffets(effets: import('../types').Effet[], labelSource: string): string[] {
+    this._applyEffets(effets, labelSource)
+    return effets.map(() => labelSource).filter(Boolean)
   }
 
   // ─── Stats ────────────────────────────────────────────────────────────────
@@ -1173,6 +1303,10 @@ export class GameEngine {
     if (state) {
       // Ajouter les utilisations des choix locaux
       state.choixUtilisations = { ...this.choixUtilisations }
+      // Ajouter les utilisations des groupes
+      if (Object.keys(this.groupeUtilisations).length > 0) {
+        state.groupeUtilisations = { ...this.groupeUtilisations }
+      }
       // Ajouter les utilisations des règles
       const currentRegleUtilisations = this.actionsModule.getRegleUtilisations()
       if (Object.keys(currentRegleUtilisations).length > 0) {
@@ -1236,7 +1370,7 @@ export class GameEngine {
     return GameEngineActions.canUseAction(this.adventure, this.hero, actionName)
   }
 
-  resolveFuiteAction(rolls: number[]): string[] {
+  resolveFuiteAction(rolls: number[]): { log: string[]; resultat: string | null } {
     return GameEngineActions.resolveFuiteAction(
       this.adventure,
       this.hero,

@@ -3,7 +3,7 @@ import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure } 
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 21
-const SECTION_TEXT = 'Le sang verdâtre des farfadets morts'
+const SECTION_TEXT = 'Le sang verdâtre des orcs morts'
 const SECTION_CHOICES = {
   339: 'Briser la serrure',
   293: 'Sortir par la porte ouverte'

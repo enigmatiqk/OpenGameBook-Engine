@@ -1,6 +1,38 @@
 import type { Hero, Enemy, CombatRules, CombatRound, CombatState, MonstreData, CombatPhaseData, CombatData } from '../types'
 
 /**
+ * Calcule les bonus de stat_combat issus des items équipés du héros.
+ * Retourne un record { stat_name: bonus_total }.
+ * delta est additif, valeur est absolue (prioritaire sur delta si les deux sont définis).
+ */
+function getEquipementStatCombatBonus(hero: Hero): Record<string, number> {
+  const bonus: Record<string, number> = {}
+  for (const item of Object.values(hero.equipement)) {
+    if (!item.effets) continue
+    for (const effet of item.effets) {
+      if (effet.type !== 'stat_combat' || !effet.stat_combat) continue
+      const { name, delta, valeur } = effet.stat_combat
+      if (valeur !== undefined) {
+        // valeur absolue : on stocke la valeur, pas un delta
+        bonus[`__valeur__${name}`] = valeur
+      } else if (delta !== undefined) {
+        bonus[name] = (bonus[name] ?? 0) + delta
+      }
+    }
+  }
+  return bonus
+}
+
+/**
+ * Applique un bonus de stat_combat (delta ou valeur absolue) à une valeur de base.
+ */
+function applyStatCombatBonus(base: number, statName: string, bonuses: Record<string, number>): number {
+  const valeurKey = `__valeur__${statName}`
+  if (bonuses[valeurKey] !== undefined) return bonuses[valeurKey]
+  return base + (bonuses[statName] ?? 0)
+}
+
+/**
  * Évalue les effets de type "combat" d'un monstre et retourne les dégâts effectifs.
  * Supporte valeur absolue (valeur: 0) et delta relatif.
  * La condition est évaluée contre l'équipement du héros.
@@ -62,13 +94,14 @@ export function parseAttackFormula(formula: string): { statName: string; diceCou
 /**
  * Parse une formule de dés simple : "2d6", "1d6", etc.
  */
-export function parseDiceFormula(formula: string): { count: number; sides: number; modifier: number } {
-  const m = formula.trim().match(/^(\d+)d(\d+)([+-]\d+)?$/i)
+export function parseDiceFormula(formula: string): { count: number; sides: number; modifier: number; negative: boolean } {
+  const m = formula.trim().match(/^(-?)(\d+)d(\d+)([+-]\d+)?$/i)
   if (!m) throw new Error(`Formule de dés invalide : "${formula}"`)
   return {
-    count: parseInt(m[1], 10),
-    sides: parseInt(m[2], 10),
-    modifier: m[3] ? parseInt(m[3], 10) : 0,
+    negative: m[1] === '-',
+    count: parseInt(m[2], 10),
+    sides: parseInt(m[3], 10),
+    modifier: m[4] ? parseInt(m[4], 10) : 0,
   }
 }
 
@@ -166,6 +199,7 @@ export function resolvePhaseData(combatData: CombatData, phase: CombatPhaseData)
     defense:         phase.defense         ?? combatData.defense,
     modifier:        phase.modifier        ?? combatData.modifier,
     victoire:        phase.victoire        ?? combatData.victoire,
+    mort:            phase.mort            ?? combatData.mort,
     fuite:           phase.fuite           ?? combatData.fuite,
     // events : concaténation phase + global (les events phase ont priorité d'index)
     events: [
@@ -337,14 +371,30 @@ export class CombatResolver {
     const heroAttaqueStat = hero.statistiques[statName] ?? 0
     const enemyAttaqueStat = state.enemy.habilete
 
+    // Bonus de stat_combat issus des items équipés
+    const equipBonus = getEquipementStatCombatBonus(hero)
+
     let heroBonus = 0
     if (resolved?.attaque_heros) {
       const m = resolved.attaque_heros.match(/^([+-]\d+)$/)
       if (m) heroBonus = parseInt(m[1], 10)
     }
+    // Ajoute le bonus d'attaque des items équipés
+    heroBonus += equipBonus['attaque_heros'] ?? 0
+    if (equipBonus['__valeur__attaque_heros'] !== undefined) {
+      heroBonus = equipBonus['__valeur__attaque_heros'] - heroAttaqueStat  // force la valeur totale
+    }
+
+    let enemyBonus = 0
+    if (resolved?.attaque_monstre) {
+      const m = resolved.attaque_monstre.match(/^([+-]\d+)$/)
+      if (m) enemyBonus = parseInt(m[1], 10)
+    }
+    // Ajoute le bonus d'attaque monstre des items équipés (ex: malédiction)
+    enemyBonus += equipBonus['attaque_monstre'] ?? 0
 
     const forceAttaqueHero = heroAttaqueStat + rolls.reduce((a, b) => a + b, 0) + heroBonus
-    const forceAttaqueEnnemi = enemyAttaqueStat + state.currentRollEnnemi.reduce((a, b) => a + b, 0)
+    const forceAttaqueEnnemi = enemyAttaqueStat + state.currentRollEnnemi.reduce((a, b) => a + b, 0) + enemyBonus
 
     const heroGagne = rules.attaque === '>='
       ? forceAttaqueHero >= forceAttaqueEnnemi
@@ -363,10 +413,15 @@ export class CombatResolver {
 
     if (heroGagne && !ennemiGagne) {
       degats = rules.degats_victoire
+      // Applique valeur absolue ou delta depuis les items équipés
+      degats = applyStatCombatBonus(degats, 'degats_victoire', equipBonus)
       if (resolved?.degats_heros) {
         const m = resolved.degats_heros.match(/^([+-]\d+)$/)
         if (m) { heroBonusDegats = parseInt(m[1], 10); degats += heroBonusDegats }
       }
+      // Ajoute le bonus de dégâts_heros des items équipés
+      const equipDegatsHeros = equipBonus['degats_heros'] ?? 0
+      if (equipDegatsHeros !== 0) { heroBonusDegats += equipDegatsHeros; degats += equipDegatsHeros }
       cible = 'ennemi'
 
       // Applique les effets du monstre (ex: immunité conditionnelle)
@@ -375,6 +430,8 @@ export class CombatResolver {
       enemyVie -= degats
     } else if (ennemiGagne && !heroGagne) {
       degats = rules.degats_defaite
+      // Applique valeur absolue ou delta depuis les items équipés (ex: armure réduit les dégâts)
+      degats = applyStatCombatBonus(degats, 'degats_defaite', equipBonus)
       if (resolved?.defense && resolved.defense.type === 'lancer_de') {
         defenseRollNeeded = true
         defenseData = { ...resolved.defense.lancer_de, texte: resolved.defense.texte }
@@ -455,11 +512,14 @@ export class CombatResolver {
     const { statName } = parseAttackFormula(rules.formule_attaque)
     const heroAttaqueStat = hero.statistiques[statName] ?? 0
 
+    const equipBonus = getEquipementStatCombatBonus(hero)
+
     let heroBonus = 0
     if (resolved?.attaque_heros) {
       const m = resolved.attaque_heros.match(/^([+-]\d+)$/)
       if (m) heroBonus = parseInt(m[1], 10)
     }
+    heroBonus += equipBonus['attaque_heros'] ?? 0
 
     const faSecondaire = secondaire.habilete + rollSecondaire.reduce((a, b) => a + b, 0)
     const faHero = heroAttaqueStat + rolls.reduce((a, b) => a + b, 0) + heroBonus
@@ -468,7 +528,7 @@ export class CombatResolver {
     let degatsS = 0
     let heroVie = state.heroVie
     if (faSecondaire > faHero) {
-      degatsS = rules.degats_defaite
+      degatsS = applyStatCombatBonus(rules.degats_defaite, 'degats_defaite', equipBonus)
       heroVie -= degatsS
     }
 
@@ -733,7 +793,14 @@ export class CombatResolver {
       if (phases && !state.combatDataGlobal?.lancer_de) {
         const nextPhaseIndex = phaseIndex + 1
         if (nextPhaseIndex < phases.length) {
-          return this.transitionToPhase(state, nextPhaseIndex)
+          // Capture les effets de victoire de la phase qui se termine, avant que combatData soit écrasé
+          const phaseVictoire = state.combatData?.victoire
+          const phaseEndEffects: { effets: import('../types').Effet[]; label: string }[] = []
+          if (phaseVictoire?.effets?.length) {
+            phaseEndEffects.push({ effets: phaseVictoire.effets, label: `victoire — phase ${phaseIndex + 1}` })
+          }
+          const nextState = this.transitionToPhase(state, nextPhaseIndex)
+          return { ...nextState, phaseEndEffects }
         }
       }
 
@@ -887,14 +954,22 @@ export class CombatResolver {
       } else if (event.declencheur === 'degats' && (degatsHeros > 0 || degatsMonster > 0)) {
         if (newState.compteurDegats === event.round) shouldTrigger = true
       } else if (event.declencheur === 'round') {
-        if (state.roundNumber === event.round) shouldTrigger = true
+        if (event.repeter) {
+          // Avec repeter: true, se déclenche à chaque multiple du round (6, 12, 18…)
+          if (state.roundNumber > 0 && state.roundNumber % event.round === 0) shouldTrigger = true
+        } else {
+          if (state.roundNumber === event.round) shouldTrigger = true
+        }
       } else if (event.declencheur === 'attaque_heros' && heroARempoteLround) {
         if (newState.compteurAttaqueHeros === event.round) shouldTrigger = true
       } else if (event.declencheur === 'attaque_monstre' && monstreARempoteLround) {
         if (newState.compteurAttaqueMonstre === event.round) shouldTrigger = true
       }
       if (shouldTrigger) {
-        newState.eventsDeclenches = [...(newState.eventsDeclenches ?? []), i]
+        // Si repeter: true, on ne marque pas l'event comme déclenché — il se redéclenchera
+        if (!event.repeter) {
+          newState.eventsDeclenches = [...(newState.eventsDeclenches ?? []), i]
+        }
         if (event.ignorerDegats) {
           newState.heroVie += degatsHeros
           newState.enemyVie += degatsMonster

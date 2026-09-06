@@ -51,7 +51,7 @@ Il n'existe qu'un seul type d'effet item (`EffetItem`), utilisé dans tous les c
 | `poids` | number | | Poids de l'item (défaut: 1) |
 | `quantite` | number | | Fixe la quantité absolue de l'item. `0` = renommage seul (quantité inchangée) |
 | `delta` | number | | Quantité à ajouter/retirer par rapport à l'existant (défaut: 1). Négatif = retirer. `0` = renommage seul. Si positif et item inexistant → crée l'item |
-| `delta_de` | string | | Quantité aléatoire par lancé de dés (ex: `"2d6"`). Prioritaire sur `delta` |
+| `delta_de` | string | | Quantité aléatoire par lancé de dés (ex: `"2d6"`, `"-2d6"`). Supporte `{resultat_de}` pour réutiliser le jet précédent. Prioritaire sur `delta` |
 | `remplace` | boolean \| string | | Stratégie de remplacement (voir ci-dessous). Ignoré si `delta > 1` |
 | `image` | string | | Chemin vers l'image de l'item |
 | `image_ia` | string | | Chemin vers l'image IA de l'item |
@@ -125,6 +125,25 @@ Quand la quantité d'un item doit être déterminée par un lancé de dés, util
 
 `"delta_de": "<nb_dés>d<faces>"` — ex: `"2d6"`, `"1d6"`, `"3d6"`
 
+Pour une **perte** aléatoire, préfixer avec `-` :
+
+`"delta_de": "-2d6"` — le résultat du dé sera soustrait de l'inventaire.
+
+### Variable `{resultat_de}`
+
+Dans un contexte `si_reussi` / `si_echoue`, il est possible de réutiliser le **total du jet de dés qui a déclenché l'action** (ex: le jet de `tenter_chance`) au lieu de relancer des dés :
+
+`"delta_de": "-{resultat_de}"` — soustrait le total du jet précédent.
+
+`"delta_de": "{resultat_de}"` — ajoute le total du jet précédent.
+
+**Exemple — section 346 : perdre autant de pièces que le résultat du jet de chance :**
+```json
+"si_echoue": {
+  "effets": [{ "type": "item", "item": { "id": "piece-or", "delta_de": "-{resultat_de}", "raison": "malchance" } }]
+}
+```
+
 ### Exemple — gain de pièces d'or par 2d6
 
 ```json
@@ -139,7 +158,7 @@ Quand la quantité d'un item doit être déterminée par un lancé de dés, util
 }
 ```
 
-Le moteur lance les dés au moment de l'exécution de l'effet et ajoute le résultat obtenu à l'inventaire.
+Le moteur affiche une modale avec un bouton de lancer. Le joueur clique pour lancer les dés, le résultat s'affiche avec un délai, puis l'inventaire est mis à jour.
 
 > Si `delta_de` et `delta` sont tous les deux présents, `delta_de` est prioritaire.
 
@@ -151,6 +170,7 @@ Les effets d'items sont des modifications de stats qui s'appliquent **automatiqu
 
 - **`stat`** : modifie la stat courante (temporaire, lié à l'équipement)
 - **`stat_total`** : modifie la stat initiale/totale (permanent, augmente le plafond)
+- **`stat_combat`** : bonus de combat (attaque, dégâts) actif tant que l'item est équipé (voir [08-section-03-effets.md](08-section-03-effets.md#type-stat_combat--bonus-de-combat-via-item-équipé))
 
 ### Structure d'un effet d'item
 

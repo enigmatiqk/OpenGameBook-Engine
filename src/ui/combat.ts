@@ -437,6 +437,7 @@ export class CombatView {
           fuirDirectBtn.type = 'button'
           fuirDirectBtn.textContent = '🏃 Fuir directement'
           fuirDirectBtn.addEventListener('click', () => {
+            fuirDirectBtn.disabled = true
             this.engine.startFuite()
             this.engine.navigateTo(sectionFuiteDestination)
             this.onCombatEnd()
@@ -452,6 +453,7 @@ export class CombatView {
           fuirChanceBtn.textContent = '🎲 Tenter sa chance pour fuir'
           
           fuirChanceBtn.addEventListener('click', () => {
+            fuirChanceBtn.disabled = true
             this.engine.startFuite()
             // Lance directement les dés sans afficher un bouton supplémentaire
             const pending = this.engine.getActionPendingRoll({ 
@@ -463,10 +465,33 @@ export class CombatView {
             
             const { count, sides } = parseDiceFormula(pending.formula)
             const rolls = rollDice(count, sides)
-            const effets = this.engine.resolveFuiteAction(rolls)
+            const total = rolls.reduce((a: number, b: number) => a + b, 0)
+
+            // Vérifier si le résultat correspond à un échec_critique
+            const echecCritique = sectionFuite?.tenter_chance?.echec_critique
+            if (echecCritique && echecCritique.resultats.includes(total)) {
+              // Échec critique : appliquer les effets si présents, puis naviguer quand même
+              const effets = echecCritique.effets
+                ? this.engine.applyEffets(echecCritique.effets, 'Échec critique (fuite)')
+                : []
+
+              const resEl = document.createElement('div')
+              resEl.className = 'combat-action-result combat-action-result--fuite'
+              resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total} — Échec critique !</div>`
+                + effets.map((e: string) => `<div class="action-effet">${e}</div>`).join('')
+              this.container?.appendChild(resEl)
+
+              const dest = echecCritique.section ?? sectionFuiteDestination
+              setTimeout(() => {
+                this.engine.navigateTo(dest)
+                this.onCombatEnd()
+              }, 1500)
+              return
+            }
+
+            const { log: effets, resultat: fuiteResultat } = this.engine.resolveFuiteAction(rolls)
             
             // Affiche le résultat
-            const total = rolls.reduce((a: number, b: number) => a + b, 0)
             const resEl = document.createElement('div')
             resEl.className = 'combat-action-result combat-action-result--fuite'
             resEl.innerHTML = `<div class="action-resultat">[${rolls.join(', ')}] = ${total}</div>`
@@ -474,11 +499,14 @@ export class CombatView {
             
             this.container?.appendChild(resEl)
             
-            // Fuit après le résultat
-            setTimeout(() => {
-              this.engine.navigateTo(sectionFuiteDestination)
-              this.onCombatEnd()
-            }, 1500)
+            // Ne fuit que si chanceux
+            if (fuiteResultat === 'chanceux') {
+              setTimeout(() => {
+                this.engine.navigateTo(sectionFuiteDestination)
+                this.onCombatEnd()
+              }, 1500)
+            }
+            // Si malchanceux : on reste en combat, le joueur continue
           })
           actionsEl.appendChild(fuirChanceBtn)
         }

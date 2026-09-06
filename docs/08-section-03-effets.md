@@ -76,6 +76,44 @@ Principalement utilisé dans les effets d'items équipés (voir [07-items-gain.m
 
 ---
 
+## Type `stat_combat` — bonus de combat via item équipé
+
+Applique un bonus permanent au score d'attaque, aux dégâts infligés ou reçus, **tant que l'item est équipé**. S'applique à chaque round de combat, sans jet de dés.
+
+```json
+{
+  "type": "stat_combat",
+  "stat_combat": {
+    "name":   "attaque_heros",
+    "delta":  1,
+    "raison": "casque bienfaisant"
+  }
+}
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `stat_combat.name` | ★ | Stat de combat ciblée (voir tableau ci-dessous) |
+| `stat_combat.delta` | ★ (ou `valeur`) | Bonus/malus relatif (ex : `+1`, `-2`) |
+| `stat_combat.valeur` | ★ (ou `delta`) | Valeur absolue forcée (prioritaire sur `delta`) |
+| `stat_combat.raison` | — | Affiché dans la fiche héros |
+
+### Stats de combat disponibles
+
+| Valeur | Description |
+|--------|-------------|
+| `attaque_heros` | Bonus au score d'attaque du héros (`habilete + 2d6 + bonus`) |
+| `attaque_monstre` | Bonus au score d'attaque du monstre (malédiction, handicap) |
+| `degats_heros` | Bonus aux dégâts infligés quand le héros gagne le round |
+| `degats_victoire` | Remplace/ajuste les dégâts de base infligés au monstre |
+| `degats_defaite` | Remplace/ajuste les dégâts reçus quand le héros perd le round |
+
+> Utilisable uniquement dans `item.effets`. Cet effet est passif — il s'applique automatiquement en combat tant que l'item est équipé, sans interaction du joueur.
+
+Voir aussi [08-section-06-combat-defense-item.md](08-section-06-combat-defense-item.md) pour les effets de défense par dé.
+
+---
+
 ## Type `item` — ajouter un item à l'inventaire
 
 ```json
@@ -94,6 +132,54 @@ Principalement utilisé dans les effets d'items équipés (voir [07-items-gain.m
 | `item.name` | ★ | ID de l'item à ajouter / augmenter |
 | `item.delta` | — | Quantité à ajouter (défaut : 1) |
 | `item.raison` | — | Raison enregistrée dans l'historique |
+
+---
+
+## Type `equiper` — équiper un item de l'inventaire
+
+Équipe un item **déjà présent dans l'inventaire** du héros dans le slot correspondant à son type.
+
+```json
+{ "type": "equiper", "equiper": { "id": "epee-magique" } }
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `id` | ★ | Identifiant de l'item à équiper (doit être dans l'inventaire) |
+
+> Si le slot cible est déjà occupé, l'occupant est déséquipé et retourne dans l'inventaire avant que le nouvel item soit équipé.
+> Si l'item n'est pas dans l'inventaire, ou si son `type` ne correspond à aucun slot, l'effet est silencieusement ignoré.
+
+---
+
+## Type `desequiper` — déséquiper un item équipé
+
+Déséquipe un item actuellement équipé. Par défaut, l'item retourne dans l'inventaire.
+
+```json
+{ "type": "desequiper", "desequiper": { "id": "epee" } }
+```
+
+Avec `jeter: true`, l'item est supprimé définitivement au lieu de retourner dans l'inventaire :
+
+```json
+{ "type": "desequiper", "desequiper": { "id": "epee", "jeter": true } }
+```
+
+| Champ | Obligatoire | Description |
+|-------|-------------|-------------|
+| `id` | ★ | Identifiant de l'item à déséquiper |
+| `jeter` | — | Si `true`, supprime l'item au lieu de le remettre dans l'inventaire (défaut : `false`) |
+
+> Si l'item n'est pas équipé, l'effet est silencieusement ignoré (Option A). Pour retirer un item qu'il soit équipé ou dans l'inventaire, utiliser `type: "item"` avec `delta: -1`.
+
+**Exemple — remplacer une arme équipée par une autre de l'inventaire :**
+```json
+"effets": [
+  { "type": "item",      "item":      { "id": "epee",        "delta": -1, "raison": "jetée dans la rivière" } },
+  { "type": "equiper",   "equiper":   { "id": "epee-magique" } }
+]
+```
 
 ---
 

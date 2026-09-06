@@ -93,6 +93,12 @@ export interface RegleTestStat {
     toujours?: Effet | string
     [resultat: string]: Effet | string | undefined
   }
+  /** Nombre total de tentatives. Défaut : 1. Toujours >= reussites_requises (enforced at runtime). */
+  tentatives?: number
+  /** Nombre de réussites nécessaires pour considérer l'action comme réussie. Défaut : 1. */
+  reussites_requises?: number
+  /** Si true, une défaite arrête immédiatement la séquence. Défaut : true. */
+  consecutif?: boolean
 }
 
 export interface RegleComposite {
@@ -203,6 +209,7 @@ export interface CombatEvent {
   ignorerDegats?: boolean    // true pour annuler les dégâts du coup qui déclenche l'action
   condition?: ChoiceCondition // condition pour déclencher l'action
   fin_combat?: boolean       // true = cache le bouton "Round suivant", le joueur doit choisir une option ou fuir
+  repeter?: boolean          // si true, l'event se redéclenche à chaque fois (non marqué comme déjà déclenché)
 }
 
 export interface CombatModifier {
@@ -270,6 +277,11 @@ export interface CombatPhaseOverrides {
     section: SectionRef
     effets?: Effet[]
   }
+  mort?: {
+    section?: SectionRef
+    end?: "defaite" | "victoire"
+    effets?: Effet[]
+  }
   fuite?: {
     section: SectionRef
     avant?: boolean
@@ -315,6 +327,18 @@ export interface CombatData {
     fuite_directe?: boolean    // si false, masque le bouton "Fuir directement" (défaut: true)
     fuite_chance?: boolean     // si false, masque le bouton "Tenter sa chance pour fuir" (défaut: true)
     effets?: Effet[]           // effets appliqués lors de la fuite (après le coût global)
+    tenter_chance?: {
+      echec_critique?: {
+        resultats: number[]    // valeurs du dé (2d6) considérées comme échec critique (ex: [11, 12])
+        section?: SectionRef   // section vers laquelle naviguer malgré l'échec
+        effets?: Effet[]       // effets appliqués en cas d'échec critique
+      }
+      reussite_critique?: {
+        resultats: number[]    // valeurs du dé (2d6) considérées comme réussite critique
+        section?: SectionRef   // section vers laquelle naviguer en cas de réussite critique
+        effets?: Effet[]       // effets appliqués en cas de réussite critique
+      }
+    }
   }
   defense?: {
     texte?: string            // libellé personnalisé du bouton de défense (ex: "Esquiver")
@@ -372,13 +396,32 @@ export interface EffetCombatDefense {
   resultats: Record<string, { delta: number }>     // clé: valeur exacte ("6") ou plage ("1-3"), valeur: delta dégâts
 }
 
+export interface EffetStatCombat {
+  name: 'attaque_heros' | 'attaque_monstre' | 'degats_heros' | 'degats_victoire' | 'degats_defaite'
+  delta?: number   // bonus/malus relatif (ex: +1, -2)
+  valeur?: number  // valeur absolue (ex: forcer les dégâts à 3)
+  raison?: string
+}
+
+export interface EffetEquiper {
+  id: string       // id de l'item à équiper (doit être dans l'inventaire)
+}
+
+export interface EffetDesequiper {
+  id: string       // id de l'item à déséquiper (doit être équipé)
+  jeter?: boolean  // si true, l'item est aussi supprimé après déséquipement
+}
+
 export interface Effet {
   type: string
   stat?: EffetStat          // pour type "stat" et "stat_total"
   item?: EffetItem          // pour type "item"
+  equiper?: EffetEquiper    // pour type "equiper"
+  desequiper?: EffetDesequiper  // pour type "desequiper"
   monstre_stat?: EffetMonstreStat  // pour type "monstre_stat"
   combat?: EffetCombat      // pour type "combat"
   combat_defense?: EffetCombatDefense  // pour type "combat_defense" (sur item équipé)
+  stat_combat?: EffetStatCombat  // pour type "stat_combat" (bonus permanent de combat via item équipé)
   condition?: ChoiceCondition
   cout?: CoutEffet[]        // coût appliqué quand l'effet est déclenché (ex: consommer 1 repas)
   trigger?: string          // trigger moteur à activer après exécution (ex: "item_dropped")
@@ -397,7 +440,7 @@ export type SectionRef = number | { param: string }
 // ─── Condition et coût sur un choix ──────────────────────────────────────────
 
 export interface ChoiceCondition {
-  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name' | 'item_name' | 'section-connue' | 'nth_item_acquired'
+  type: 'item_quantite' | 'item_type_quantite' | 'retour' | 'first_visit' | 'action_resolved' | 'combat_victoire' | 'combat_degats_monstre' | 'combat_degats_heros' | 'trigger' | 'no_droppable_item' | 'no_droppable_equip' | 'monstre_mort' | 'stat' | 'expr' | 'and' | 'or' | 'item_equipe_name' | 'item_name' | 'section-connue' | 'nth_item_acquired' | 'groupe_utilise'
   item_id?: string        // pour item_quantite ; pour nth_item_acquired : l'item attendu à la position n
   item_type?: string      // pour item_type_quantite : type sémantique de l'item (ex: "clef")
   quantite?: number       // pour item_quantite / item_type_quantite / stat
@@ -412,6 +455,7 @@ export interface ChoiceCondition {
   degats_min?: number     // pour combat_degats_monstre/heros : dégâts minimum
   degats_max?: number     // pour combat_degats_monstre/heros : dégâts maximum
   trigger?: string        // pour trigger : nom du trigger à vérifier (ex: "item_dropped", "corde_coupe")
+  groupe?: string         // pour groupe_utilise : identifiant du groupe de choix à vérifier
   conditions?: ChoiceCondition[]  // pour and/or : liste de sous-conditions
   texte?: string          // pour item_equipe_name : texte à chercher dans le nom de l'item équipé
   contains?: boolean      // pour item_equipe_name : true = contient (pas égalité stricte), false = égalité stricte
@@ -471,6 +515,7 @@ export interface Choice {
   section?: SectionRef
   local?: boolean           // true = reste sur la même section, false/absent = change de section
   utilisations?: number     // nombre de fois utilisable (absent = infini)
+  groupe?: string           // identifiant de groupe : quand un choix du groupe est pris, tous sont épuisés
   condition?: ChoiceCondition
   cout?: CoutEffet[]
   effets?: Effet[]
@@ -569,6 +614,7 @@ export interface SaveState {
   timestamp: number
   choixUtilisations?: Record<string, number>  // Track des utilisations par choix (clé: "section_numero-choix_index")
   regleUtilisations?: Record<string, number>  // Track des utilisations des règles (clé: "section-N-règle", "section_courante-règle", "combat-règle", "aventure-règle")
+  groupeUtilisations?: Record<string, number>  // Track des utilisations par groupe (clé: "section_numero-groupe_id")
   pendingMonsterStatMods?: Record<string, EffetMonstreStat[]>  // Mods en attente pour les monstres (clé: monstre_id ou "__any__")
   currentSectionParams?: Record<string, number>  // Paramètres transmis à la section courante via section_params
 }
@@ -607,13 +653,32 @@ export interface PendingRoll {
  * L'UI ouvre une seconde modale, puis appelle resolveGainRoll() avec le résultat.
  */
 export interface PendingGainRoll {
-  formula: string      // ex: "2d6"
+  formula: string      // ex: "2d6" ou "-2d6" (négatif)
   label: string        // ex: "Lancez 2 dés — Pièces d'Or"
-  itemName: string     // id de l'item à créditer
-  itemLabel: string    // label affiché (= itemName si pas de label séparé)
+  itemId?: string      // id de l'item (prioritaire sur itemName)
+  itemName: string     // id de l'item à créditer (legacy)
+  itemLabel: string    // label affiché
   raison: string       // raison pour l'historique
   targetSection: number
   remainingEffets: Effet[]  // autres effets de si_reussi sans delta_de, déjà appliqués
+}
+
+/**
+ * État intermédiaire pour une action avec plusieurs tentatives de jet (tentatives > 1).
+ * Produit par resolveActionChoice quand la règle a tentatives > 1.
+ * L'UI relance les dés pour chaque tentative restante, puis appelle resolveMultiRoll().
+ */
+export interface PendingMultiRoll {
+  choice: Choice             // le Choice en cours (pour continuer après chaque jet)
+  formula: string            // formule de dés (ex: "2d6")
+  label: string              // libellé affiché dans la modale
+  tentativesRestantes: number
+  tentativesTotal: number    // nombre total de tentatives (pour l'affichage)
+  tentativeCourante: number  // numéro de la tentative en cours (1-indexé)
+  reussitesRestantes: number
+  reussitesRequises: number  // nombre total de réussites requises (pour l'affichage)
+  consecutif: boolean        // si true, une défaite arrête la séquence immédiatement
+  reussiteKey: string        // clé de résultat "succes" (ex: "chanceux")
 }
 
 export interface RollResult {
@@ -743,6 +808,9 @@ export interface CombatState {
   actionLancee?: string           // action lancée dans ce round (attaque_chance, defense_chance, etc.)
   // Tracking de l'attaque spéciale
   compteurAttaqueSpeciale?: number  // nombre de fois que l'attaque spéciale s'est déclenchée (pour declencheur par occurrence)
+  // Effets à appliquer en fin de phase (victoire/mort/fuite d'une phase intermédiaire)
+  // Rempli par CombatResolver, consommé et vidé par GameEngine avant la transition
+  phaseEndEffects?: { effets: Effet[]; label: string }[]
 }
 
 // ─── Machine à états création héros ──────────────────────────────────────────

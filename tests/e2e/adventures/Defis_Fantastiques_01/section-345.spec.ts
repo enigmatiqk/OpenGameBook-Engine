@@ -7,7 +7,7 @@ const SECTION_NUMBER = 345
 const SECTION_TEXT = "Vous suivez le passage qui"
 const SECTION_CHOICES = {
   381: "Continuer tout droit",
-  311: "Prendre à gauche"
+  311: "Prendre à droite"
 }
 
 test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {

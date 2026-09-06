@@ -1,5 +1,6 @@
 import type { Hero, Adventure, Regle, CombatState, Effet, Choice } from '../types'
 import { GameEngineHero } from './GameEngineHero'
+import { parseDiceFormula } from './CombatResolver'
 
 /**
  * Gère la résolution des actions et des règles
@@ -586,18 +587,31 @@ export class GameEngineActions {
     pending: import('../types').PendingGainRoll,
     rolls: number[]
   ): { targetSection: number; itemName: string; totalGained: number } {
-    const total = rolls.reduce((a, b) => a + b, 0)
-    const itemName = pending.itemName
-    const existingItem = hero.inventaire.find(i => typeof i !== 'string' && i.id === itemName)
+    const rawTotal = rolls.reduce((a, b) => a + b, 0)
+    // Tient compte du signe négatif dans la formule ("-2d6")
+    let total = rawTotal
+    if (pending.formula) {
+      try {
+        const { negative, modifier } = parseDiceFormula(pending.formula)
+        total = (negative ? -rawTotal : rawTotal) + modifier
+      } catch { /* formule inconnue, on garde rawTotal */ }
+    }
+    const itemId = pending.itemId ?? pending.itemName
+    const existingItem = hero.inventaire.find(i => typeof i !== 'string' && (i as any).id === itemId)
     if (existingItem && typeof existingItem !== 'string') {
       existingItem.quantite = (existingItem.quantite ?? 0) + total
-    } else {
-      hero.inventaire.push({ id: itemName, label: pending.itemLabel, quantite: total })
+      if ((existingItem.quantite ?? 0) <= 0) {
+        hero.inventaire.splice(hero.inventaire.indexOf(existingItem), 1)
+      }
+    } else if (total > 0) {
+      hero.inventaire.push({ id: itemId, label: pending.itemLabel, quantite: total })
     }
-    hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: total, value_string: itemName, tags: ['item', 'add'], raison: pending.raison })    
+    if (total !== 0) {
+      hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: total, value_string: itemId, tags: total > 0 ? ['item', 'add'] : ['item', 'remove'], raison: pending.raison })
+    }
     return {
       targetSection: pending.targetSection,
-      itemName,
+      itemName: itemId,
       totalGained: total
     }
   }
@@ -610,13 +624,14 @@ export class GameEngineActions {
     hero: Hero,
     choice: Choice,
     rolls: number[],
-    applyEffets: (effets: Effet[], label: string) => void,
+    applyEffets: (effets: Effet[], label: string, context?: { resultat_de?: number }) => void,
     recordActionResult: (actionName: string, resultat: string) => void,
     recordTrigger: (trigger: string) => void,
     resolveSection: (ref: import('../types').SectionRef) => number
   ): {
     targetSection?: number;
     pendingGainRoll?: import('../types').PendingGainRoll;
+    pendingMultiRoll?: import('../types').PendingMultiRoll;
     endValue?: 'victoire' | 'defaite';
   } {
     if (!choice.action) throw new Error('Ce choix n\'a pas d\'action.')
@@ -641,9 +656,73 @@ export class GameEngineActions {
     const actionName = typeof action === 'string' ? action : (action as any).name
     if (!actionName) throw new Error('Action name not found')
 
+    // Résout la règle de base en tenant compte d'une éventuelle surcharge locale
+    const regleSurcharge = (choice as any).regle_surcharge as Record<string, unknown> | undefined
+    const regleBase = GameEngineActions.getRegle(adventure, actionName)
+    const regleMerged = regleBase && regleSurcharge ? { ...regleBase, ...regleSurcharge } : regleBase
+
+    // Résout les paramètres multi-tentatives depuis :
+    // 1. l'objet action lui-même (priorité maximale — surcharge inline dans sections.json)
+    // 2. la règle fusionnée (regles.json + regle_surcharge)
+    // Règle : tentatives >= reussites_requises (on prend le max pour garantir la cohérence)
+    const actionProps = typeof choice.action === 'object' ? (choice.action as any) : {}
+    const reussitesRequises: number = actionProps.reussites_requises ?? (regleMerged as any)?.reussites_requises ?? 1
+    const consecutif: boolean = actionProps.consecutif ?? (regleMerged as any)?.consecutif ?? true
+    const tentativesBrutes: number = actionProps.tentatives ?? (regleMerged as any)?.tentatives ?? 1
+    const tentativesTotal = Math.max(tentativesBrutes, reussitesRequises)
+
+    // Résout la première tentative
     const resultat = GameEngineActions.resolveRegle(adventure, hero, actionName, rolls,
       (effets, label) => applyEffets(effets, label)
     )
+
+    const reussiteKey = GameEngineActions.getRegleSuccesKey(adventure, actionName)
+    const isSuccess = resultat === reussiteKey
+    const reussitesObtenues = isSuccess ? 1 : 0
+
+    // Si multi-tentatives : vérifie si la séquence doit continuer
+    if (tentativesTotal > 1) {
+      // Défaite immédiate avec consecutif=true → on arrête tout de suite
+      if (!isSuccess && consecutif) {
+        recordActionResult(actionName, resultat)
+        // Extrait les outcomes
+        const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+          ? choice.action as import('../types').ActionRegle : null
+        const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
+        return this._applyOutcome(si_echoue, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+      }
+
+      const tentativesRestantes = tentativesTotal - 1
+      const reussitesRestantes = reussitesRequises - reussitesObtenues
+
+      // Toutes les réussites atteintes dès la 1ère tentative (cas tentativesTotal=1 déjà géré, mais par cohérence)
+      if (reussitesRestantes <= 0) {
+        recordActionResult(actionName, reussiteKey)
+        const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+          ? choice.action as import('../types').ActionRegle : null
+        const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
+        return this._applyOutcome(si_reussi, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+      }
+
+      // Tentatives restantes à effectuer → retourne un PendingMultiRoll
+      const formula = GameEngineActions.getActionFormula(adventure, actionName)
+      return {
+        pendingMultiRoll: {
+          choice,
+          formula,
+          label: choice.texte,
+          tentativesRestantes,
+          tentativesTotal,
+          tentativeCourante: 2,  // la 1ère tentative vient d'être résolue
+          reussitesRestantes,
+          reussitesRequises,
+          consecutif,
+          reussiteKey,
+        }
+      }
+    }
+
+    // Cas standard (1 seule tentative) — chemin original
     recordActionResult(actionName, resultat)
 
     // Extrait les outcomes (ancien format vs nouveau)
@@ -652,95 +731,189 @@ export class GameEngineActions {
       : null
     const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
     const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
-
-    // Applique les effets du résultat
-    const isSuccess = resultat === GameEngineActions.getRegleSuccesKey(adventure, actionName)
     const outcome = isSuccess ? si_reussi : si_echoue
+    return this._applyOutcome(outcome, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+  }
 
-    if (outcome) {
-      // Vérifie si un effet item avec delta_de nécessite un jet manuel
-      const effets: Effet[] = outcome.effets ?? []
-      const gainDiceEffet = effets.find(e => e.type === 'item' && e.item?.delta_de)
-      
-      if (gainDiceEffet?.item?.delta_de) {
-        // Applique les effets sans delta_de immédiatement
-        const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
-        if (autresEffets.length > 0) applyEffets(autresEffets, choice.texte)
-        
-        // Applique les items gagnés
-        if (outcome.items && hero) {
-          for (const itemGain of outcome.items) {
-            GameEngineHero.addItemGain(hero, itemGain, adventure.personnage.emplacements_equipement ?? {})
-          }
-        }
-        
-        const targetSection = outcome.choix?.section !== undefined ? resolveSection(outcome.choix.section) : undefined
-        if (!targetSection) throw new Error('outcome avec delta_de doit avoir choix.section')
-        
-        return {
-          pendingGainRoll: {
-            formula: gainDiceEffet.item.delta_de,
-            label: `Lancez les dés — ${gainDiceEffet.item.name}`,
-            itemName: gainDiceEffet.item.name,
-            itemLabel: gainDiceEffet.item.name,
-            raison: gainDiceEffet.item.raison ?? choice.texte,
-            targetSection,
-            remainingEffets: [],
-          }
-        }
+  /**
+   * Continue une séquence de multi-tentatives avec le résultat du jet courant.
+   * Appelé par le moteur après chaque jet intermédiaire.
+   */
+  resolveMultiRoll(
+    adventure: Adventure,
+    hero: Hero,
+    pending: import('../types').PendingMultiRoll,
+    rolls: number[],
+    applyEffets: (effets: Effet[], label: string) => void,
+    recordActionResult: (actionName: string, resultat: string) => void,
+    recordTrigger: (trigger: string) => void,
+    resolveSection: (ref: import('../types').SectionRef) => number
+  ): {
+    targetSection?: number;
+    pendingMultiRoll?: import('../types').PendingMultiRoll;
+    endValue?: 'victoire' | 'defaite';
+  } {
+    const choice = pending.choice
+    const actionName = typeof choice.action === 'string' ? choice.action : (choice.action as any).name
+
+    // Résout cette tentative (les effets "toujours" sont appliqués à chaque jet)
+    const resultat = GameEngineActions.resolveRegle(adventure, hero, actionName, rolls,
+      (effets, label) => applyEffets(effets, label)
+    )
+
+    const isSuccess = resultat === pending.reussiteKey
+    const nouvellesReussites = isSuccess ? pending.reussitesRestantes - 1 : pending.reussitesRestantes
+    const tentativesRestantes = pending.tentativesRestantes - 1
+
+    // Défaite avec consecutif=true → séquence échouée
+    if (!isSuccess && pending.consecutif) {
+      recordActionResult(actionName, resultat)
+      const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+        ? choice.action as import('../types').ActionRegle : null
+      const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
+      return this._applyOutcome(si_echoue, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+    }
+
+    // Toutes les réussites atteintes → succès global
+    if (nouvellesReussites <= 0) {
+      recordActionResult(actionName, pending.reussiteKey)
+      const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+        ? choice.action as import('../types').ActionRegle : null
+      const si_reussi = actionObj?.si_reussi || (choice as any).si_reussi
+      return this._applyOutcome(si_reussi, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+    }
+
+    // Plus de tentatives disponibles → échec global (réussites insuffisantes)
+    if (tentativesRestantes <= 0) {
+      const echecKey = Object.values(
+        (GameEngineActions.getRegle(adventure, actionName) as any)?.resultats ?? {}
+      ).find((v) => v !== pending.reussiteKey) as string | undefined ?? resultat
+      recordActionResult(actionName, echecKey)
+      const actionObj = typeof choice.action === 'object' && (choice.action as any).type !== 'lancer_de'
+        ? choice.action as import('../types').ActionRegle : null
+      const si_echoue = actionObj?.si_echoue || (choice as any).si_echoue
+      return this._applyOutcome(si_echoue, hero, adventure, choice, applyEffets, recordTrigger, resolveSection, rolls)
+    }
+
+    // Séquence toujours en cours → prochaine tentative
+    return {
+      pendingMultiRoll: {
+        ...pending,
+        tentativesRestantes,
+        tentativeCourante: pending.tentativeCourante + 1,
+        reussitesRestantes: nouvellesReussites,
       }
-      
-      // Pas de delta_de — chemin normal
-      if (outcome.effets) {
-        applyEffets(outcome.effets, choice.texte)
-      }
-      
-      // Applique les items gagnés
+    }
+  }
+
+  /**
+   * Applique un outcome (si_reussi ou si_echoue) et retourne le résultat de navigation.
+   */
+  private _applyOutcome(
+    outcome: import('../types').ActionOutcome | undefined,
+    hero: Hero,
+    adventure: Adventure,
+    choice: Choice,
+    applyEffets: (effets: Effet[], label: string, context?: { resultat_de?: number }) => void,
+    recordTrigger: (trigger: string) => void,
+    resolveSection: (ref: import('../types').SectionRef) => number,
+    rolls?: number[]
+  ): {
+    targetSection?: number;
+    pendingGainRoll?: import('../types').PendingGainRoll;
+    endValue?: 'victoire' | 'defaite';
+  } {
+    if (!outcome) return {}
+
+    const resultat_de = rolls ? rolls.reduce((a, b) => a + b, 0) : undefined
+    const context = resultat_de !== undefined ? { resultat_de } : undefined
+
+    // Vérifie si un effet item avec delta_de nécessite un jet manuel
+    const effets: Effet[] = outcome.effets ?? []
+    // Ne déclenche pas pendingGainRoll si c'est {resultat_de} — on applique directement
+    const gainDiceEffet = effets.find(e =>
+      e.type === 'item' && e.item?.delta_de &&
+      !e.item.delta_de.trim().replace(/^-/, '').trim().startsWith('{resultat_de}')
+    )
+
+    if (gainDiceEffet?.item?.delta_de) {
+      const targetSection = outcome.choix?.section !== undefined
+        ? resolveSection(outcome.choix.section)
+        : 0  // 0 = rester sur la section courante
+
+      // Chemin interactif : affiche un bouton de lancer
+      const autresEffets = effets.filter(e => !(e.type === 'item' && e.item?.delta_de))
+      if (autresEffets.length > 0) applyEffets(autresEffets, choice.texte)
+
       if (outcome.items && hero) {
         for (const itemGain of outcome.items) {
           GameEngineHero.addItemGain(hero, itemGain, adventure.personnage.emplacements_equipement ?? {})
         }
       }
-      
-      // Active le trigger de l'outcome si défini
-      if (outcome.trigger) {
-        recordTrigger(outcome.trigger)
-      }
 
-      // Gère end selon le résultat
-      if (outcome.end) {
-        return { endValue: outcome.end }
+      return {
+        pendingGainRoll: {
+          formula: gainDiceEffet.item.delta_de,
+          label: `Lancez les dés — ${gainDiceEffet.item.name ?? gainDiceEffet.item.id}`,
+          itemName: gainDiceEffet.item.name ?? gainDiceEffet.item.id ?? '',
+          itemLabel: gainDiceEffet.item.name ?? gainDiceEffet.item.id ?? '',
+          raison: gainDiceEffet.item.raison ?? choice.texte,
+          targetSection,
+          remainingEffets: [],
+        }
       }
-
-      // Navigation
-      const targetSection = outcome.choix?.section !== undefined ? resolveSection(outcome.choix.section) : undefined
-      return { targetSection }
     }
 
-    return {}
+    // Chemin normal
+    if (outcome.effets) {
+      applyEffets(outcome.effets, choice.texte, context)
+    }
+
+    // Applique les items gagnés
+    if (outcome.items && hero) {
+      for (const itemGain of outcome.items) {
+        GameEngineHero.addItemGain(hero, itemGain, adventure.personnage.emplacements_equipement ?? {})
+      }
+    }
+
+    // Active le trigger de l'outcome si défini
+    if (outcome.trigger) {
+      recordTrigger(outcome.trigger)
+    }
+
+    // Gère end selon le résultat
+    if (outcome.end) {
+      return { endValue: outcome.end }
+    }
+
+    // Navigation
+    const targetSection = outcome.choix?.section !== undefined ? resolveSection(outcome.choix.section) : undefined
+    return { targetSection }
   }
 
   /**
    * Résout une action de fuite : lance les dés et applique les effets via applyEffets
+   * Retourne { log, resultat } — resultat = "chanceux" | "malchanceux" | null
    */
   static resolveFuiteAction(
     adventure: Adventure | null,
     hero: Hero | null,
     rolls: number[],
     applyEffets: (effets: Effet[], label: string) => void
-  ): string[] {
-    if (!adventure) return []
+  ): { log: string[]; resultat: string | null } {
+    if (!adventure) return { log: [], resultat: null }
 
     const fuiteAction = adventure.regles.combat.events?.fuite
-    if (!fuiteAction) return []
+    if (!fuiteAction) return { log: [], resultat: null }
 
     const regle = GameEngineActions.getRegle(adventure, fuiteAction)
-    if (!regle) return []
+    if (!regle) return { log: [], resultat: null }
 
     const log: string[] = []
+    let resultat: string | null = null
 
     if (regle.type === 'composite') {
-      const resultat = GameEngineActions.resolveRegle(adventure, hero, regle.utilise, rolls, applyEffets)
+      resultat = GameEngineActions.resolveRegle(adventure, hero, regle.utilise, rolls, applyEffets)
 
       const effetsResultat = regle.effets[resultat]
       if (effetsResultat) {
@@ -749,6 +922,6 @@ export class GameEngineActions {
       }
     }
 
-    return log
+    return { log, resultat }
   }
 }

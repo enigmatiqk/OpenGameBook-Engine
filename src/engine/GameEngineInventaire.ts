@@ -273,7 +273,7 @@ export class GameEngineInventaire {
       const section = adventure.sections.find(s => s.numero === currentSection)
       if (section?.equipement_dropable === true) return true
       const debugConds = initDebugConditions()
-      if (debugConds.item_dropable) return true
+      if (debugConds.equip_dropable) return true
     }
     return false
   }
