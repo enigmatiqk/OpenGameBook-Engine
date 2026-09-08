@@ -41,3 +41,7 @@ export async function combatMonstreSuivant(page: Page) {
 export async function combatResultat(page: Page) {
   await page.click('button.combat-next-btn')
 }
+
+export async function combatFuiteDirecte(page: Page) {
+  await page.click('.combat-fuite-direct-btn')
+}

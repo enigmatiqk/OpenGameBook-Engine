@@ -61,6 +61,7 @@ interface DebugParams {
   // Combat
   monstre_endurance:  string
   monstre_habilete:   string
+  monstre_data:       string  // format : id:habilete:endurance:endurance_start (alias monstre1_data)
   // Équipement debug
   equip:              string
   equip2:             string
@@ -73,6 +74,7 @@ interface DebugParams {
   item_quantite:      string
   ignore_stat_limit:  boolean
   item_dropable:      boolean
+  equipement_dropable: boolean
   show_section:       boolean
 }
 
@@ -101,6 +103,7 @@ function parseCurrentParams(): DebugParams {
     item3_count:       p.get('item3_count')       ?? '',
     monstre_endurance: p.get('monstre_endurance') ?? '',
     monstre_habilete:  p.get('monstre_habilete')  ?? '',
+    monstre_data:      p.get('monstre_data') ?? p.get('monstre1_data') ?? '',
     equip:             p.get('equip')              ?? '',
     equip2:            p.get('equip2')             ?? '',
     equip3:            p.get('equip3')             ?? '',
@@ -111,6 +114,7 @@ function parseCurrentParams(): DebugParams {
     item_quantite:     p.get('item_quantite')     ?? '',
     ignore_stat_limit: p.has('ignore_stat_limit'),
     item_dropable:     p.has('item_dropable'),
+    equipement_dropable: p.has('equipement_dropable'),
     show_section:      p.has('show_section'),
   }
 }
@@ -141,6 +145,7 @@ function buildUrl(params: DebugParams): string {
   set('item3_count',        params.item3_count)
   set('monstre_endurance',  params.monstre_endurance)
   set('monstre_habilete',   params.monstre_habilete)
+  set('monstre_data',       params.monstre_data)
   set('equip',              params.equip)
   set('equip2',             params.equip2)
   set('equip3',             params.equip3)
@@ -150,7 +155,8 @@ function buildUrl(params: DebugParams): string {
   if (params.action_resolved.trim()) p.set('action_resolved', params.action_resolved.trim())
   set('item_quantite',      params.item_quantite)
   if (params.ignore_stat_limit) p.set('ignore_stat_limit', '__FLAG__')
-  if (params.item_dropable)     p.set('item_dropable',     '__FLAG__')
+  if (params.item_dropable)         p.set('item_dropable',         '__FLAG__')
+  if (params.equipement_dropable)   p.set('equipement_dropable',   '__FLAG__')
   if (params.show_section)      p.set('show_section',      '__FLAG__')
 
   const qs = p.toString()
@@ -431,6 +437,7 @@ export function showDebugPanel(): void {
 
   addRow(secCombat, 'monstre_endurance', '', makeInput(params, 'monstre_endurance', S.input, updatePreview))
   addRow(secCombat, 'monstre_habilete', '', makeInput(params, 'monstre_habilete', S.input, updatePreview))
+  addRow(secCombat, 'monstre_data', 'id:hab:end:end_start', makeInput(params, 'monstre_data', S.input, updatePreview))
   panel.appendChild(secCombat)
 
   // ── Section : Équipement ──────────────────────────────────────────────────
@@ -503,18 +510,8 @@ export function showDebugPanel(): void {
   islRow.append(islLabel, islCb, islHint)
   secDev.appendChild(islRow)
 
-  // item_dropable checkbox
-  const idRow = document.createElement('div')
-  idRow.setAttribute('style', S.row)
-  const idLabel = document.createElement('span')
-  idLabel.setAttribute('style', S.label)
-  idLabel.textContent = 'item_dropable'
-  const idCb = makeCheckbox(params, 'item_dropable', updatePreview)
-  const idHint = document.createElement('span')
-  idHint.setAttribute('style', S.hint)
-  idHint.textContent = 'force le mode "jeter" sur la section courante'
-  idRow.append(idLabel, idCb, idHint)
-  secDev.appendChild(idRow)
+  addRow(secDev, 'item_dropable', 'force le mode "jeter" sur la section courante', makeCheckbox(params, 'item_dropable', updatePreview))
+  addRow(secDev, 'equipement_dropable', 'force le mode "jeter" sur l\'équipement équipé', makeCheckbox(params, 'equipement_dropable', updatePreview))
 
   // show_section checkbox
   const ssRow = document.createElement('div')

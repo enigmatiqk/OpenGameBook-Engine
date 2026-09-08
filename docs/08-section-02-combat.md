@@ -56,6 +56,65 @@ Une section peut contenir un bloc `combat` décrivant un ou plusieurs ennemis à
 | `face` | — | Numéro de face du dé (mode `lancer_de` uniquement) |
 | `persistant` | — | `true` si le monstre persiste entre les sections (son endurance est sauvegardée) |
 | `effets` | — | Effets appliqués à chaque round (voir [Effets sur un monstre](#effets-sur-un-monstre)) |
+| `condition` | — | Condition d'activation de ce monstre — seuls les monstres dont la condition est vraie sont mis en combat (voir [Condition sur un monstre](#condition-sur-un-monstre)) |
+| `modifier` | — | Modifications de stats appliquées avant le combat via un jet de dé ou un delta fixe (voir [Modifier sur un monstre](#modifier-sur-un-monstre)) |
+
+---
+
+## Condition sur un monstre
+
+Un monstre peut porter une `condition` qui détermine s'il est mis en combat. Quand plusieurs monstres sont dans une phase de type `groupe`, seuls ceux dont la condition est vraie sont retenus.
+
+```json
+"monstres": [
+  {
+    "nom": "PIRANHAS", "habilete": 5, "endurance": 1,
+    "condition": { "type": "combat_degats_monstre", "id": "crocodile" }
+  },
+  {
+    "nom": "PIRANHAS", "habilete": 5, "endurance": 5,
+    "condition": { "type": "combat_degats_monstre", "id": "crocodile", "not": true }
+  }
+]
+```
+
+`combat_degats_monstre` avec `id` est vrai si le monstre persistant identifié a `endurance < endurance_start` (blessé ou mort). Le champ `not: true` inverse la condition.
+
+Toutes les conditions de `ChoiceCondition` sont supportées (voir [08-section-01-choix.md](08-section-01-choix.md)).
+
+---
+
+## Modifier sur un monstre
+
+Un monstre peut porter un tableau `modifier` qui modifie ses stats avant le début du combat.
+
+### type `stat` — delta fixe
+
+```json
+"modifier": [
+  { "type": "stat", "stat": "endurance", "delta": -2 }
+]
+```
+
+### type `lancer_de` — jet de dé interactif
+
+Le joueur lance un dé avant le combat. Le résultat est mappé via `resultats` vers un objet `{ "delta", "stat" }`. Si `stat` est absent, défaut `"endurance"`.
+
+```json
+"modifier": [
+  {
+    "type": "lancer_de",
+    "lancer_de": {
+      "choix": "1d6",
+      "resultats": {
+        "3-6": { "delta": -4, "stat": "endurance" }
+      }
+    }
+  }
+]
+```
+
+> Si le résultat du dé ne correspond à aucune entrée de `resultats`, aucun modificateur n'est appliqué.
 
 ---
 

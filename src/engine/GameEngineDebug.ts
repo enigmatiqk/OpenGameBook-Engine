@@ -60,8 +60,8 @@ export interface DebugConditions {
   action_resolved?: string
   item_quantite?: { item_id: string; quantite: number }
   ignore_stat_limit?: boolean
-  item_dropable?: boolean    // force item_dropable: true sur la section courante
-  equip_dropable?: boolean   // force equipement_dropable: true sur la section courante
+  item_dropable?: boolean         // force item_dropable: true sur la section courante
+  equipement_dropable?: boolean   // force equipement_dropable: true sur la section courante
 }
 
 /**
@@ -108,9 +108,9 @@ export function initDebugConditions(): DebugConditions {
     conditions.item_dropable = true
   }
 
-  // equip_dropable (présence seule) — force equipement_dropable: true sur la section courante
-  if (params.has('equip_dropable')) {
-    conditions.equip_dropable = true
+  // equipement_dropable (présence seule) — force equipement_dropable: true sur la section courante
+  if (params.has('equipement_dropable')) {
+    conditions.equipement_dropable = true
   }
 
   return conditions

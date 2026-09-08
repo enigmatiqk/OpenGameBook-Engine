@@ -1,12 +1,15 @@
 ﻿import { test, expect} from '@playwright/test'
-import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure, testStat, testMonnaie } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, navigationTests, screenshotOnFailure, testItem, testStat, gotoWithParams } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 218
 const SECTION_TEXT = "Vous vous trouvez sur la berge"
+const SECTION_CHOICES_DISABLED = {
+  0: "Prendre un repas",
+  3: "Sonner la cloche"
+}
 const SECTION_CHOICES = {
-  3: "Sonner la cloche",
   386: "Utiliser le radeau",
   209: "Se risquer sur le pont",
   316: "Je prefère nager"
@@ -28,23 +31,54 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Boutons de choix', async ({ page }) => {
-    await testChoiceButtons(page, SECTION_CHOICES)
+    await testChoiceButtons(page, { ...SECTION_CHOICES, ...SECTION_CHOICES_DISABLED})
   })
 
   navigationTests(test, SECTION_CHOICES)
 
 
+  test('no repas', async ({ page }) => {
+    const button = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+    await expect(button).toBeDisabled()
+  })
+
+  test('no repas avec des repas', async ({ page }) => {
+    const button = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+    await expect(button).toBeDisabled()
+  })
+
+  test('repas avec repas et si arrive de 158', async ({ page }) => {
+    await gotoWithParams(page, { endurance:'10', 'item_id':'repas', item_count:'2',sn1: '158', ignore_stat_limit:''})
+
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+
+    await testItem(page, "repas",1)
+    await testStat(page, "endurance", 14)
+    const button = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+    await expect(button).toBeDisabled()
+  })
+
+    test('repas avec repas et si arrive de 316', async ({ page }) => {
+    await gotoWithParams(page, { endurance:'10', 'item_id':'repas', item_count:'2',sn1: '316' , ignore_stat_limit:''})
+
+    await page.click(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+
+    await testItem(page, "repas",1)
+    await testStat(page, "endurance", 14)
+    const button = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[0]}")`)
+    await expect(button).toBeDisabled()
+  })
+
   test("pas d'or pour la cloche", async ({ page }) => {
-    const btn_cloche = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[3]}")`)
+    const btn_cloche = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[3]}")`)
     await expect(btn_cloche).toBeDisabled()
   })
 
   //ne consomme pas d'or, juste une condition
   test("de l'or la cloche", async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&item_id=piece-or&item_count=5`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {item_id: 'piece-or', item_count: '5'})
 
-    const btn_repas = page.locator(`.choices-list button:has-text("${SECTION_CHOICES[3]}")`)
+    const btn_repas = page.locator(`.choices-list button:has-text("${SECTION_CHOICES_DISABLED[3]}")`)
     await btn_repas.click()
 
     await testSection(page, 3)

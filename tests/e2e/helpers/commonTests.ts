@@ -118,16 +118,12 @@ export function navigationTests(test: (name: string, fn: (args: { page: Page }) 
 }
 
 export function repasTests(test: (name: string, fn: (args: { page: Page }) => Promise<void>) => void, button_name: string) {
-
-
   test('no repas', async ({ page }) => {
     const button = page.locator(`.choices-list button:has-text("${button_name}")`)
     await expect(button).toBeDisabled()
   })
 
   test('repas', async ({ page }) => {
-    // await page.goto(`/?adventure=${adventure_id}&section=${section_number}&endurance=10&item_id=repas&item_count=2&ignore_stat_limit`)
-    // await page.waitForSelector('.section-text')
     await gotoWithParams(page, { endurance:'10', 'item_id':'repas', item_count:'2', ignore_stat_limit:''})
 
     await page.click(`.choices-list button:has-text("${button_name}")`)
@@ -196,15 +192,16 @@ export async function dropEquipment(page: Page, item_id: string) {
 
 
 /**
- * Vérifie qu'un item est équipé sur la fiche du heros
+ * Vérifie qu'un item est équipé (ou non) sur la fiche du heros
  * @param page - La page Playwright
- * @param item_id - l'id DOM de l'equiment (ex: "casque-bronze")
+ * @param item_id - l'id DOM de l'équipement (ex: "casque-bronze")
+ * @param equipped - true (défaut) : vérifie que l'item est équipé ; false : vérifie qu'il a été droppé
  */
-export async function testEquipement(page: Page, item_id: string) {
+export async function testEquipement(page: Page, item_id: string, equipped = true) {
   await showFicheHero(page)
 
   const item = page.locator(`.equipment-grid-rpg .slot-item#${item_id}`)
-  await expect(item).toHaveCount(1)
+  await expect(item).toHaveCount(equipped ? 1 : 0)
 }
 
 /**

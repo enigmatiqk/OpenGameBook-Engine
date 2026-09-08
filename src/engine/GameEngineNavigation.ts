@@ -197,26 +197,38 @@ export class GameEngineNavigation {
       }
     } else if (cond.type === 'combat_degats_monstre') {
       // Vérifier les dégâts infligés au monstre du combat précédent
-      const lastCombatState = this.lastCombatState
-      if (!lastCombatState) {
-        conditionOk = false
-        raison = 'Aucun combat précédent'
-      } else {
-        let degats = 0
-        if (cond.id) {
-          // Chercher les dégâts pour un monstre persistant spécifique
-          degats = lastCombatState.totalDegatsMonsterById?.[cond.id] ?? 0
-        } else {
-          // Utiliser les dégâts totaux du dernier monstre combattu
-          degats = lastCombatState.totalDegatsMonster ?? 0
-        }
-        
-        const min = cond.degats_min ?? 0
-        const max = cond.degats_max ?? Infinity
-        
-        if (degats < min || degats > max) {
+      // Si cond.id est fourni, on cherche d'abord dans monstres_stats (persistance inter-sections).
+      // Sinon (ou si pas d'entrée persistante), on utilise le dernier combat en mémoire.
+      if (cond.id && hero.monstres_stats?.[cond.id]) {
+        // Monstre persistant : blessé si endurance courante < endurance_start (couvre mort aussi)
+        const saved = hero.monstres_stats[cond.id]
+        const estBlesse = saved.endurance < saved.endurance_start
+        if (!estBlesse) {
           conditionOk = false
-          raison = `Dégâts au monstre insuffisants (${degats})`
+          raison = `Le monstre "${cond.id}" n'a pas encore été blessé`
+        }
+      } else {
+        const lastCombatState = this.lastCombatState
+        if (!lastCombatState) {
+          conditionOk = false
+          raison = 'Aucun combat précédent'
+        } else {
+          let degats = 0
+          if (cond.id) {
+            // Chercher les dégâts pour un monstre persistant spécifique
+            degats = lastCombatState.totalDegatsMonsterById?.[cond.id] ?? 0
+          } else {
+            // Utiliser les dégâts totaux du dernier monstre combattu
+            degats = lastCombatState.totalDegatsMonster ?? 0
+          }
+          
+          const min = cond.degats_min ?? 0
+          const max = cond.degats_max ?? Infinity
+          
+          if (degats < min || degats > max) {
+            conditionOk = false
+            raison = `Dégâts au monstre insuffisants (${degats})`
+          }
         }
       }
     } else if (cond.type === 'combat_degats_heros') {

@@ -1,5 +1,5 @@
-﻿import { expect, test } from '@playwright/test'
-import { testSection, testChoiceButtons, screenshotOnFailure, tenterChance, testStat } from '../../helpers/commonTests'
+﻿import { test } from '@playwright/test'
+import { testSection, testChoiceButtons, screenshotOnFailure, tenterChance, testStat, gotoWithParams } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
@@ -29,8 +29,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Enfoncer la porte avec succès', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {habilete: '10', lance_de: '1'})
 
     await tenterChance(page, SECTION_CHOICES[0])    
 
@@ -38,8 +37,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Echouer a enfoncer la porte', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=10&lance_de=6&endurance=10`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {habilete: '10', endurance:'10', lance_de: '6'})
 
     await tenterChance(page, SECTION_CHOICES[0])    
 

@@ -324,6 +324,36 @@ export class CombatView {
       }))
     }
 
+    // ── Modificateur pré-combat (lancer de dé sur stat du monstre) ──────────
+    else if (phase.type === 'pending_modifier_roll') {
+      const { formula, resultats, stat } = phase
+      const { count, sides } = parseDiceFormula(formula)
+      const label = `🎲 Lancer les dés (${formula}) — modificateur ${stat} du monstre`
+      const modifierBtn = this._rollBtn(label, () => {
+        const rolls = rollDice(count, sides)
+        const total = rolls.reduce((a, b) => a + b, 0)
+        // Résout l'entrée pour affichage
+        const entry = resolveResultatDe(resultats, total)
+        const delta = typeof entry === 'object' ? (entry?.delta ?? 0) : 0
+        const entryStat = typeof entry === 'object' ? (entry?.stat ?? stat) : stat
+
+        const resEl = document.createElement('div')
+        resEl.className = 'combat-action-result'
+        if (delta !== 0) {
+          const sign = delta > 0 ? '+' : ''
+          resEl.innerHTML = `<div class="action-resultat">🎲 [${rolls.join(', ')}] = ${total} → ${sign}${delta} ${entryStat} du monstre</div>`
+        } else {
+          resEl.innerHTML = `<div class="action-resultat">🎲 [${rolls.join(', ')}] = ${total} → aucun effet</div>`
+        }
+        el.appendChild(resEl)
+
+        this.engine.resolveModifierRoll(rolls)
+        setTimeout(() => this._render(), 1000)
+      })
+      modifierBtn.classList.add('combat-modifier-roll')
+      el.appendChild(modifierBtn)
+    }
+
     // ── Lancer de défense ────────────────────────────────────────────────────
     else if (phase.type === 'pending_defense') {
       const defenseData = phase.defenseData

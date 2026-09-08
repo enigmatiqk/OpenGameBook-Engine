@@ -1,5 +1,5 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, screenshotOnFailure, navigationTests, testEquipement, testStat } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, screenshotOnFailure, navigationTests, testEquipement, testStat, gotoWithParams, showFicheHero } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
@@ -36,11 +36,10 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('casque maudit - ne peut être retiré', async ({ page }) => {
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&equip=arme_1main_test&show_section&item_dropable`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {equip: 'arme_1main_test', equipement_dropable:''})
 
     //fiche hero
-    await page.click(`.btn-hero-sheet`)
+    await showFicheHero(page)
 
     //item de test dropable
     const item_test = page.locator('.equipment-slot-rpg')

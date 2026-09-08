@@ -192,7 +192,19 @@ export interface MonstreData {
   persistant?: boolean       // true si le monstre persiste entre les sections
   effets?: Effet[]           // effets appliqués à chaque round (ex: immunité conditionnelle)
   attaque_speciale?: AttaqueSpeciale  // attaque spéciale propre à ce monstre
+  condition?: ChoiceCondition // condition d'activation de ce monstre (ex: combat_degats_monstre)
+  modifier?: MonstreModifier[] // modifications à appliquer aux stats avant le combat
 }
+
+/**
+ * Modification de stat d'un monstre avant le combat.
+ * type "stat"     : delta fixe appliqué immédiatement
+ * type "lancer_de" : jet de dé interactif, résultat mappé via resultats
+ *   chaque résultat : { "delta": -4, "stat": "endurance" } — stat optionnel, défaut "endurance"
+ */
+export type MonstreModifier =
+  | { type: "stat"; stat: string; delta: number; raison?: string }
+  | { type: "lancer_de"; lancer_de: { choix: string; resultats: Record<string, { delta: number; stat?: string }> } }
 
 export interface CombatEventChoix {
   texte: string              // libellé du bouton de choix
@@ -408,8 +420,10 @@ export interface EffetEquiper {
 }
 
 export interface EffetDesequiper {
-  id: string       // id de l'item à déséquiper (doit être équipé)
-  jeter?: boolean  // si true, l'item est aussi supprimé après déséquipement
+  id?: string       // id de l'item à déséquiper (doit être équipé)
+  name?: string     // texte à chercher dans l'id ou le label de l'item équipé (alternatif à id)
+  contains?: boolean // true = recherche par inclusion (défaut), false = égalité stricte (utilisé avec name)
+  jeter?: boolean   // si true, l'item est aussi supprimé après déséquipement
 }
 
 export interface Effet {
@@ -600,7 +614,7 @@ export interface Hero {
   statistiques_initiales: Record<string, number>
   inventaire: InventaireEntree[]
   equipement: Record<string, InventaireItem>  // items équipés par slot (clé: nom du slot)
-  monstres_stats?: Record<string, { habilete: number; endurance: number }>
+  monstres_stats?: Record<string, { habilete: number; endurance: number; endurance_start: number }>
   journal: JournalEntry[]           // journal unifié (stats, sections, items)
 }
 
@@ -761,6 +775,7 @@ export type CombatPhase =
   | { type: 'pending_attaque_speciale_roll'; attaqueSpeciale: AttaqueSpeciale }           // attente jet de dé de déclenchement (type lancer_de)
   | { type: 'pending_attaque_speciale_parade'; effets: Effet[]; attaqueSpeciale: AttaqueSpeciale }  // effets déterminés, attente parade
   | { type: 'pending_attaque_speciale_action'; effets: Effet[]; attaqueSpeciale: AttaqueSpeciale; action: string }  // attente résolution action de parade (tenter_chance, etc.)
+  | { type: 'pending_modifier_roll'; formula: string; resultats: Record<string, { delta: number; stat?: string }>; stat: string }  // attente jet de modificateur de stat pré-combat (MonstreModifier lancer_de)
   | { type: 'round_result'; round: CombatRound; availableActions: string[] }  // résultat, actions dispo
   | { type: 'termine'; victoire: boolean; heroEnduranceFinale: number }
 

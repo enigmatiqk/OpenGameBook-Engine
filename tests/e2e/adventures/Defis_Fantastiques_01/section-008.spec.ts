@@ -1,5 +1,6 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testCombatStart, testCombatRound, testRoundSuivant, screenshotOnFailure } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, testMort, screenshotOnFailure, gotoWithParams } from '../../helpers/commonTests'
+import { combatStart, combatRound, combatRoundSuivant } from '../../helpers/combatTests'
 
 
 const ADVENTURE_ID = 1
@@ -33,19 +34,18 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
 
   test('Combat gagné avec endurance=1 habilete=12 et lance_de=1', async ({ page }) => {
     // Charger avec habilete élevée et dés favorables
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=12&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {habilete: '12', lance_de: '1'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 2
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 3
-    await testCombatRound(page)
+    await combatRound(page)
     //résultat
     await page.click('button.combat-next-btn')
 
@@ -55,32 +55,28 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
 
   test('Combat perdu avec habilete=5 et lance_de=6', async ({ page }) => {
     // Charger avec habilete faible et dés défavorables
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=1&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {endurance: '1', habilete: '5', lance_de: '6'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
     
     //resultat
     await page.click('button.combat-next-btn')
     
     // Vérifier qu'on a perdu (on devrait voir un message de défaite ou être redirigé)
     // Le héros devrait avoir perdu de l'endurance
-    const deathInfo = page.locator('div#view-defeat')
-    await expect(deathInfo).toBeVisible()
+    await testMort(page)
   })
 
     test('Pas de fuite si le hero meurt', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=1&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {endurance: '1', habilete: '5', lance_de: '6'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     // Vérifier que me bouton fuite n'apparait pas
     const sectionContent = page.locator('button.combat-fuite-direct-btn')
@@ -89,9 +85,9 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
 
   test('Possibilité de fuir vers section 189', async ({ page }) => {    
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //fuite directe
     await page.click('button.combat-fuite-direct-btn')
@@ -101,14 +97,12 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('Possibilité de fuir avec chance vers section 189', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', habilete: '5', lance_de: '4'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //fuite chance
     await page.click('button.combat-fuite-chance-btn')
@@ -118,14 +112,12 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('tester attaque_chance chanceux', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=50&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', habilete: '50', lance_de: '1'})
 
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //attente du bouton attaque_chance
     await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
@@ -143,14 +135,12 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('tester attaque_chance malchanceux', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=50&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', habilete: '50', lance_de: '6'})
 
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //attente du bouton attaque_chance
     await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
@@ -167,14 +157,12 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('tester defense_chance chanceux', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', endurance: '10', habilete: '1', lance_de: '1'})
 
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //attente du bouton attaque_chance
     await page.waitForSelector('.combat-action-btn', { timeout: 5000 })
@@ -193,14 +181,12 @@ test.describe('Section 008 - Combat contre le Barbare', () => {
   })
 
   test('tester defense_chance malchanceux', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=10&habilete=1&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', endurance: '10', habilete: '1', lance_de: '6'})
 
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //attente du bouton attaque_chance
     await page.waitForSelector('.combat-action-btn', { timeout: 5000 })

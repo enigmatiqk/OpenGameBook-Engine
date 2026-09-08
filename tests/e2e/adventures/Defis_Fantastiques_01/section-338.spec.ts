@@ -33,7 +33,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   })
 
   test('Combat perdu → écran défaite', async ({ page }) => {
-    await gotoWithParams(page, {habilete: '50', endurance: '1', lance_de: '6'})
+    await gotoWithParams(page, {habilete: '1', endurance: '1', lance_de: '6'})
 
     await combatStart(page)
     await combatRound(page)

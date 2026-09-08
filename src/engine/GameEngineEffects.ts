@@ -132,13 +132,23 @@ export class GameEngineEffects {
           }
         }
       } else if (effet.type === 'desequiper' && effet.desequiper) {
-        const equipSlot = Object.entries(hero.equipement).find(([, e]) => e.id === effet.desequiper!.id)
+        const d = effet.desequiper
+        const matchItem = (e: import('../types').InventaireItem): boolean => {
+          if (d.id) return e.id === d.id
+          if (d.name) {
+            const haystack = `${e.id} ${e.label ?? ''}`.toLowerCase()
+            const needle = d.name.toLowerCase()
+            return d.contains === false ? (e.id === needle || (e.label ?? '').toLowerCase() === needle) : haystack.includes(needle)
+          }
+          return false
+        }
+        const equipSlot = Object.entries(hero.equipement).find(([, e]) => matchItem(e))
         if (equipSlot) {
           const [slotName, equippedItem] = equipSlot
           GameEngineHero.removeItemEffects(hero, equippedItem)
           equippedItem.equipe = false
           delete hero.equipement[slotName]
-          if (!effet.desequiper.jeter) {
+          if (!d.jeter) {
             hero.inventaire.push(equippedItem)
           }
         }

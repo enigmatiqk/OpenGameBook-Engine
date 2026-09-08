@@ -569,8 +569,8 @@ export class GameEngineActions {
     // Incrémente les compteurs max_utilisations
     this.incrementRegleUtilisations(adventure, currentSection, actionName)
 
-    // Track les utilisations si c'est un choix local avec limite
-    if (choice.local && choice.utilisations !== undefined && choixIndex !== undefined && trackChoiceUsage) {
+    // Track les utilisations si le choix a une limite (local ou non)
+    if (choice.utilisations !== undefined && choixIndex !== undefined && trackChoiceUsage) {
       const key = `${currentSection}-${choixIndex}`
       trackChoiceUsage(key)
     }

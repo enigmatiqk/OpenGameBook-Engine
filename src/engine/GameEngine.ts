@@ -4,7 +4,7 @@ import type {
   HeroInitState, CombatState, RegleComposite
 } from '../types'
 import { PlayTimer } from './PlayTimer'
-import { CombatResolver, parseAttackFormula } from './CombatResolver'
+import { CombatResolver, parseAttackFormula, resolveResultatDe } from './CombatResolver'
 import { SaveStore } from './SaveStore'
 import { initDebugNavHistory, initDebugConditions } from './GameEngineDebug'
 import { GameEngineHero } from './GameEngineHero'
@@ -319,30 +319,38 @@ export class GameEngine {
         // Initialise avec la première phase
         const combatData = section.combat
 
-        // Applique les mods sur le premier monstre de la première phase
-        let premiereMonstre = combatData.phases[0]?.monstres[0]
-        if (premiereMonstre) {
-          // Applique toutes les modifications de monstre via le module
-          premiereMonstre = this.monstresModule.prepareMonsterForCombat(
-            premiereMonstre,
-            this.hero,
-            this.adventure
-          )
+        // Filtre et prépare les monstres de la première phase selon leurs conditions
+        const phase0 = combatData.phases[0]
+        if (phase0) {
+          // Filtre les monstres dont la condition n'est pas remplie
+          const monstresFiltres = phase0.monstres.filter(m => {
+            if (!m.condition) return true
+            const check = this.navigation.checkChoiceCondition({ condition: m.condition } as any, this.hero!)
+            // checkChoiceCondition applique déjà le `not` de la condition
+            return check.ok
+          })
 
-          // Reconstruire le combatData avec le monstre modifié
-          const phasesModifiees = [...combatData.phases]
-          phasesModifiees[0] = {
-            ...phasesModifiees[0],
-            monstres: [premiereMonstre, ...phasesModifiees[0].monstres.slice(1)],
+          if (monstresFiltres.length > 0) {
+            // Prépare chaque monstre retenu (mods de stats, persistance)
+            const monstresPrepares = monstresFiltres.map(m =>
+              this.monstresModule.prepareMonsterForCombat(m, this.hero!, this.adventure!)
+            )
+
+            const phasesModifiees = [...combatData.phases]
+            phasesModifiees[0] = { ...phase0, monstres: monstresPrepares }
+            const combatDataModifie = { ...combatData, phases: phasesModifiees }
+
+            this.combatState = this.combatModule.initCombat(
+              this.hero,
+              combatDataModifie,
+              this.adventure.regles.combat,
+              0,
+            )
+            // Crée l'entrée persistante du monstre au premier contact (endurance_start)
+            this.monstresModule.initPersistentMonsterEntry(this.adventure, this.hero, this.combatState, this.currentSection)
+            // Si le monstre sélectionné a un modifier lancer_de, déclenche le jet pré-combat
+            this.combatState = this._applyModifierRollPhaseIfNeeded(this.combatState, monstresPrepares[0])
           }
-          const combatDataModifie = { ...combatData, phases: phasesModifiees }
-
-          this.combatState = this.combatModule.initCombat(
-            this.hero,
-            combatDataModifie,
-            this.adventure.regles.combat,
-            0,
-          )
         }
       }
     }
@@ -475,8 +483,8 @@ export class GameEngine {
 
     const choice = section.choix[choixIndex]
 
-    // Si ce n'est pas un choix local, toujours disponible (la condition est gérée ailleurs)
-    if (!choice.local) return true
+    // Si ce n'est pas un choix local et qu'il n'a pas d'utilisations définies, toujours disponible
+    if (!choice.local && choice.utilisations === undefined && !choice.groupe) return true
 
     // Vérification par groupe : si le groupe a déjà été utilisé, ce choix est épuisé
     if (choice.groupe) {
@@ -606,8 +614,8 @@ export class GameEngine {
       (ref) => this.resolveSection(ref)
     )
 
-    // Track les utilisations si c'est un choix local avec limite (chemin action avec dés)
-    if (choice.local && choice.utilisations !== undefined) {
+    // Track les utilisations si le choix a une limite (local ou non, chemin action avec dés)
+    if (choice.utilisations !== undefined) {
       const choixIndex = this.adventure.sections
         .find(s => s.numero === this.currentSection)
         ?.choix.indexOf(choice as any) ?? -1
@@ -834,6 +842,13 @@ export class GameEngine {
       this.adventure.regles.combat,
       phaseIndex,
     )
+    // Crée l'entrée persistante du monstre au premier contact (endurance_start)
+    this.monstresModule.initPersistentMonsterEntry(this.adventure, this.hero, this.combatState, this.currentSection)
+    // Si le monstre sélectionné a un modifier lancer_de, déclenche le jet pré-combat
+    const monstrePhase = combat.phases[phaseIndex]?.monstres[0]
+    if (monstrePhase) {
+      this.combatState = this._applyModifierRollPhaseIfNeeded(this.combatState, monstrePhase)
+    }
   }
 
   /**
@@ -911,6 +926,68 @@ export class GameEngine {
     if (this.combatState.phase.type === 'round_result') {
       const delta = this.combatState.heroVie - (this.hero.statistiques[this.adventure.regles.combat.formule_vie] ?? 0)
       if (delta !== 0) this.applyStatDelta(this.adventure.regles.combat.formule_vie, delta, `combat vs ${this.combatState.enemy.nom}`)
+    }
+  }
+
+  /**
+   * Si le monstre a un modifier de type lancer_de, passe le combatState en pending_modifier_roll.
+   * Sinon retourne l'état inchangé.
+   */
+  private _applyModifierRollPhaseIfNeeded(
+    state: CombatState,
+    monstre: import('../types').MonstreData
+  ): CombatState {
+    if (!monstre.modifier) return state
+    const lancerDeMod = monstre.modifier.find(m => m.type === 'lancer_de')
+    if (!lancerDeMod || lancerDeMod.type !== 'lancer_de') return state
+
+    // Détermine la stat à afficher dans l'UI depuis la première entrée (toutes partagent la même stat en général)
+    const firstEntry = Object.values(lancerDeMod.lancer_de.resultats)[0]
+    const stat = firstEntry?.stat ?? 'endurance'
+
+    return {
+      ...state,
+      phase: {
+        type: 'pending_modifier_roll',
+        formula: lancerDeMod.lancer_de.choix,
+        resultats: lancerDeMod.lancer_de.resultats,
+        stat,
+      },
+    }
+  }
+
+  /**
+   * Résout le jet de modificateur pré-combat (MonstreModifier lancer_de).
+   * Applique le delta sur l'ennemi selon la table resultats, puis passe en pending_ennemi.
+   */
+  resolveModifierRoll(rolls: number[]): void {
+    if (!this.combatState) throw new Error('Pas de combat en cours.')
+    if (this.combatState.phase.type !== 'pending_modifier_roll') throw new Error('Phase invalide')
+
+    const { resultats } = this.combatState.phase
+    const diceResult = rolls.reduce((a, b) => a + b, 0)
+
+    // Récupère l'entrée brute pour extraire delta ET stat
+    const entry = resolveResultatDe(resultats as Record<string, any>, diceResult)
+    const delta = typeof entry === 'object' ? (entry?.delta ?? 0) : (typeof entry === 'string' ? parseInt(entry, 10) || 0 : 0)
+    const stat  = typeof entry === 'object' ? (entry?.stat ?? 'endurance') : 'endurance'
+
+    let enemy = { ...this.combatState.enemy }
+    let enemyVie = this.combatState.enemyVie
+    if (delta !== 0) {
+      const current = (enemy as any)[stat] ?? 0
+      const newVal = Math.max(1, current + delta)
+      ;(enemy as any)[stat] = newVal
+      if (stat === 'endurance') {
+        enemyVie = Math.max(1, enemyVie + delta)
+      }
+    }
+
+    this.combatState = {
+      ...this.combatState,
+      enemy,
+      enemyVie,
+      phase: { type: 'pending_ennemi' },
     }
   }
 

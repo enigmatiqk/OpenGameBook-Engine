@@ -7,10 +7,11 @@
  *   ?adventure=1                     → sélectionne l'aventure N (1-based) ou par nom partiel
  *   ?habilete=8&endurance=12         → stats du héros
  *   ?habilete_start=10               → valeur initiale (plafond) de la stat
- *   ?item_id=pieces_or&item_count=5  → injection d'item (jusqu'à item3_id)
+ *   ?item_id=pieces_or&item_count=5  → injection d'item (item_id = item1_id, jusqu'à item9_id)
  *   ?equip=arme_1main_Épée           → injection d'équipement (jusqu'à equip9)
  *   ?monstre_endurance=2             → override endurance du monstre
  *   ?monstre_habilete=5              → override habileté du monstre
+ *   ?monstre_data=id:hab:end:end_start → injecte un monstre persistant dans hero.monstres_stats (alias monstre1_data)
  *   ?param_section_<nom>=<val>       → paramètres transmis à la section cible
  *   ?show_section                    → badge section visible en haut à droite
  */
@@ -66,20 +67,18 @@ export async function initDebugLoader(launchGameView: (engine: GameEngine) => vo
   const hero = (engine as any).hero
 
   // ── Injection d'items ────────────────────────────────────────────────────────
-  const itemId = params.get('item_id')
-  if (itemId) {
-    const itemCount = parseInt(params.get('item_count') ?? '1', 10)
-    const itemType = params.get('item_type') ?? undefined
-    const entry: Record<string, unknown> = { id: itemId, label: itemId, quantite: itemCount }
-    if (itemType) entry.type = itemType
-    hero.inventaire.push(entry)
-    hero.journal.push({ timestamp: Date.now(), section: 0, name: 'item_id', value_number: itemCount, value_string: itemId, tags: ['item', ...(itemType ? ['equip'] : []), 'add'] })
-  }
-  for (let n = 2; n <= 3; n++) {
-    const nId = params.get(`item${n}_id`)
-    if (!nId) break
-    const nCount = parseInt(params.get(`item${n}_count`) ?? '1', 10)
-    const nType = params.get(`item${n}_type`) ?? undefined
+  // item_id / item1_id sont équivalents ; item2_id, item3_id, etc. pour les suivants
+  for (let n = 1; n <= 9; n++) {
+    const nId = n === 1
+      ? (params.get('item1_id') ?? params.get('item_id'))
+      : params.get(`item${n}_id`)
+    if (!nId) { if (n > 1) break; continue }
+    const nCount = parseInt((n === 1
+      ? (params.get('item1_count') ?? params.get('item_count'))
+      : params.get(`item${n}_count`)) ?? '1', 10)
+    const nType = (n === 1
+      ? (params.get('item1_type') ?? params.get('item_type'))
+      : params.get(`item${n}_type`)) ?? undefined
     const entry: Record<string, unknown> = { id: nId, label: nId, quantite: nCount }
     if (nType) entry.type = nType
     hero.inventaire.push(entry)
@@ -189,6 +188,21 @@ export async function initDebugLoader(launchGameView: (engine: GameEngine) => vo
       if (cs) { applyMonsterOverrides(cs) }
       else { const target = typeof sectionRef === 'number' ? sectionRef : engine.getCurrentSection(); applyMonsterOverridesOnSection(target) }
       return section
+    }
+  }
+
+  // ── Injection monstres persistants (monstres_stats) ─────────────────────────
+  // Format : monstre_data=id:habilete:endurance:endurance_start (alias monstre1_data)
+  const monstreDataRaw = params.get('monstre_data') ?? params.get('monstre1_data')
+  if (monstreDataRaw) {
+    const parts = monstreDataRaw.split(':')
+    const mId    = parts[0]
+    const mHab   = parseInt(parts[1] ?? '0', 10)
+    const mEnd   = parseInt(parts[2] ?? '0', 10)
+    const mStart = parseInt(parts[3] ?? String(mEnd), 10)
+    if (mId) {
+      if (!hero.monstres_stats) hero.monstres_stats = {}
+      hero.monstres_stats[mId] = { habilete: mHab, endurance: mEnd, endurance_start: mStart }
     }
   }
 

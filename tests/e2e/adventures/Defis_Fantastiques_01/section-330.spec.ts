@@ -31,7 +31,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
   navigationTests(test, SECTION_CHOICES)
 
   test('Gains stat', async ({ page }) => {
-    gotoWithParams(page, {endurance:'10', chance:'10', ignore_stat_limit:''})
+    await gotoWithParams(page, {endurance:'10', chance:'10', ignore_stat_limit:''})
     await testStat(page, "endurance",16)
     await testStat(page, "chance",11)
   })

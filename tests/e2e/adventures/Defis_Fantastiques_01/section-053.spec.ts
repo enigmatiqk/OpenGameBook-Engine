@@ -1,5 +1,5 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, screenshotOnFailure } from '../../helpers/commonTests'
+import { testSection, testChoiceButtons, screenshotOnFailure, gotoWithParams } from '../../helpers/commonTests'
 
 
 const ADVENTURE_ID = 1
@@ -30,8 +30,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Si réussi - section 155', async ({ page }) => {
     // habilete=10, lance_de=4 → total dés = 8 ≤ 10 → succès → section 155
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&habilete=10&lance_de=4`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', habilete: '10', lance_de: '4', ignore_stat_limit:''})
 
     await page.click('.choices-list button:has-text("Enfoncer la porte")')
     await page.waitForSelector('.action-roll-btn', { timeout: 5000 })
@@ -45,8 +44,7 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Si échoué - section 300 avec -1 endurance', async ({ page }) => {
     // habilete=5, endurance=10, lance_de=4 → total dés = 8 > 5 → échec → section 300, endurance passe à 9
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&ignore_stat_limit&habilete=5&endurance=10&lance_de=4`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {endurance: '10', habilete: '5', lance_de: '4', ignore_stat_limit:''})
 
     await page.click('.choices-list button:has-text("Enfoncer la porte")')
     await page.waitForSelector('.section-text', { timeout: 5000 })
@@ -56,6 +54,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await testSection(page, 300)
 
     const enduranceValue = await page.locator('#stat-endurance').textContent()
-    expect(enduranceValue).toBe('9')
+    await expect(enduranceValue).toBe('9')
   })
 })

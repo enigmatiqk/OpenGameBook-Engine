@@ -1,6 +1,6 @@
 {
   "adventures/manifest.json": {
-    "mtime": 1785442170.483203,
+    "mtime": 1788282872.5299299,
     "ast_hash": "92749756d0def9e14eba3f7baca8a6e4",
     "semantic_hash": "92749756d0def9e14eba3f7baca8a6e4"
   },
@@ -105,29 +105,29 @@
     "semantic_hash": "552ebacf698689265efa8a4374c80350"
   },
   "src/engine/CombatResolver.ts": {
-    "mtime": 1786545628.1248562,
-    "ast_hash": "19e58caa60bcc269ebe286270de2c4b2",
-    "semantic_hash": ""
+    "mtime": 1788729890.9485726,
+    "ast_hash": "7525b9896e5828a22680d4a0ee8d7521",
+    "semantic_hash": "7525b9896e5828a22680d4a0ee8d7521"
   },
   "src/engine/GameEngine.ts": {
-    "mtime": 1786967363.0768282,
-    "ast_hash": "15e2ce85c0b89e44310bb7c725cb6c90",
-    "semantic_hash": ""
+    "mtime": 1788808529.3645492,
+    "ast_hash": "9994c879375f13a92ea6f1b8bceaa1ab",
+    "semantic_hash": "9994c879375f13a92ea6f1b8bceaa1ab"
   },
   "src/engine/GameEngineActions.ts": {
-    "mtime": 1786960211.5193515,
-    "ast_hash": "c317a53ede5a8a2f37acc62f106a87b7",
-    "semantic_hash": ""
+    "mtime": 1788808435.2669535,
+    "ast_hash": "79d0fa54c98575bf4c947f51d5ef2e65",
+    "semantic_hash": "79d0fa54c98575bf4c947f51d5ef2e65"
   },
   "src/engine/GameEngineCombat.ts": {
-    "mtime": 1786545816.9918878,
-    "ast_hash": "3a6dcd3785c2ada0b5b2883495e6e68b",
-    "semantic_hash": ""
+    "mtime": 1788299130.4974537,
+    "ast_hash": "cbcd87d541c7f5fcda8f28ddb8c20e14",
+    "semantic_hash": "cbcd87d541c7f5fcda8f28ddb8c20e14"
   },
   "src/engine/GameEngineDebug.ts": {
-    "mtime": 1786264504.7195778,
-    "ast_hash": "2101f60fe6d72307336ab4c6dc3eb0a4",
-    "semantic_hash": "2101f60fe6d72307336ab4c6dc3eb0a4"
+    "mtime": 1788892443.481228,
+    "ast_hash": "8c32c68c0d5151aa3e570d58e7e48e7f",
+    "semantic_hash": "8c32c68c0d5151aa3e570d58e7e48e7f"
   },
   "src/engine/GameEngineEquipement.ts": {
     "mtime": 1777932127.6380444,
@@ -135,24 +135,24 @@
     "semantic_hash": "d3f777f061ad0dae96f0f0561b930b51"
   },
   "src/engine/GameEngineHero.ts": {
-    "mtime": 1785842881.6921072,
-    "ast_hash": "66dbe2eb9f9134da10d679f7ad8ce356",
-    "semantic_hash": "66dbe2eb9f9134da10d679f7ad8ce356"
+    "mtime": 1788282986.344419,
+    "ast_hash": "7c2095688f456e8402324a127e378476",
+    "semantic_hash": "7c2095688f456e8402324a127e378476"
   },
   "src/engine/GameEngineInventaire.ts": {
-    "mtime": 1786661826.1596234,
-    "ast_hash": "8e5adf4783f2a302b78cb02d2a3cd873",
-    "semantic_hash": ""
+    "mtime": 1788892447.779395,
+    "ast_hash": "82a0099165cce3bc52732c12d185f00b",
+    "semantic_hash": "82a0099165cce3bc52732c12d185f00b"
   },
   "src/engine/GameEngineNavigation.ts": {
-    "mtime": 1786289548.6073332,
-    "ast_hash": "512f568a244ec8720971c5111dd5b6db",
-    "semantic_hash": ""
+    "mtime": 1788726988.0674124,
+    "ast_hash": "089f08dd8a00c82f5180fb15352aa128",
+    "semantic_hash": "089f08dd8a00c82f5180fb15352aa128"
   },
   "src/engine/GameEngineSave.ts": {
-    "mtime": 1777926802.193095,
-    "ast_hash": "3773aa8eb8260535346608fefcd4904b",
-    "semantic_hash": "3773aa8eb8260535346608fefcd4904b"
+    "mtime": 1787263917.7859974,
+    "ast_hash": "9a05332e0427a9a7a53fdb2f6e93441c",
+    "semantic_hash": "9a05332e0427a9a7a53fdb2f6e93441c"
   },
   "src/engine/ImageGenerator.ts": {
     "mtime": 1776978804.2908366,
@@ -177,7 +177,7 @@
   "src/engine/schema-choices.ts": {
     "mtime": 1786546184.524801,
     "ast_hash": "a666e1e1615345d9c1ed80fe6350b5b0",
-    "semantic_hash": ""
+    "semantic_hash": "a666e1e1615345d9c1ed80fe6350b5b0"
   },
   "src/engine/schema-conditions.ts": {
     "mtime": 1777844723.3257895,
@@ -185,19 +185,19 @@
     "semantic_hash": "a11b88055f32560ba6a6732da3e303ca"
   },
   "src/engine/schema-effects.ts": {
-    "mtime": 1786711884.788725,
-    "ast_hash": "3c1a222cc6869d7510339164147ae4a6",
-    "semantic_hash": ""
+    "mtime": 1788812920.6872053,
+    "ast_hash": "b0680f26b8ae0e7868967111d740df75",
+    "semantic_hash": "b0680f26b8ae0e7868967111d740df75"
   },
   "src/main.ts": {
-    "mtime": 1786546163.8538792,
-    "ast_hash": "f6b47d9ede2222512a62d36145d417c0",
-    "semantic_hash": ""
+    "mtime": 1788341249.6510632,
+    "ast_hash": "3da876588b323bce1f6073bfabd47331",
+    "semantic_hash": "3da876588b323bce1f6073bfabd47331"
   },
   "src/types.ts": {
-    "mtime": 1786711898.341212,
-    "ast_hash": "98a2d9f895dd675ff39c2857c209df90",
-    "semantic_hash": ""
+    "mtime": 1788812903.0540793,
+    "ast_hash": "03bb6f2678d9c71f9813b9f744e5a875",
+    "semantic_hash": "03bb6f2678d9c71f9813b9f744e5a875"
   },
   "src/ui/accessibility.ts": {
     "mtime": 1777066320.1349342,
@@ -205,29 +205,29 @@
     "semantic_hash": "fa37a7839e8d3faf21c654b5fb3a614a"
   },
   "src/ui/combat.ts": {
-    "mtime": 1786376567.1265,
-    "ast_hash": "dd974c41d7fc2dca46a4e2d742fbe760",
-    "semantic_hash": ""
+    "mtime": 1788808414.10644,
+    "ast_hash": "6f2a83516c611f13abf75ec470f0ccb4",
+    "semantic_hash": "6f2a83516c611f13abf75ec470f0ccb4"
   },
   "src/ui/debugPanel.ts": {
-    "mtime": 1786264685.8332858,
-    "ast_hash": "cf5c8fbdaeb2ca4fca5b6d05ca7ebdd9",
-    "semantic_hash": "cf5c8fbdaeb2ca4fca5b6d05ca7ebdd9"
+    "mtime": 1788892473.9154425,
+    "ast_hash": "615e70a094adf3a08e5fcfe398fe8ab2",
+    "semantic_hash": "615e70a094adf3a08e5fcfe398fe8ab2"
   },
   "src/ui/diceRoll.ts": {
-    "mtime": 1777239872.0347092,
-    "ast_hash": "ad6d3f6a0662ece1b30033e7483a3289",
-    "semantic_hash": "ad6d3f6a0662ece1b30033e7483a3289"
+    "mtime": 1787241099.5415823,
+    "ast_hash": "9772b45b134be0b608474fa45fe5ffbd",
+    "semantic_hash": "9772b45b134be0b608474fa45fe5ffbd"
   },
   "src/ui/equipement.ts": {
-    "mtime": 1786661886.5164278,
-    "ast_hash": "e79b15811e2d54c98ae177d81a3717f7",
-    "semantic_hash": ""
+    "mtime": 1787213399.3011403,
+    "ast_hash": "9917599d14ed3d5d536755920f20d153",
+    "semantic_hash": "9917599d14ed3d5d536755920f20d153"
   },
   "src/ui/game.ts": {
-    "mtime": 1786545933.348463,
-    "ast_hash": "7c2719ec8c1c4ada8796197269254393",
-    "semantic_hash": ""
+    "mtime": 1788723459.0403948,
+    "ast_hash": "6ff8c17cf591baf4248f125c8177555d",
+    "semantic_hash": "6ff8c17cf591baf4248f125c8177555d"
   },
   "src/ui/imagePreferences.ts": {
     "mtime": 1778166929.823751,
@@ -237,7 +237,7 @@
   "src/ui/inventaire.ts": {
     "mtime": 1786661870.146318,
     "ast_hash": "4772e1a1ecfd84eb447d9443c15dd834",
-    "semantic_hash": ""
+    "semantic_hash": "4772e1a1ecfd84eb447d9443c15dd834"
   },
   "src/ui/leaderboard.ts": {
     "mtime": 1777239851.7921107,
@@ -282,7 +282,7 @@
   "tests/GameEngine.test.ts": {
     "mtime": 1786281859.0077977,
     "ast_hash": "1930de5e3fba29d5fd8d60e7c11e2392",
-    "semantic_hash": ""
+    "semantic_hash": "1930de5e3fba29d5fd8d60e7c11e2392"
   },
   "tests/ImageGenerator.property.test.ts": {
     "mtime": 1786107110.9116154,
@@ -322,717 +322,717 @@
   "tests/e2e/adventures/Defis_Fantastiques_01/section-001.spec.ts": {
     "mtime": 1786451618.4736543,
     "ast_hash": "b63d64ef8b52eb2d844c0fe710637eb8",
-    "semantic_hash": ""
+    "semantic_hash": "b63d64ef8b52eb2d844c0fe710637eb8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-002.spec.ts": {
     "mtime": 1786451617.3700411,
     "ast_hash": "0f7c8917fc38b087c72c90679b69096b",
-    "semantic_hash": ""
+    "semantic_hash": "0f7c8917fc38b087c72c90679b69096b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-003.spec.ts": {
     "mtime": 1786451616.5135763,
     "ast_hash": "13b0af1d8e9743d8f0ec55d7a9e31b8a",
-    "semantic_hash": ""
+    "semantic_hash": "13b0af1d8e9743d8f0ec55d7a9e31b8a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-004.spec.ts": {
     "mtime": 1786451615.6721044,
     "ast_hash": "d0604de64c2d67367ead594c0a6a7cb2",
-    "semantic_hash": ""
+    "semantic_hash": "d0604de64c2d67367ead594c0a6a7cb2"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-005.spec.ts": {
     "mtime": 1786451614.7000203,
     "ast_hash": "d57aadafd9b9f843b497eeee435b1d92",
-    "semantic_hash": ""
+    "semantic_hash": "d57aadafd9b9f843b497eeee435b1d92"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-006.spec.ts": {
     "mtime": 1786451613.5206552,
     "ast_hash": "1b3de604fdd31e5c11c5e39738656017",
-    "semantic_hash": ""
+    "semantic_hash": "1b3de604fdd31e5c11c5e39738656017"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-007.spec.ts": {
     "mtime": 1786451565.9091775,
     "ast_hash": "0938c0216e614b1572803ba7e69cf271",
-    "semantic_hash": ""
+    "semantic_hash": "0938c0216e614b1572803ba7e69cf271"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-008.spec.ts": {
-    "mtime": 1786451612.6816223,
-    "ast_hash": "0f7bc330315fe9c846cd54ec7e4934fa",
-    "semantic_hash": ""
+    "mtime": 1788890425.393689,
+    "ast_hash": "18bed0da83a481d09c5b7c0f9da83619",
+    "semantic_hash": "18bed0da83a481d09c5b7c0f9da83619"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-009.spec.ts": {
     "mtime": 1786451611.8634799,
     "ast_hash": "3244eeaf545feb5d49a9fce5c48171a9",
-    "semantic_hash": ""
+    "semantic_hash": "3244eeaf545feb5d49a9fce5c48171a9"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-010.spec.ts": {
     "mtime": 1786451610.8993309,
     "ast_hash": "7de52ea4e39199e6adea13d9c0a4f2fa",
-    "semantic_hash": ""
+    "semantic_hash": "7de52ea4e39199e6adea13d9c0a4f2fa"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-011.spec.ts": {
     "mtime": 1786451610.082416,
     "ast_hash": "20bd7038bd47e8e5bae6059c99a9284b",
-    "semantic_hash": ""
+    "semantic_hash": "20bd7038bd47e8e5bae6059c99a9284b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-012.spec.ts": {
-    "mtime": 1786451609.282067,
-    "ast_hash": "8e766559d0db5ef97ef23f00e4876ad7",
-    "semantic_hash": ""
+    "mtime": 1787256557.2226937,
+    "ast_hash": "2d0a0296f2194c5935698a71bd8b2f79",
+    "semantic_hash": "2d0a0296f2194c5935698a71bd8b2f79"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-013.spec.ts": {
     "mtime": 1786451608.463828,
     "ast_hash": "9fbc8ad82387dbdf70bdd9794054dc1d",
-    "semantic_hash": ""
+    "semantic_hash": "9fbc8ad82387dbdf70bdd9794054dc1d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-014.spec.ts": {
-    "mtime": 1786451607.4783027,
-    "ast_hash": "5844b686632bf58fec5ded1d1f4dfd62",
-    "semantic_hash": ""
+    "mtime": 1787254910.339656,
+    "ast_hash": "984de8c25af40e0a20b8e1d626966114",
+    "semantic_hash": "984de8c25af40e0a20b8e1d626966114"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-015.spec.ts": {
     "mtime": 1786451606.6481073,
     "ast_hash": "2d50904794718d71c20945a6906a4d1a",
-    "semantic_hash": ""
+    "semantic_hash": "2d50904794718d71c20945a6906a4d1a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-016.spec.ts": {
-    "mtime": 1786451605.0138006,
-    "ast_hash": "63af862b6d7fe145fbfee73d4163b64f",
-    "semantic_hash": ""
+    "mtime": 1788890978.040359,
+    "ast_hash": "80ba2a1edb32cb3c17791a4e9763439b",
+    "semantic_hash": "80ba2a1edb32cb3c17791a4e9763439b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-017.spec.ts": {
     "mtime": 1786451604.0937035,
     "ast_hash": "0d21603b451c6c41fbaec9c2344a63d3",
-    "semantic_hash": ""
+    "semantic_hash": "0d21603b451c6c41fbaec9c2344a63d3"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-018.spec.ts": {
     "mtime": 1786451602.5655735,
     "ast_hash": "0b924f25cfe2cb8fd9984d7c5271e133",
-    "semantic_hash": ""
+    "semantic_hash": "0b924f25cfe2cb8fd9984d7c5271e133"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-019.spec.ts": {
     "mtime": 1786451601.026687,
     "ast_hash": "b64e57176c5c161dfe1dc0678db37e6d",
-    "semantic_hash": ""
+    "semantic_hash": "b64e57176c5c161dfe1dc0678db37e6d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-020.spec.ts": {
     "mtime": 1786451599.492961,
     "ast_hash": "88a71fba2e61a9fda979ce41abaa3e4b",
-    "semantic_hash": ""
+    "semantic_hash": "88a71fba2e61a9fda979ce41abaa3e4b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-021.spec.ts": {
-    "mtime": 1786451591.229835,
-    "ast_hash": "2e339aeb7d7ff7240eaaaf4c633fdb67",
-    "semantic_hash": ""
+    "mtime": 1788503712.8544219,
+    "ast_hash": "053ceeeb90414656b9485e6fd295b56e",
+    "semantic_hash": "053ceeeb90414656b9485e6fd295b56e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-022.spec.ts": {
     "mtime": 1786451598.6098175,
     "ast_hash": "d6d544d7333c7378e7698d44848a294c",
-    "semantic_hash": ""
+    "semantic_hash": "d6d544d7333c7378e7698d44848a294c"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-023.spec.ts": {
     "mtime": 1786451597.7016795,
     "ast_hash": "7e261806fcf3267f3e0ca42fdde8e103",
-    "semantic_hash": ""
+    "semantic_hash": "7e261806fcf3267f3e0ca42fdde8e103"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-024.spec.ts": {
     "mtime": 1786449360.207201,
     "ast_hash": "ea989f3bb02f3707767b997dc40119d1",
-    "semantic_hash": ""
+    "semantic_hash": "ea989f3bb02f3707767b997dc40119d1"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-025.spec.ts": {
     "mtime": 1786449425.8829598,
     "ast_hash": "c5348ef933c42603525288a6cf623e7d",
-    "semantic_hash": ""
+    "semantic_hash": "c5348ef933c42603525288a6cf623e7d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-026.spec.ts": {
     "mtime": 1786449481.3014455,
     "ast_hash": "674de24c9ce3efbd7d6c017e8025749d",
-    "semantic_hash": ""
+    "semantic_hash": "674de24c9ce3efbd7d6c017e8025749d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-027spec.ts": {
     "mtime": 1786449534.8495586,
     "ast_hash": "aed3b0ab576fe60b3ed9fdb1c675e506",
-    "semantic_hash": ""
+    "semantic_hash": "aed3b0ab576fe60b3ed9fdb1c675e506"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-028.spec.ts": {
     "mtime": 1786449560.8186898,
     "ast_hash": "5827efa50509b0e9d71ee8f1a4d3dea8",
-    "semantic_hash": ""
+    "semantic_hash": "5827efa50509b0e9d71ee8f1a4d3dea8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-029.spec.ts": {
     "mtime": 1786449580.6731975,
     "ast_hash": "01f21bf88ca44c47e4a569ca376319aa",
-    "semantic_hash": ""
+    "semantic_hash": "01f21bf88ca44c47e4a569ca376319aa"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-030.spec.ts": {
     "mtime": 1786449605.9422085,
     "ast_hash": "c8d4972d5dddcfdc0081fd0526d3a96c",
-    "semantic_hash": ""
+    "semantic_hash": "c8d4972d5dddcfdc0081fd0526d3a96c"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-031.spec.ts": {
     "mtime": 1786449629.9608054,
     "ast_hash": "a2b9efd9796312499f101ecd88605565",
-    "semantic_hash": ""
+    "semantic_hash": "a2b9efd9796312499f101ecd88605565"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-032spec.ts": {
     "mtime": 1786449656.334198,
     "ast_hash": "7d44c156de7dd3f092d76c564d611b81",
-    "semantic_hash": ""
+    "semantic_hash": "7d44c156de7dd3f092d76c564d611b81"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-033.spec.ts": {
-    "mtime": 1786538744.3422706,
-    "ast_hash": "56cc4463fd76e98e512d3532bd5ca794",
-    "semantic_hash": ""
+    "mtime": 1788891017.233587,
+    "ast_hash": "99831b05b67324089f93fe5b5dc20c3d",
+    "semantic_hash": "99831b05b67324089f93fe5b5dc20c3d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-034.spec.ts": {
     "mtime": 1786449696.124066,
     "ast_hash": "1b8a1bac5c326e8c9930443f0762e569",
-    "semantic_hash": ""
+    "semantic_hash": "1b8a1bac5c326e8c9930443f0762e569"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-035.spec.ts": {
     "mtime": 1786449719.4394164,
     "ast_hash": "f9fb7de7c93fc46599a8918edc8ab9b2",
-    "semantic_hash": ""
+    "semantic_hash": "f9fb7de7c93fc46599a8918edc8ab9b2"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-036.spec.ts": {
     "mtime": 1786450498.2858193,
     "ast_hash": "04e146a3566745984d99ac6a499e1cff",
-    "semantic_hash": ""
+    "semantic_hash": "04e146a3566745984d99ac6a499e1cff"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-037.spec.ts": {
     "mtime": 1786450523.4070828,
     "ast_hash": "2845280c1f225d8bea78f3b724745d68",
-    "semantic_hash": ""
+    "semantic_hash": "2845280c1f225d8bea78f3b724745d68"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-038.spec.ts": {
     "mtime": 1786450535.45581,
     "ast_hash": "81431d8dbb6abd64043722944dfa0f89",
-    "semantic_hash": ""
+    "semantic_hash": "81431d8dbb6abd64043722944dfa0f89"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-039.spec.ts": {
-    "mtime": 1786450563.6592596,
-    "ast_hash": "8da24ca2fbc335344222ed1cfd8b4e01",
-    "semantic_hash": ""
+    "mtime": 1788363829.672186,
+    "ast_hash": "436d8b8ed63a8c19034f1b600df01602",
+    "semantic_hash": "436d8b8ed63a8c19034f1b600df01602"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-040.spec.ts": {
     "mtime": 1786450591.7062776,
     "ast_hash": "be42b8d31d1ef60e1a7ca56ff802670e",
-    "semantic_hash": ""
+    "semantic_hash": "be42b8d31d1ef60e1a7ca56ff802670e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-041.spec.ts": {
     "mtime": 1786450618.408404,
     "ast_hash": "dc901aff1545017cc740b81fc84cd1ab",
-    "semantic_hash": ""
+    "semantic_hash": "dc901aff1545017cc740b81fc84cd1ab"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-042.spec.ts": {
     "mtime": 1786450644.0914123,
     "ast_hash": "0c5b9fb9789c08d4b97f8fb4b9e771cd",
-    "semantic_hash": ""
+    "semantic_hash": "0c5b9fb9789c08d4b97f8fb4b9e771cd"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-043.spec.ts": {
     "mtime": 1786450669.5971475,
     "ast_hash": "5cb441fb283a791171794413976b9271",
-    "semantic_hash": ""
+    "semantic_hash": "5cb441fb283a791171794413976b9271"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-044.spec.ts": {
     "mtime": 1786448646.956827,
     "ast_hash": "488a99fef2089e3651e7be92e36c6e6a",
-    "semantic_hash": ""
+    "semantic_hash": "488a99fef2089e3651e7be92e36c6e6a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-045.spec.ts": {
     "mtime": 1786450697.6932456,
     "ast_hash": "1fe8b022969f16eba422092d6b7dc2d0",
-    "semantic_hash": ""
+    "semantic_hash": "1fe8b022969f16eba422092d6b7dc2d0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-046.spec.ts": {
     "mtime": 1786450718.1108112,
     "ast_hash": "dd10341fd70563ce31532b2e5770d209",
-    "semantic_hash": ""
+    "semantic_hash": "dd10341fd70563ce31532b2e5770d209"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-047.spec.ts": {
     "mtime": 1786450724.7779586,
     "ast_hash": "343dbd1b7b4409820210f5065e3ebd34",
-    "semantic_hash": ""
+    "semantic_hash": "343dbd1b7b4409820210f5065e3ebd34"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-048.spec.ts": {
     "mtime": 1786450746.5702386,
     "ast_hash": "b64f860441f3546530d38e4c6882ce7a",
-    "semantic_hash": ""
+    "semantic_hash": "b64f860441f3546530d38e4c6882ce7a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-049.spec.ts": {
     "mtime": 1786450776.0008368,
     "ast_hash": "da39e76e07c45f0bd568cd5fe797e954",
-    "semantic_hash": ""
+    "semantic_hash": "da39e76e07c45f0bd568cd5fe797e954"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-050.spec.ts": {
-    "mtime": 1786450798.1530726,
-    "ast_hash": "0417bd5c8fa36730867e9e574fc50866",
-    "semantic_hash": ""
+    "mtime": 1787254990.5314684,
+    "ast_hash": "8a5f79bda58643ea8aa7616e8610ba03",
+    "semantic_hash": "8a5f79bda58643ea8aa7616e8610ba03"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-051.spec.ts": {
-    "mtime": 1786450815.4929352,
-    "ast_hash": "68c18cd2bdf7d3cddbd1d034ac8454ae",
-    "semantic_hash": ""
+    "mtime": 1786971444.0901313,
+    "ast_hash": "41ac719406d7b39394873e21dd027233",
+    "semantic_hash": "41ac719406d7b39394873e21dd027233"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-052.spec.ts": {
     "mtime": 1786450842.913272,
     "ast_hash": "18eae3b708a3d157125d901701b5dc48",
-    "semantic_hash": ""
+    "semantic_hash": "18eae3b708a3d157125d901701b5dc48"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-053.spec.ts": {
-    "mtime": 1786545573.1445062,
-    "ast_hash": "09ce1903eecc94f49c63733550090a2e",
-    "semantic_hash": ""
+    "mtime": 1788891091.0180783,
+    "ast_hash": "679be041a3bb9b42b2454f5a5f2bee1f",
+    "semantic_hash": "679be041a3bb9b42b2454f5a5f2bee1f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-054.spec.ts": {
     "mtime": 1786450892.9465086,
     "ast_hash": "9180df55aab6afdd726002a1640f307d",
-    "semantic_hash": ""
+    "semantic_hash": "9180df55aab6afdd726002a1640f307d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-055.spec.ts": {
     "mtime": 1786450925.487057,
     "ast_hash": "a41c9cbc438fe33cdaa484a8bf94ac73",
-    "semantic_hash": ""
+    "semantic_hash": "a41c9cbc438fe33cdaa484a8bf94ac73"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-056.spec.ts": {
     "mtime": 1786450947.4888754,
     "ast_hash": "f1f487b33d60dc28579f59d7b067d63f",
-    "semantic_hash": ""
+    "semantic_hash": "f1f487b33d60dc28579f59d7b067d63f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-057.spec.ts": {
     "mtime": 1786464329.7588372,
     "ast_hash": "2c60e98f24113a2308a716676c797254",
-    "semantic_hash": ""
+    "semantic_hash": "2c60e98f24113a2308a716676c797254"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-058.spec.ts": {
     "mtime": 1786450959.0376155,
     "ast_hash": "6d8a3ad58e97b33ca2fd1aaaeef7981f",
-    "semantic_hash": ""
+    "semantic_hash": "6d8a3ad58e97b33ca2fd1aaaeef7981f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-059.spec.ts": {
     "mtime": 1786450985.1149852,
     "ast_hash": "2fdb2efb8ddef719d500648dcc1b5258",
-    "semantic_hash": ""
+    "semantic_hash": "2fdb2efb8ddef719d500648dcc1b5258"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-060.spec.ts": {
     "mtime": 1786451008.4696524,
     "ast_hash": "206d0e595db8772cacc4d66fe0e9eaae",
-    "semantic_hash": ""
+    "semantic_hash": "206d0e595db8772cacc4d66fe0e9eaae"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-061.spec.ts": {
     "mtime": 1786448646.9896924,
     "ast_hash": "a06c76c0ebf517285157cb5d720c8b1b",
-    "semantic_hash": ""
+    "semantic_hash": "a06c76c0ebf517285157cb5d720c8b1b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-062.spec.ts": {
     "mtime": 1786451035.1303635,
     "ast_hash": "fe657caee6935e48d6240e5d017be82b",
-    "semantic_hash": ""
+    "semantic_hash": "fe657caee6935e48d6240e5d017be82b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-063.spec.ts": {
     "mtime": 1786451043.4782436,
     "ast_hash": "566659502447015a813a0024cb5c6bd0",
-    "semantic_hash": ""
+    "semantic_hash": "566659502447015a813a0024cb5c6bd0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-064.spec.ts": {
     "mtime": 1786448646.9926977,
     "ast_hash": "6bad754cbdb635fcd423694a5571b870",
-    "semantic_hash": ""
+    "semantic_hash": "6bad754cbdb635fcd423694a5571b870"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-065.spec.ts": {
     "mtime": 1786451058.75058,
     "ast_hash": "0dd29cf690e6473e9ee898fe2838b3d7",
-    "semantic_hash": ""
+    "semantic_hash": "0dd29cf690e6473e9ee898fe2838b3d7"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-066.spec.ts": {
     "mtime": 1786451106.703086,
     "ast_hash": "c800920bc55796544a58b4125b725890",
-    "semantic_hash": ""
+    "semantic_hash": "c800920bc55796544a58b4125b725890"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-067.spec.ts": {
     "mtime": 1786451099.5342393,
     "ast_hash": "909860cc8f8124ce668cc93d146af9ea",
-    "semantic_hash": ""
+    "semantic_hash": "909860cc8f8124ce668cc93d146af9ea"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-068.spec.ts": {
     "mtime": 1786451123.4889305,
     "ast_hash": "27486abf904f045206a771b2fb65727e",
-    "semantic_hash": ""
+    "semantic_hash": "27486abf904f045206a771b2fb65727e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-069.spec.ts": {
     "mtime": 1786451143.256644,
     "ast_hash": "82e85bc969801ae3486ddb6c77382f13",
-    "semantic_hash": ""
+    "semantic_hash": "82e85bc969801ae3486ddb6c77382f13"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-070.spec.ts": {
     "mtime": 1786451154.2018087,
     "ast_hash": "7e947abd6fe8b8feb00b2849bb917023",
-    "semantic_hash": ""
+    "semantic_hash": "7e947abd6fe8b8feb00b2849bb917023"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-071.spec.ts": {
     "mtime": 1786451159.7691007,
     "ast_hash": "43cc17b731412ca00f87838a463251b9",
-    "semantic_hash": ""
+    "semantic_hash": "43cc17b731412ca00f87838a463251b9"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-072.spec.ts": {
-    "mtime": 1786448647.0002072,
-    "ast_hash": "71d8590a5b2d7ab6e4768e6949a7b5ef",
-    "semantic_hash": ""
+    "mtime": 1787255702.8850458,
+    "ast_hash": "44e71e68650546925e60d287c7853293",
+    "semantic_hash": "44e71e68650546925e60d287c7853293"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-073.spec.ts": {
     "mtime": 1786451174.504558,
     "ast_hash": "5ef4e1dcb19ecc4cd4fc433709b04fd0",
-    "semantic_hash": ""
+    "semantic_hash": "5ef4e1dcb19ecc4cd4fc433709b04fd0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-074.spec.ts": {
     "mtime": 1786451180.1217923,
     "ast_hash": "fb29e9076567892f2dec9ba7d135dcbd",
-    "semantic_hash": ""
+    "semantic_hash": "fb29e9076567892f2dec9ba7d135dcbd"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-075.spec.ts": {
     "mtime": 1786451183.9355938,
     "ast_hash": "1595f1195d5ed8325390dca0a212ee28",
-    "semantic_hash": ""
+    "semantic_hash": "1595f1195d5ed8325390dca0a212ee28"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-076.spec.ts": {
     "mtime": 1786451201.1740637,
     "ast_hash": "893ffa3cee78c97c187c06dc34d4e029",
-    "semantic_hash": ""
+    "semantic_hash": "893ffa3cee78c97c187c06dc34d4e029"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-077.spec.ts": {
     "mtime": 1786448647.0107155,
     "ast_hash": "770bc0b4631dea439c5c4dfca8736573",
-    "semantic_hash": ""
+    "semantic_hash": "770bc0b4631dea439c5c4dfca8736573"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-078.spec.ts": {
     "mtime": 1786451215.133659,
     "ast_hash": "ce159c0b2f375ee9a2934d12ccb42ec0",
-    "semantic_hash": ""
+    "semantic_hash": "ce159c0b2f375ee9a2934d12ccb42ec0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-079.spec.ts": {
     "mtime": 1786451225.8088963,
     "ast_hash": "242075581f7c2ab33d7c46973bf6fcea",
-    "semantic_hash": ""
+    "semantic_hash": "242075581f7c2ab33d7c46973bf6fcea"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-080.spec.ts": {
     "mtime": 1786451230.0044267,
     "ast_hash": "dfabae2bd074febd8d9bbdb088f76e02",
-    "semantic_hash": ""
+    "semantic_hash": "dfabae2bd074febd8d9bbdb088f76e02"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-081.spec.ts": {
     "mtime": 1786451244.760181,
     "ast_hash": "b9ebb05d18166d0dcb3ff6704371c025",
-    "semantic_hash": ""
+    "semantic_hash": "b9ebb05d18166d0dcb3ff6704371c025"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-082.spec.ts": {
     "mtime": 1786451249.8108647,
     "ast_hash": "0af25df8ee7f6f082f0f731faf964e77",
-    "semantic_hash": ""
+    "semantic_hash": "0af25df8ee7f6f082f0f731faf964e77"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-083.spec.ts": {
     "mtime": 1786451252.7362156,
     "ast_hash": "a74de7f04569aa47d83393a943202c65",
-    "semantic_hash": ""
+    "semantic_hash": "a74de7f04569aa47d83393a943202c65"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-084.spec.ts": {
     "mtime": 1786451271.2414598,
     "ast_hash": "5fae05313f98fb1fa1cf2cba080e4ce9",
-    "semantic_hash": ""
+    "semantic_hash": "5fae05313f98fb1fa1cf2cba080e4ce9"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-085.spec.ts": {
     "mtime": 1786451286.8237472,
     "ast_hash": "8f4157f7558e8cf7b145a302cfc75665",
-    "semantic_hash": ""
+    "semantic_hash": "8f4157f7558e8cf7b145a302cfc75665"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-086.spec.ts": {
     "mtime": 1786448647.042264,
     "ast_hash": "2c1bd3a7ce179cf3d3ae0400c26ca5df",
-    "semantic_hash": ""
+    "semantic_hash": "2c1bd3a7ce179cf3d3ae0400c26ca5df"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-087.spec.ts": {
     "mtime": 1786451315.330482,
     "ast_hash": "71d14a53417717851405c3561a8562d5",
-    "semantic_hash": ""
+    "semantic_hash": "71d14a53417717851405c3561a8562d5"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-088.spec.ts": {
     "mtime": 1786451329.5282936,
     "ast_hash": "ee1b9292c69450f7040f9090088da4f8",
-    "semantic_hash": ""
+    "semantic_hash": "ee1b9292c69450f7040f9090088da4f8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-089.spec.ts": {
     "mtime": 1786451343.6366923,
     "ast_hash": "12c46dfc44cb7060a3ca3f56275e4c68",
-    "semantic_hash": ""
+    "semantic_hash": "12c46dfc44cb7060a3ca3f56275e4c68"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-090.spec.ts": {
     "mtime": 1786451348.3941228,
     "ast_hash": "2ad71aa45fc7bd36f38ced530febb421",
-    "semantic_hash": ""
+    "semantic_hash": "2ad71aa45fc7bd36f38ced530febb421"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-091.spec.ts": {
     "mtime": 1786448647.0522633,
     "ast_hash": "3a60eece4c4d2aa9bbef00abc8d8ef27",
-    "semantic_hash": ""
+    "semantic_hash": "3a60eece4c4d2aa9bbef00abc8d8ef27"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-092.spec.ts": {
     "mtime": 1786451368.970915,
     "ast_hash": "bb95136f0538cbe1308262461e6f88b7",
-    "semantic_hash": ""
+    "semantic_hash": "bb95136f0538cbe1308262461e6f88b7"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-093.spec.ts": {
     "mtime": 1786451381.588537,
     "ast_hash": "2894e0d32c4e31835bb75d19d611b68b",
-    "semantic_hash": ""
+    "semantic_hash": "2894e0d32c4e31835bb75d19d611b68b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-094.spec.ts": {
     "mtime": 1786451387.164055,
     "ast_hash": "1c2c343c4fe8963e1cb4939b4e1991cf",
-    "semantic_hash": ""
+    "semantic_hash": "1c2c343c4fe8963e1cb4939b4e1991cf"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-095.spec.ts": {
     "mtime": 1786451391.4072618,
     "ast_hash": "27f39bc92547cdb155f2e9c26cd14488",
-    "semantic_hash": ""
+    "semantic_hash": "27f39bc92547cdb155f2e9c26cd14488"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-096.spec.ts": {
     "mtime": 1786451394.5319307,
     "ast_hash": "b143077e42d8f8a2abb7edacfbe5650b",
-    "semantic_hash": ""
+    "semantic_hash": "b143077e42d8f8a2abb7edacfbe5650b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-097.spec.ts": {
     "mtime": 1786451397.3469324,
     "ast_hash": "8fcd9e20cc08b170e275df54bbf9c480",
-    "semantic_hash": ""
+    "semantic_hash": "8fcd9e20cc08b170e275df54bbf9c480"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-098.spec.ts": {
     "mtime": 1786451400.691215,
     "ast_hash": "e1ef33b40e64577338fdea81de143af3",
-    "semantic_hash": ""
+    "semantic_hash": "e1ef33b40e64577338fdea81de143af3"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-099.spec.ts": {
     "mtime": 1786451404.3724363,
     "ast_hash": "878da6fa343ae4437f4d227a8a123097",
-    "semantic_hash": ""
+    "semantic_hash": "878da6fa343ae4437f4d227a8a123097"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-100.spec.ts": {
     "mtime": 1786451407.0741942,
     "ast_hash": "0c91c03fff11a8d4d23ca9d528687cff",
-    "semantic_hash": ""
+    "semantic_hash": "0c91c03fff11a8d4d23ca9d528687cff"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-101.spec.ts": {
     "mtime": 1786451410.1491632,
     "ast_hash": "426c75b3a4f96fd96fd961ea0ddcb267",
-    "semantic_hash": ""
+    "semantic_hash": "426c75b3a4f96fd96fd961ea0ddcb267"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-102.spec.ts": {
     "mtime": 1786451551.093359,
     "ast_hash": "8c0fa0a5f7d248eeb625a5516e79f179",
-    "semantic_hash": ""
+    "semantic_hash": "8c0fa0a5f7d248eeb625a5516e79f179"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-103.spec.ts": {
     "mtime": 1786451416.8981452,
     "ast_hash": "df55e1cdd28c2c73f182d3245ede0a7f",
-    "semantic_hash": ""
+    "semantic_hash": "df55e1cdd28c2c73f182d3245ede0a7f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-104.spec.ts": {
     "mtime": 1786451419.8738093,
     "ast_hash": "c9812335a3f7913ec164f11d4dbd0e81",
-    "semantic_hash": ""
+    "semantic_hash": "c9812335a3f7913ec164f11d4dbd0e81"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-105.spec.ts": {
     "mtime": 1786448647.0804698,
     "ast_hash": "bf19d0cbedc28b46f2995627e033382a",
-    "semantic_hash": ""
+    "semantic_hash": "bf19d0cbedc28b46f2995627e033382a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-106.spec.ts": {
     "mtime": 1786451425.963547,
     "ast_hash": "3a84c755353eb59a1d3e31577ed6834b",
-    "semantic_hash": ""
+    "semantic_hash": "3a84c755353eb59a1d3e31577ed6834b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-107.spec.ts": {
     "mtime": 1786451428.7760308,
     "ast_hash": "cad2aef6abd3a5725cbcabf922273949",
-    "semantic_hash": ""
+    "semantic_hash": "cad2aef6abd3a5725cbcabf922273949"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-108.spec.ts": {
     "mtime": 1786448647.0903325,
     "ast_hash": "f0099afd7eae18721aae8c1d008a7945",
-    "semantic_hash": ""
+    "semantic_hash": "f0099afd7eae18721aae8c1d008a7945"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-109.spec.ts": {
     "mtime": 1786448647.0908494,
     "ast_hash": "9c5758b609028feb7b62d5b4c47f6217",
-    "semantic_hash": ""
+    "semantic_hash": "9c5758b609028feb7b62d5b4c47f6217"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-110.spec.ts": {
     "mtime": 1786451467.908828,
     "ast_hash": "16467d980da1e2784519dfc89fcc4980",
-    "semantic_hash": ""
+    "semantic_hash": "16467d980da1e2784519dfc89fcc4980"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-111.spec.ts": {
     "mtime": 1786451547.6419163,
     "ast_hash": "6a2f151e1905a019d51769a2052eb380",
-    "semantic_hash": ""
+    "semantic_hash": "6a2f151e1905a019d51769a2052eb380"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-112.spec.ts": {
     "mtime": 1786451496.1247878,
     "ast_hash": "6f17e494894b63ee92afde4fcc526980",
-    "semantic_hash": ""
+    "semantic_hash": "6f17e494894b63ee92afde4fcc526980"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-113.spec.ts": {
     "mtime": 1786451504.0759156,
     "ast_hash": "d5bd55caebcc7a5376506d2f85d0990e",
-    "semantic_hash": ""
+    "semantic_hash": "d5bd55caebcc7a5376506d2f85d0990e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-114.spec.ts": {
     "mtime": 1786451510.473944,
     "ast_hash": "32c01724d974703d280899abbb5766f0",
-    "semantic_hash": ""
+    "semantic_hash": "32c01724d974703d280899abbb5766f0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-115.spec.ts": {
     "mtime": 1786451518.25672,
     "ast_hash": "0db5911b164596d018251803a1dc9733",
-    "semantic_hash": ""
+    "semantic_hash": "0db5911b164596d018251803a1dc9733"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-116.spec.ts": {
-    "mtime": 1786448647.1016655,
-    "ast_hash": "560bf337a8b8b02e453b834e0e125b49",
-    "semantic_hash": ""
+    "mtime": 1788503696.575223,
+    "ast_hash": "ee30ae02bf6dee3132eacd280d349f8d",
+    "semantic_hash": "ee30ae02bf6dee3132eacd280d349f8d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-117.spec.ts": {
     "mtime": 1786451532.8460982,
     "ast_hash": "fab8d3510d7f21c2cfd284b6ae3d43ae",
-    "semantic_hash": ""
+    "semantic_hash": "fab8d3510d7f21c2cfd284b6ae3d43ae"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-118.spec.ts": {
     "mtime": 1786448647.103671,
     "ast_hash": "9aeacd42804206e93aa0bbc0b749e9ad",
-    "semantic_hash": ""
+    "semantic_hash": "9aeacd42804206e93aa0bbc0b749e9ad"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-119.spec.ts": {
     "mtime": 1786448647.104671,
     "ast_hash": "44b93ea10e3eb09863fb9bac8a71528d",
-    "semantic_hash": ""
+    "semantic_hash": "44b93ea10e3eb09863fb9bac8a71528d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-120.spec.ts": {
     "mtime": 1786451636.8299341,
     "ast_hash": "3db2baddbd73f1b5ebd5a7108f5ea5e9",
-    "semantic_hash": ""
+    "semantic_hash": "3db2baddbd73f1b5ebd5a7108f5ea5e9"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-121.spec.ts": {
     "mtime": 1786451643.821951,
     "ast_hash": "affb25483b6f3b60314185b1919a8558",
-    "semantic_hash": ""
+    "semantic_hash": "affb25483b6f3b60314185b1919a8558"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-122.spec.ts": {
     "mtime": 1786451650.6291072,
     "ast_hash": "9a37abb8ae2da9973a2d246c089cfa99",
-    "semantic_hash": ""
+    "semantic_hash": "9a37abb8ae2da9973a2d246c089cfa99"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-123.spec.ts": {
     "mtime": 1786451653.8469954,
     "ast_hash": "5dd8064158c4288c3561f19b2c2dceaa",
-    "semantic_hash": ""
+    "semantic_hash": "5dd8064158c4288c3561f19b2c2dceaa"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-124.spec.ts": {
     "mtime": 1786451659.3129075,
     "ast_hash": "f8bd306842488aff7fe842c5aec585c9",
-    "semantic_hash": ""
+    "semantic_hash": "f8bd306842488aff7fe842c5aec585c9"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-125.spec.ts": {
     "mtime": 1786448647.110686,
     "ast_hash": "a4644db17bd007e4b660ac3b2cda249d",
-    "semantic_hash": ""
+    "semantic_hash": "a4644db17bd007e4b660ac3b2cda249d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-126.spec.ts": {
     "mtime": 1786451666.8390443,
     "ast_hash": "cfd66ffa1b1577d698745596eaaab08b",
-    "semantic_hash": ""
+    "semantic_hash": "cfd66ffa1b1577d698745596eaaab08b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-127.spec.ts": {
     "mtime": 1786448647.110686,
     "ast_hash": "0a1adfc0c56cb294aed6fe319e2cb0c0",
-    "semantic_hash": ""
+    "semantic_hash": "0a1adfc0c56cb294aed6fe319e2cb0c0"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-128.spec.ts": {
     "mtime": 1786451698.9471972,
     "ast_hash": "215dcb8afb1258c8c408880a4c7b08be",
-    "semantic_hash": ""
+    "semantic_hash": "215dcb8afb1258c8c408880a4c7b08be"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-129.spec.ts": {
     "mtime": 1786451705.1971478,
     "ast_hash": "3de2f23927d08bd95ece84c424d08aad",
-    "semantic_hash": ""
+    "semantic_hash": "3de2f23927d08bd95ece84c424d08aad"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-130.spec.ts": {
-    "mtime": 1786448647.1135292,
-    "ast_hash": "ee7a9face68abfd9a5cfa5150de8a126",
-    "semantic_hash": ""
+    "mtime": 1788342726.593686,
+    "ast_hash": "48b4a6c24aee74eb2285e7c46e23f19b",
+    "semantic_hash": "48b4a6c24aee74eb2285e7c46e23f19b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-131.spec.ts": {
     "mtime": 1786448647.1150756,
     "ast_hash": "fd4e02338b92ad91957e6943aee5ebb1",
-    "semantic_hash": ""
+    "semantic_hash": "fd4e02338b92ad91957e6943aee5ebb1"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-132.spec.ts": {
     "mtime": 1786448647.1150756,
     "ast_hash": "a405c6fcfa6952cc3da81f02e7134679",
-    "semantic_hash": ""
+    "semantic_hash": "a405c6fcfa6952cc3da81f02e7134679"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-133.spec.ts": {
     "mtime": 1786451737.149021,
     "ast_hash": "31e7d9aac6baf1b9e3098cd044597d9b",
-    "semantic_hash": ""
+    "semantic_hash": "31e7d9aac6baf1b9e3098cd044597d9b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-134.spec.ts": {
     "mtime": 1786451744.3156893,
     "ast_hash": "c1ee22e2c73f09358cfd746fb777275b",
-    "semantic_hash": ""
+    "semantic_hash": "c1ee22e2c73f09358cfd746fb777275b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-135.spec.ts": {
     "mtime": 1786448647.1165845,
     "ast_hash": "fb5be6044e980a5f203947e8851fc50d",
-    "semantic_hash": ""
+    "semantic_hash": "fb5be6044e980a5f203947e8851fc50d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-136.spec.ts": {
     "mtime": 1786451765.7669482,
     "ast_hash": "0e584b74a231bdcc3e52c70020df67e5",
-    "semantic_hash": ""
+    "semantic_hash": "0e584b74a231bdcc3e52c70020df67e5"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-137.spec.ts": {
     "mtime": 1786451785.5173068,
     "ast_hash": "defe1c13a43ce8ac51df79c2dc006613",
-    "semantic_hash": ""
+    "semantic_hash": "defe1c13a43ce8ac51df79c2dc006613"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-138.spec.ts": {
     "mtime": 1786451802.0645502,
     "ast_hash": "5b2232820ccd981b40d4cd467fd0325b",
-    "semantic_hash": ""
+    "semantic_hash": "5b2232820ccd981b40d4cd467fd0325b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-139.spec.ts": {
     "mtime": 1786448647.1185896,
     "ast_hash": "2915519fe38fa8ec55e75b8b5bb270d8",
-    "semantic_hash": ""
+    "semantic_hash": "2915519fe38fa8ec55e75b8b5bb270d8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-140.spec.ts": {
     "mtime": 1786448647.119589,
     "ast_hash": "1763abe574f9317b0b4ee32237805994",
-    "semantic_hash": ""
+    "semantic_hash": "1763abe574f9317b0b4ee32237805994"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-141.spec.ts": {
     "mtime": 1786451819.1560109,
     "ast_hash": "d76d2eb565d62e80a2de27835aef284d",
-    "semantic_hash": ""
+    "semantic_hash": "d76d2eb565d62e80a2de27835aef284d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-142.spec.ts": {
     "mtime": 1786448647.120589,
     "ast_hash": "f323f9305a1125078c9fb8d206476e52",
-    "semantic_hash": ""
+    "semantic_hash": "f323f9305a1125078c9fb8d206476e52"
   },
   "tests/e2e/helpers/commonTests.ts": {
-    "mtime": 1786446206.090014,
-    "ast_hash": "f5a9cf1c01c95603c9c3babfa5568a10",
-    "semantic_hash": ""
+    "mtime": 1788893736.5876412,
+    "ast_hash": "cbb646a69345079283d2b9df86bf834b",
+    "semantic_hash": "cbb646a69345079283d2b9df86bf834b"
   },
   "tests/e2e/setup.ts": {
     "mtime": 1777671470.6957073,
@@ -1055,9 +1055,9 @@
     "semantic_hash": "7669b3b3b45b08f185d360181b156332"
   },
   "tsconfig.json": {
-    "mtime": 1777239931.2907882,
-    "ast_hash": "81f5131e490d22dba5136a9037b627fa",
-    "semantic_hash": "81f5131e490d22dba5136a9037b627fa"
+    "mtime": 1788340807.782708,
+    "ast_hash": "4c4cc321cf39197ea7aceb25843dcad2",
+    "semantic_hash": "4c4cc321cf39197ea7aceb25843dcad2"
   },
   "vite.config.ts": {
     "mtime": 1777318734.977239,
@@ -1497,371 +1497,1321 @@
   "tests/e2e/adventures/Defis_Fantastiques_01/section-143.spec.ts": {
     "mtime": 1786448647.121092,
     "ast_hash": "09a4b393a67f3c9c157d224ce0c44905",
-    "semantic_hash": ""
+    "semantic_hash": "09a4b393a67f3c9c157d224ce0c44905"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-144.spec.ts": {
     "mtime": 1786451837.1188807,
     "ast_hash": "914957ddb4e4bfb54a488b3165f0ba72",
-    "semantic_hash": ""
+    "semantic_hash": "914957ddb4e4bfb54a488b3165f0ba72"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-145.spec.ts": {
     "mtime": 1786451857.9508967,
     "ast_hash": "b154f33350170994930e9dce4efddd62",
-    "semantic_hash": ""
+    "semantic_hash": "b154f33350170994930e9dce4efddd62"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-146.spec.ts": {
     "mtime": 1786451864.9056416,
     "ast_hash": "02346a33f9338267494747d7f7ae4f75",
-    "semantic_hash": ""
+    "semantic_hash": "02346a33f9338267494747d7f7ae4f75"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-147.spec.ts": {
     "mtime": 1786451879.9622653,
     "ast_hash": "87008c5661dd7c1f48445d7fc88c028a",
-    "semantic_hash": ""
+    "semantic_hash": "87008c5661dd7c1f48445d7fc88c028a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-148.spec.ts": {
     "mtime": 1786451884.119526,
     "ast_hash": "6e595bb19c10b76093d5c73983c0006e",
-    "semantic_hash": ""
+    "semantic_hash": "6e595bb19c10b76093d5c73983c0006e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-149.spec.ts": {
     "mtime": 1786451887.0675278,
     "ast_hash": "512f8bf428df9c7508d64caadd7385b6",
-    "semantic_hash": ""
+    "semantic_hash": "512f8bf428df9c7508d64caadd7385b6"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-150.spec.ts": {
     "mtime": 1786451889.451259,
     "ast_hash": "565f230be419630cbe5074ebe6d602d5",
-    "semantic_hash": ""
+    "semantic_hash": "565f230be419630cbe5074ebe6d602d5"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-151.spec.ts": {
     "mtime": 1786451892.1348224,
     "ast_hash": "06d84801899865ef39f7bb64e6869898",
-    "semantic_hash": ""
+    "semantic_hash": "06d84801899865ef39f7bb64e6869898"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-152.spec.ts": {
     "mtime": 1786452155.9642572,
     "ast_hash": "d269aa6e91448698537d6ba244195d6a",
-    "semantic_hash": ""
+    "semantic_hash": "d269aa6e91448698537d6ba244195d6a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-153.spec.ts": {
     "mtime": 1786451898.606068,
     "ast_hash": "9e862a4a01ebcb1e4bf2b6502a6a5eec",
-    "semantic_hash": ""
+    "semantic_hash": "9e862a4a01ebcb1e4bf2b6502a6a5eec"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-154.spec.ts": {
     "mtime": 1786451901.6136713,
     "ast_hash": "721a6d967cf92a1cfa5a7881ecbdfa27",
-    "semantic_hash": ""
+    "semantic_hash": "721a6d967cf92a1cfa5a7881ecbdfa27"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-155.spec.ts": {
     "mtime": 1786451904.166775,
     "ast_hash": "2f53e83c41199da6691d986e989bd547",
-    "semantic_hash": ""
+    "semantic_hash": "2f53e83c41199da6691d986e989bd547"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-156.spec.ts": {
     "mtime": 1786451906.4998639,
     "ast_hash": "136950575ca0d9a9d9570fce8713efd1",
-    "semantic_hash": ""
+    "semantic_hash": "136950575ca0d9a9d9570fce8713efd1"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-157.spec.ts": {
     "mtime": 1786464655.2507412,
     "ast_hash": "5bcd18803ba2af6eba7584d42092208b",
-    "semantic_hash": ""
+    "semantic_hash": "5bcd18803ba2af6eba7584d42092208b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-158.spec.ts": {
     "mtime": 1786448647.136608,
     "ast_hash": "8a5c764c11f44c73719a83464c26ea8d",
-    "semantic_hash": ""
+    "semantic_hash": "8a5c764c11f44c73719a83464c26ea8d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-159.spec.ts": {
-    "mtime": 1786451915.6120458,
-    "ast_hash": "a8efea6339fabb2e71637cd8ca338d7f",
-    "semantic_hash": ""
+    "mtime": 1788503730.0567048,
+    "ast_hash": "4d7361668e51a01a0ff3e724e44d1693",
+    "semantic_hash": "4d7361668e51a01a0ff3e724e44d1693"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-160.spec.ts": {
     "mtime": 1786451929.3293755,
     "ast_hash": "713e50f82226cb1a80510f8f15c2b571",
-    "semantic_hash": ""
+    "semantic_hash": "713e50f82226cb1a80510f8f15c2b571"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-161.spec.ts": {
     "mtime": 1786485525.7826464,
     "ast_hash": "e5d2dcf4d379bb290f96433fc1245aa5",
-    "semantic_hash": ""
+    "semantic_hash": "e5d2dcf4d379bb290f96433fc1245aa5"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-162.spec.ts": {
     "mtime": 1786451936.7475643,
     "ast_hash": "ae91baf2688101aaaca3aa043aaf1ccf",
-    "semantic_hash": ""
+    "semantic_hash": "ae91baf2688101aaaca3aa043aaf1ccf"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-163.spec.ts": {
-    "mtime": 1786487369.475665,
-    "ast_hash": "30bc5902e220b71fbe686cfbf2164a29",
-    "semantic_hash": ""
+    "mtime": 1788338297.6668928,
+    "ast_hash": "18799f31584beb3a3a3860615ab500e4",
+    "semantic_hash": "18799f31584beb3a3a3860615ab500e4"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-164.spec.ts": {
     "mtime": 1786451945.4356182,
     "ast_hash": "01a36e0ce388c09a761cef906fe31186",
-    "semantic_hash": ""
+    "semantic_hash": "01a36e0ce388c09a761cef906fe31186"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-165.spec.ts": {
     "mtime": 1786451948.5694168,
     "ast_hash": "25e5f22ec1301b5e6a9958d396b83a49",
-    "semantic_hash": ""
+    "semantic_hash": "25e5f22ec1301b5e6a9958d396b83a49"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-166.spec.ts": {
     "mtime": 1786526663.576444,
     "ast_hash": "5fd254edf6e087a2eb4a4a5f2ef525ee",
-    "semantic_hash": ""
+    "semantic_hash": "5fd254edf6e087a2eb4a4a5f2ef525ee"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-167.spec.ts": {
     "mtime": 1786451954.2241118,
     "ast_hash": "083dbaf63ba49094e0c8871789927a6e",
-    "semantic_hash": ""
+    "semantic_hash": "083dbaf63ba49094e0c8871789927a6e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-168.spec.ts": {
     "mtime": 1786451958.1476822,
     "ast_hash": "3a4e351297912fc05554a6bbffa1521f",
-    "semantic_hash": ""
+    "semantic_hash": "3a4e351297912fc05554a6bbffa1521f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-169.spec.ts": {
     "mtime": 1786451960.701549,
     "ast_hash": "647655ba6c909b4635ed2094402cb748",
-    "semantic_hash": ""
+    "semantic_hash": "647655ba6c909b4635ed2094402cb748"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-170.spec.ts": {
     "mtime": 1786527651.1168733,
     "ast_hash": "11444b07739d27d2d13a2850807f824a",
-    "semantic_hash": ""
+    "semantic_hash": "11444b07739d27d2d13a2850807f824a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-171.spec.ts": {
     "mtime": 1786451966.087165,
     "ast_hash": "7ef4dad7f930eb1a07451cf4e2d786aa",
-    "semantic_hash": ""
+    "semantic_hash": "7ef4dad7f930eb1a07451cf4e2d786aa"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-172.spec.ts": {
     "mtime": 1786451968.5553024,
     "ast_hash": "d6ef55cef609c9ef8d5e5eafa90a59a4",
-    "semantic_hash": ""
+    "semantic_hash": "d6ef55cef609c9ef8d5e5eafa90a59a4"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-173.spec.ts": {
     "mtime": 1786536949.9830215,
     "ast_hash": "8b9d79156c2a212796e96a968031f049",
-    "semantic_hash": ""
+    "semantic_hash": "8b9d79156c2a212796e96a968031f049"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-174.spec.ts": {
     "mtime": 1786451975.568628,
     "ast_hash": "d579d15576a7fbf7ce849e1d4df5aa7e",
-    "semantic_hash": ""
+    "semantic_hash": "d579d15576a7fbf7ce849e1d4df5aa7e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-175.spec.ts": {
     "mtime": 1786451978.4042547,
     "ast_hash": "d5e6cddcedd4bfafafbec6a6d089dc11",
-    "semantic_hash": ""
+    "semantic_hash": "d5e6cddcedd4bfafafbec6a6d089dc11"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-176.spec.ts": {
     "mtime": 1786451981.1632397,
     "ast_hash": "0975fc0dcc9d98efe0cda517380748b8",
-    "semantic_hash": ""
+    "semantic_hash": "0975fc0dcc9d98efe0cda517380748b8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-177.spec.ts": {
     "mtime": 1786451983.4009037,
     "ast_hash": "44bd020dc1988f24dc32def1839ca111",
-    "semantic_hash": ""
+    "semantic_hash": "44bd020dc1988f24dc32def1839ca111"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-178.spec.ts": {
     "mtime": 1786451985.6347604,
     "ast_hash": "7f400403e492cb7032f55ada74af04f5",
-    "semantic_hash": ""
+    "semantic_hash": "7f400403e492cb7032f55ada74af04f5"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-179.spec.ts": {
     "mtime": 1786448647.1526084,
     "ast_hash": "c46d2d38f3718dd608159ff8eb39222a",
-    "semantic_hash": ""
+    "semantic_hash": "c46d2d38f3718dd608159ff8eb39222a"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-180.spec.ts": {
     "mtime": 1786451992.6490695,
     "ast_hash": "ca352531bb5d33eb5252331383a8827e",
-    "semantic_hash": ""
+    "semantic_hash": "ca352531bb5d33eb5252331383a8827e"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-181.spec.ts": {
     "mtime": 1786452016.023003,
     "ast_hash": "2ecbd4d179b36c9e06f5a6a826b83b92",
-    "semantic_hash": ""
+    "semantic_hash": "2ecbd4d179b36c9e06f5a6a826b83b92"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-182.spec.ts": {
     "mtime": 1786452033.3825777,
     "ast_hash": "a2fa902933f9115783477a6cd7133642",
-    "semantic_hash": ""
+    "semantic_hash": "a2fa902933f9115783477a6cd7133642"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-183.spec.ts": {
-    "mtime": 1786538929.9540076,
-    "ast_hash": "689475cee6bbe17489da8ed79597e1f7",
-    "semantic_hash": ""
+    "mtime": 1788503744.1359882,
+    "ast_hash": "7d4e25e0c203bb51c881ac85428cc3f4",
+    "semantic_hash": "7d4e25e0c203bb51c881ac85428cc3f4"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-184.spec.ts": {
     "mtime": 1786452070.7234209,
     "ast_hash": "680a15324408b8cae99a37b0d444855f",
-    "semantic_hash": ""
+    "semantic_hash": "680a15324408b8cae99a37b0d444855f"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-185.spec.ts": {
     "mtime": 1786537018.7758272,
     "ast_hash": "1303407edc19649094f5a68ed3f51bf4",
-    "semantic_hash": ""
+    "semantic_hash": "1303407edc19649094f5a68ed3f51bf4"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-186.spec.ts": {
     "mtime": 1786452087.5852323,
     "ast_hash": "240ae42ac24d21724d47fb433585a04b",
-    "semantic_hash": ""
+    "semantic_hash": "240ae42ac24d21724d47fb433585a04b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-187.spec.ts": {
     "mtime": 1786452091.540136,
     "ast_hash": "c6c52ad74784751a611ef8d6cf484468",
-    "semantic_hash": ""
+    "semantic_hash": "c6c52ad74784751a611ef8d6cf484468"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-188.spec.ts": {
     "mtime": 1786448647.1571178,
     "ast_hash": "bc8852d9df321504f25582922ae96deb",
-    "semantic_hash": ""
+    "semantic_hash": "bc8852d9df321504f25582922ae96deb"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-189.spec.ts": {
     "mtime": 1786452097.0903058,
     "ast_hash": "6f38a044468790ea884eef6755b37f02",
-    "semantic_hash": ""
+    "semantic_hash": "6f38a044468790ea884eef6755b37f02"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-190.spec.ts": {
     "mtime": 1786452099.570865,
     "ast_hash": "9146ce372b3363266792575da6fa0995",
-    "semantic_hash": ""
+    "semantic_hash": "9146ce372b3363266792575da6fa0995"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-191.spec.ts": {
     "mtime": 1786537257.7307303,
     "ast_hash": "6ae8b2c00a66d99aaae510f5b34e9263",
-    "semantic_hash": ""
+    "semantic_hash": "6ae8b2c00a66d99aaae510f5b34e9263"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-192.spec.ts": {
     "mtime": 1786452105.1814861,
     "ast_hash": "4b018b4a2a138f718ae95281cf07d08b",
-    "semantic_hash": ""
+    "semantic_hash": "4b018b4a2a138f718ae95281cf07d08b"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-193.spec.ts": {
     "mtime": 1786452107.6543984,
     "ast_hash": "5afcea29e44024f40a56257a29b39052",
-    "semantic_hash": ""
+    "semantic_hash": "5afcea29e44024f40a56257a29b39052"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-194.spec.ts": {
     "mtime": 1786452110.60384,
     "ast_hash": "be6578384416f87c7a81efac35319ab8",
-    "semantic_hash": ""
+    "semantic_hash": "be6578384416f87c7a81efac35319ab8"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-195.spec.ts": {
     "mtime": 1786537414.6305914,
     "ast_hash": "56a05605881898e906e8c7a6ac59a6f4",
-    "semantic_hash": ""
+    "semantic_hash": "56a05605881898e906e8c7a6ac59a6f4"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-196.spec.ts": {
     "mtime": 1786452132.9555247,
     "ast_hash": "fd151bea11b76cf443028e23ccda8f8c",
-    "semantic_hash": ""
+    "semantic_hash": "fd151bea11b76cf443028e23ccda8f8c"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-197.spec.ts": {
     "mtime": 1786452118.989169,
     "ast_hash": "56369a39c464e3bf67d50884f6428561",
-    "semantic_hash": ""
+    "semantic_hash": "56369a39c464e3bf67d50884f6428561"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-198.spec.ts": {
     "mtime": 1786448647.164118,
     "ast_hash": "5bfea9216b0f8db4121b6844f0303665",
-    "semantic_hash": ""
+    "semantic_hash": "5bfea9216b0f8db4121b6844f0303665"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-199.spec.ts": {
     "mtime": 1786448647.1651194,
     "ast_hash": "913d7327e9dd9bcf366683b04d99254d",
-    "semantic_hash": ""
+    "semantic_hash": "913d7327e9dd9bcf366683b04d99254d"
   },
   "tests/e2e/adventures/Defis_Fantastiques_01/section-200.spec.ts": {
     "mtime": 1786452148.9803932,
     "ast_hash": "17c842ca54cfd29e025abf8635ca2c21",
-    "semantic_hash": ""
+    "semantic_hash": "17c842ca54cfd29e025abf8635ca2c21"
   },
   "src/engine/GameEngineDuel.ts": {
     "mtime": 1786957822.5994985,
     "ast_hash": "b2f4c314e2f4e7588aa52caf8dbcdbd4",
-    "semantic_hash": ""
+    "semantic_hash": "b2f4c314e2f4e7588aa52caf8dbcdbd4"
   },
   "src/engine/GameEngineEffects.ts": {
-    "mtime": 1786967299.4038117,
-    "ast_hash": "da040639193e63858327dda3e1f98cd5",
-    "semantic_hash": ""
+    "mtime": 1788812909.5639186,
+    "ast_hash": "55d728330320cbc0b6c7ae457160b1ad",
+    "semantic_hash": "55d728330320cbc0b6c7ae457160b1ad"
   },
   "src/engine/GameEngineMonstres.ts": {
-    "mtime": 1786960712.0729203,
-    "ast_hash": "4358d4b8ed3cbcd19e709f3dc202f8d3",
-    "semantic_hash": ""
+    "mtime": 1788726930.1401367,
+    "ast_hash": "8db27bd2d5e7f6d6128dd97150e0303c",
+    "semantic_hash": "8db27bd2d5e7f6d6128dd97150e0303c"
   },
   "src/engine/GameEngineRolls.ts": {
     "mtime": 1786957495.9844751,
     "ast_hash": "7e94a97d7643dab3fcbb75521d11a2a5",
-    "semantic_hash": ""
+    "semantic_hash": "7e94a97d7643dab3fcbb75521d11a2a5"
   },
-  "playwright-report/data/2f8385d45eb8edc659bd3af26c192af275db0bfa.md": {
-    "mtime": 1786970483.672789,
-    "ast_hash": "73a34e0a45935d3891780369c2e6aed0",
-    "semantic_hash": ""
+  "src/ui/debugLoader.ts": {
+    "mtime": 1788845718.0969288,
+    "ast_hash": "72bdbb45f0d78fe65d9568c8c91e7f00",
+    "semantic_hash": "72bdbb45f0d78fe65d9568c8c91e7f00"
   },
-  "playwright-report/data/707e13ca4a52be2414566197da003148e74dd492.md": {
-    "mtime": 1786970483.664255,
-    "ast_hash": "ce2f552f2b2536e35f2fc6c78512e44e",
-    "semantic_hash": ""
+  "src/utils/debug.ts": {
+    "mtime": 1788340353.154585,
+    "ast_hash": "fdc4ed72597f2ccb45edda293967e645",
+    "semantic_hash": "fdc4ed72597f2ccb45edda293967e645"
   },
-  "playwright-report/data/9ecc5220347f2e0bd7918b43c9f9bbdb19c70859.md": {
-    "mtime": 1786970483.6839926,
-    "ast_hash": "9e2bfa1dbdf188f640689fc1edfec828",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-201.spec.ts": {
+    "mtime": 1786973366.4175823,
+    "ast_hash": "f1d93663397750b5ed68878ce25ec82d",
+    "semantic_hash": "f1d93663397750b5ed68878ce25ec82d"
   },
-  "playwright-report/data/deca6b7c63b7924cda4baac97cd55501ce074804.md": {
-    "mtime": 1786970483.6794853,
-    "ast_hash": "9901ef4b624971fcfd4463c3862be27a",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-202.spec.ts": {
+    "mtime": 1788893007.6162405,
+    "ast_hash": "9b8dd5088d424c10f95bc60df7f25d1a",
+    "semantic_hash": "9b8dd5088d424c10f95bc60df7f25d1a"
   },
-  "test-results/adventures-Defis_Fantastiq-1f2f4--Section-051-gain-de-chance-chromium/error-context.md": {
-    "mtime": 1786970298.448619,
-    "ast_hash": "9901ef4b624971fcfd4463c3862be27a",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-203.spec.ts": {
+    "mtime": 1787214652.1446075,
+    "ast_hash": "dd3ca5409dbca3d12c500e8f51b5d8d8",
+    "semantic_hash": "dd3ca5409dbca3d12c500e8f51b5d8d8"
   },
-  "test-results/adventures-Defis_Fantastiq-5de48-ection-051-Boutons-de-choix-chromium/error-context.md": {
-    "mtime": 1786970298.2145088,
-    "ast_hash": "73a34e0a45935d3891780369c2e6aed0",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-204.spec.ts": {
+    "mtime": 1787214643.2903948,
+    "ast_hash": "1689924869f6f7607893e1631cb340fc",
+    "semantic_hash": "1689924869f6f7607893e1631cb340fc"
   },
-  "test-results/adventures-Defis_Fantastiq-967fb-Navigation-vers-section-287-chromium/error-context.md": {
-    "mtime": 1786970298.5671165,
-    "ast_hash": "9e2bfa1dbdf188f640689fc1edfec828",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-205.spec.ts": {
+    "mtime": 1787214734.261826,
+    "ast_hash": "f46b51509b5b99a243ad283ce3aa9ec4",
+    "semantic_hash": "f46b51509b5b99a243ad283ce3aa9ec4"
   },
-  "test-results/adventures-Defis_Fantastiq-bc4d4-ection-051-Section-et-texte-chromium/error-context.md": {
-    "mtime": 1786970298.1095033,
-    "ast_hash": "ce2f552f2b2536e35f2fc6c78512e44e",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-206.spec.ts": {
+    "mtime": 1787215696.9030073,
+    "ast_hash": "9e88878bbbce907c3fe95deb9dc7249f",
+    "semantic_hash": "9e88878bbbce907c3fe95deb9dc7249f"
   },
-  "test-results/section-051-Boutons-de-choix-failed.png": {
-    "mtime": 1786970298.203607,
-    "ast_hash": "83e6807a0cd9a8eea35768d6ac39bf4b",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-207.spec.ts": {
+    "mtime": 1787215753.257587,
+    "ast_hash": "46e08c0ef1609f6f07236de00dcae9c0",
+    "semantic_hash": "46e08c0ef1609f6f07236de00dcae9c0"
   },
-  "test-results/section-051-Navigation-vers-section-287-failed.png": {
-    "mtime": 1786970298.5515656,
-    "ast_hash": "83e6807a0cd9a8eea35768d6ac39bf4b",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-208.spec.ts": {
+    "mtime": 1787215816.4893,
+    "ast_hash": "705bb371b68c412211d39c6567f92b74",
+    "semantic_hash": "705bb371b68c412211d39c6567f92b74"
   },
-  "test-results/section-051-Section-et-texte-failed.png": {
-    "mtime": 1786970298.093206,
-    "ast_hash": "83e6807a0cd9a8eea35768d6ac39bf4b",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-209.spec.ts": {
+    "mtime": 1787216090.476506,
+    "ast_hash": "3615213e9e37115b4f140053a20e77b3",
+    "semantic_hash": "3615213e9e37115b4f140053a20e77b3"
   },
-  "test-results/section-051-gain-de-chance-failed.png": {
-    "mtime": 1786970298.4375732,
-    "ast_hash": "83e6807a0cd9a8eea35768d6ac39bf4b",
-    "semantic_hash": ""
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-210.spec.ts": {
+    "mtime": 1787216181.363469,
+    "ast_hash": "06b9856abffa7ad3321ba8dccbd51f3b",
+    "semantic_hash": "06b9856abffa7ad3321ba8dccbd51f3b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-211.spec.ts": {
+    "mtime": 1787228428.1036139,
+    "ast_hash": "83290a02127843ad71a90f04b4df1d13",
+    "semantic_hash": "83290a02127843ad71a90f04b4df1d13"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-212.spec.ts": {
+    "mtime": 1787232843.5337434,
+    "ast_hash": "3bae6815c52e65f5c4c9b7d6521a5f51",
+    "semantic_hash": "3bae6815c52e65f5c4c9b7d6521a5f51"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-213.spec.ts": {
+    "mtime": 1788893206.7883022,
+    "ast_hash": "bf2eaae78cd34e9d09adffc16cff25da",
+    "semantic_hash": "bf2eaae78cd34e9d09adffc16cff25da"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-214.spec.ts": {
+    "mtime": 1787234126.7711303,
+    "ast_hash": "fcdca01176fdc86d2bb5f00ce3442c7a",
+    "semantic_hash": "fcdca01176fdc86d2bb5f00ce3442c7a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-215.spec.ts": {
+    "mtime": 1787237185.4852178,
+    "ast_hash": "98572d0ac7fbb0313fbd83e420f94a4a",
+    "semantic_hash": "98572d0ac7fbb0313fbd83e420f94a4a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-216.spec.ts": {
+    "mtime": 1787237734.5179567,
+    "ast_hash": "115175bcd62814e70f4b2f6ac4b1fa60",
+    "semantic_hash": "115175bcd62814e70f4b2f6ac4b1fa60"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-217.spec.ts": {
+    "mtime": 1787237471.1578941,
+    "ast_hash": "c9abac846217ff6b5439b3c0c4b0ba3f",
+    "semantic_hash": "c9abac846217ff6b5439b3c0c4b0ba3f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-218.spec.ts": {
+    "mtime": 1788894021.220943,
+    "ast_hash": "1efccf2c3ce3cae9cc93114c78b6ef0a",
+    "semantic_hash": "1efccf2c3ce3cae9cc93114c78b6ef0a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-219.spec.ts": {
+    "mtime": 1787237473.8074863,
+    "ast_hash": "24830f86fb3e31a090338dae8e01835a",
+    "semantic_hash": "24830f86fb3e31a090338dae8e01835a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-220.spec.ts": {
+    "mtime": 1787237476.6923418,
+    "ast_hash": "9dddd94591a670eee9ff402914c1fdb8",
+    "semantic_hash": "9dddd94591a670eee9ff402914c1fdb8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-221.spec.ts": {
+    "mtime": 1787300410.1991017,
+    "ast_hash": "3e8bd68142164c81d5704bdff6a0a56f",
+    "semantic_hash": "3e8bd68142164c81d5704bdff6a0a56f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-222.spec.ts": {
+    "mtime": 1787237479.4532435,
+    "ast_hash": "ef9c3fd4c18dc5d321a4e2efdbdd6d97",
+    "semantic_hash": "ef9c3fd4c18dc5d321a4e2efdbdd6d97"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-223.spec.ts": {
+    "mtime": 1787237482.3000646,
+    "ast_hash": "2b95d999cb040479ca3edcb19c9eec7d",
+    "semantic_hash": "2b95d999cb040479ca3edcb19c9eec7d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-224.spec.ts": {
+    "mtime": 1787237485.1032922,
+    "ast_hash": "e2c2a586d2e0ada3796f3bfc775f5960",
+    "semantic_hash": "e2c2a586d2e0ada3796f3bfc775f5960"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-225.spec.ts": {
+    "mtime": 1787237488.2575648,
+    "ast_hash": "9f31828fe218081fb60d02b1f10cb2d8",
+    "semantic_hash": "9f31828fe218081fb60d02b1f10cb2d8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-226.spec.ts": {
+    "mtime": 1787237490.911594,
+    "ast_hash": "4c3d933acb4654d7001da8f7c25aadfe",
+    "semantic_hash": "4c3d933acb4654d7001da8f7c25aadfe"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-227.spec.ts": {
+    "mtime": 1787348760.3074334,
+    "ast_hash": "65d4ab427ad0184246c0ddb8638e88e1",
+    "semantic_hash": "65d4ab427ad0184246c0ddb8638e88e1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-228.spec.ts": {
+    "mtime": 1787237493.6233203,
+    "ast_hash": "a2d211c304af7486de8df7e6dbe60dac",
+    "semantic_hash": "a2d211c304af7486de8df7e6dbe60dac"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-229.spec.ts": {
+    "mtime": 1787237496.3175797,
+    "ast_hash": "ebae31745324a04603505c839fae74b3",
+    "semantic_hash": "ebae31745324a04603505c839fae74b3"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-230.spec.ts": {
+    "mtime": 1788284790.6868093,
+    "ast_hash": "ced0e638b5bc1d355b59207dcc1360ff",
+    "semantic_hash": "ced0e638b5bc1d355b59207dcc1360ff"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-231.spec.ts": {
+    "mtime": 1787237501.3367667,
+    "ast_hash": "49746eb4627ec288fc884bd0b1a99f24",
+    "semantic_hash": "49746eb4627ec288fc884bd0b1a99f24"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-232.spec.ts": {
+    "mtime": 1787237504.1397328,
+    "ast_hash": "a765df2ca49b895504b1e2eb6e896e6f",
+    "semantic_hash": "a765df2ca49b895504b1e2eb6e896e6f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-233.spec.ts": {
+    "mtime": 1787237506.6640785,
+    "ast_hash": "1a8651ddac76d85f88cb36b4d7d3d12e",
+    "semantic_hash": "1a8651ddac76d85f88cb36b4d7d3d12e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-234.spec.ts": {
+    "mtime": 1788289013.064278,
+    "ast_hash": "06e374eefb2da141f3245f7306f3eba0",
+    "semantic_hash": "06e374eefb2da141f3245f7306f3eba0"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-235.spec.ts": {
+    "mtime": 1787237509.7431371,
+    "ast_hash": "1fc2050e2fd66c62d81b27e58f214329",
+    "semantic_hash": "1fc2050e2fd66c62d81b27e58f214329"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-236.spec.ts": {
+    "mtime": 1788290516.0223114,
+    "ast_hash": "4f65cc5088fcb842219fe05d00ea41ef",
+    "semantic_hash": "4f65cc5088fcb842219fe05d00ea41ef"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-237.spec.ts": {
+    "mtime": 1787237512.7280657,
+    "ast_hash": "96e8ca9f599dff7b9e0881f1030dae91",
+    "semantic_hash": "96e8ca9f599dff7b9e0881f1030dae91"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-238.spec.ts": {
+    "mtime": 1787237515.6769712,
+    "ast_hash": "252e36b7ab777cc6bb36794423398a59",
+    "semantic_hash": "252e36b7ab777cc6bb36794423398a59"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-239.spec.ts": {
+    "mtime": 1788291664.7105904,
+    "ast_hash": "0500b543daba78bd606325a8e9de0c74",
+    "semantic_hash": "0500b543daba78bd606325a8e9de0c74"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-240.spec.ts": {
+    "mtime": 1788290743.6170945,
+    "ast_hash": "e2dbc20d312bcd8ba995f8f27804784f",
+    "semantic_hash": "e2dbc20d312bcd8ba995f8f27804784f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-241.spec.ts": {
+    "mtime": 1788291655.9037597,
+    "ast_hash": "1ea746578cb50b8364312bd1e3211907",
+    "semantic_hash": "1ea746578cb50b8364312bd1e3211907"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-242.spec.ts": {
+    "mtime": 1787237518.9804819,
+    "ast_hash": "c5d5d427987e0605e43159aba2992b1b",
+    "semantic_hash": "c5d5d427987e0605e43159aba2992b1b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-243.spec.ts": {
+    "mtime": 1788291565.9766426,
+    "ast_hash": "234fa235fd7dfb3033e73c7f9ce4fe32",
+    "semantic_hash": "234fa235fd7dfb3033e73c7f9ce4fe32"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-244.spec.ts": {
+    "mtime": 1787237522.5824468,
+    "ast_hash": "b1d7dd5f230a545a5f10e21d75ae631d",
+    "semantic_hash": "b1d7dd5f230a545a5f10e21d75ae631d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-245.spec.ts": {
+    "mtime": 1787237525.0094502,
+    "ast_hash": "038b5135637ca65bbb6a5d99433d1a6c",
+    "semantic_hash": "038b5135637ca65bbb6a5d99433d1a6c"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-246.spec.ts": {
+    "mtime": 1787237528.0362775,
+    "ast_hash": "b71dcc4077e861b9c08a671f2101d262",
+    "semantic_hash": "b71dcc4077e861b9c08a671f2101d262"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-247.spec.ts": {
+    "mtime": 1788291633.1849349,
+    "ast_hash": "57d1d41ecb3b013bc061a617246f263a",
+    "semantic_hash": "57d1d41ecb3b013bc061a617246f263a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-248.spec.ts": {
+    "mtime": 1788291739.6504507,
+    "ast_hash": "afaaa964f6761d3e2a314b4029a309d2",
+    "semantic_hash": "afaaa964f6761d3e2a314b4029a309d2"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-249.spec.ts": {
+    "mtime": 1788381156.7513542,
+    "ast_hash": "e8cb2e32f224ff9a3050bd3aa23592df",
+    "semantic_hash": "e8cb2e32f224ff9a3050bd3aa23592df"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-250.spec.ts": {
+    "mtime": 1787237533.5593715,
+    "ast_hash": "529b988c8c860e0d01fa37e72e3e97ea",
+    "semantic_hash": "529b988c8c860e0d01fa37e72e3e97ea"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-251.spec.ts": {
+    "mtime": 1788381478.1143456,
+    "ast_hash": "f9cdb6a16eed93f2d6ab94c51ec2c718",
+    "semantic_hash": "f9cdb6a16eed93f2d6ab94c51ec2c718"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-252.spec.ts": {
+    "mtime": 1787237536.6105387,
+    "ast_hash": "98602a04bd5a7dd6ae661a2ca9245237",
+    "semantic_hash": "98602a04bd5a7dd6ae661a2ca9245237"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-253.spec.ts": {
+    "mtime": 1787237541.329551,
+    "ast_hash": "2f430d286771bf141767399ff9d32562",
+    "semantic_hash": "2f430d286771bf141767399ff9d32562"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-254.spec.ts": {
+    "mtime": 1787237543.79149,
+    "ast_hash": "19a89f06f39eb09d59a5de65ea35c1e0",
+    "semantic_hash": "19a89f06f39eb09d59a5de65ea35c1e0"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-255.spec.ts": {
+    "mtime": 1787237546.7622845,
+    "ast_hash": "760fd7c3a730a0595cb4fd61035df6dd",
+    "semantic_hash": "760fd7c3a730a0595cb4fd61035df6dd"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-256.spec.ts": {
+    "mtime": 1787237549.6086533,
+    "ast_hash": "46b276279a26ad7ebc0a1389962bb0e7",
+    "semantic_hash": "46b276279a26ad7ebc0a1389962bb0e7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-257.spec.ts": {
+    "mtime": 1787237552.5536857,
+    "ast_hash": "9c7b841948aa25f915291c8d83a38d5f",
+    "semantic_hash": "9c7b841948aa25f915291c8d83a38d5f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-258.spec.ts": {
+    "mtime": 1788381919.7521062,
+    "ast_hash": "71c826e40fd7911ee75ffa244dec4861",
+    "semantic_hash": "71c826e40fd7911ee75ffa244dec4861"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-259.spec.ts": {
+    "mtime": 1788382038.98173,
+    "ast_hash": "55ad614307d484aa255e5ea31e42f0ef",
+    "semantic_hash": "55ad614307d484aa255e5ea31e42f0ef"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-260.spec.ts": {
+    "mtime": 1787237555.2395961,
+    "ast_hash": "87c1ecce44dc1bafbb541e6467accdec",
+    "semantic_hash": "87c1ecce44dc1bafbb541e6467accdec"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-261.spec.ts": {
+    "mtime": 1787237557.9525576,
+    "ast_hash": "d70473ea4789357336176fb8f9dadba5",
+    "semantic_hash": "d70473ea4789357336176fb8f9dadba5"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-262.spec.ts": {
+    "mtime": 1787237560.7509098,
+    "ast_hash": "e41d35856b1417f3cda790ea620a29ab",
+    "semantic_hash": "e41d35856b1417f3cda790ea620a29ab"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-263.spec.ts": {
+    "mtime": 1788382129.6931264,
+    "ast_hash": "a3153f93e5a2bf95d61119302cc921a3",
+    "semantic_hash": "a3153f93e5a2bf95d61119302cc921a3"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-264.spec.ts": {
+    "mtime": 1788382372.0742538,
+    "ast_hash": "6f3b88c096ce238d5fb49df61a2d863c",
+    "semantic_hash": "6f3b88c096ce238d5fb49df61a2d863c"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-265.spec.ts": {
+    "mtime": 1787237568.7758133,
+    "ast_hash": "5f8b2b159e70f99e813466ae6e19331a",
+    "semantic_hash": "5f8b2b159e70f99e813466ae6e19331a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-266.spec.ts": {
+    "mtime": 1788606627.589463,
+    "ast_hash": "8a1f4c55b33d1e083767b828d8bc1e3e",
+    "semantic_hash": "8a1f4c55b33d1e083767b828d8bc1e3e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-267.spec.ts": {
+    "mtime": 1787237572.844179,
+    "ast_hash": "a1cfdde2c46fa62f9471919bf664e6fc",
+    "semantic_hash": "a1cfdde2c46fa62f9471919bf664e6fc"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-268.spec.ts": {
+    "mtime": 1787237569.5003605,
+    "ast_hash": "70df8a15c7ca4e22a308f294c1fe9e45",
+    "semantic_hash": "70df8a15c7ca4e22a308f294c1fe9e45"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-269.spec.ts": {
+    "mtime": 1787237578.2651513,
+    "ast_hash": "69d4a00ad945216df26edda6df709b40",
+    "semantic_hash": "69d4a00ad945216df26edda6df709b40"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-270.spec.ts": {
+    "mtime": 1787237584.9445136,
+    "ast_hash": "02fd897bbfa044c3855ee1332448bbf5",
+    "semantic_hash": "02fd897bbfa044c3855ee1332448bbf5"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-271.spec.ts": {
+    "mtime": 1787237575.57791,
+    "ast_hash": "e6041a92022489790cd580c046c63bf8",
+    "semantic_hash": "e6041a92022489790cd580c046c63bf8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-272.spec.ts": {
+    "mtime": 1788382610.4655182,
+    "ast_hash": "7bd44615a8e8e66e1a601146a0ed370d",
+    "semantic_hash": "7bd44615a8e8e66e1a601146a0ed370d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-273.spec.ts": {
+    "mtime": 1788382766.9998353,
+    "ast_hash": "4944ad4459215e6596580a62ee974502",
+    "semantic_hash": "4944ad4459215e6596580a62ee974502"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-274.spec.ts": {
+    "mtime": 1787237581.445028,
+    "ast_hash": "b4770244f00edf6fc8da7417685ead91",
+    "semantic_hash": "b4770244f00edf6fc8da7417685ead91"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-275.spec.ts": {
+    "mtime": 1788384175.6533794,
+    "ast_hash": "cec6c8d18ff82e2c5c72bcddea114f22",
+    "semantic_hash": "cec6c8d18ff82e2c5c72bcddea114f22"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-276.spec.ts": {
+    "mtime": 1787237593.5191376,
+    "ast_hash": "4c3e44469c18feb5fb472025b7d5e5d9",
+    "semantic_hash": "4c3e44469c18feb5fb472025b7d5e5d9"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-277.spec.ts": {
+    "mtime": 1787237588.3146267,
+    "ast_hash": "6eea12c4cce78c75246ada1e9ede6e9c",
+    "semantic_hash": "6eea12c4cce78c75246ada1e9ede6e9c"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-278.spec.ts": {
+    "mtime": 1787237594.1641767,
+    "ast_hash": "bf2baca5e0334d7dc616c2d2e3b85f70",
+    "semantic_hash": "bf2baca5e0334d7dc616c2d2e3b85f70"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-279.spec.ts": {
+    "mtime": 1788469533.7502728,
+    "ast_hash": "e1b83b153673f5503ec4061215007c0a",
+    "semantic_hash": "e1b83b153673f5503ec4061215007c0a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-280.spec.ts": {
+    "mtime": 1787237599.7676904,
+    "ast_hash": "08764dca3fd9d007995622a9b396bdce",
+    "semantic_hash": "08764dca3fd9d007995622a9b396bdce"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-281.spec.ts": {
+    "mtime": 1787237602.3179083,
+    "ast_hash": "f48dcb63370911d045d2ed64426da88f",
+    "semantic_hash": "f48dcb63370911d045d2ed64426da88f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-282.spec.ts": {
+    "mtime": 1788472653.218702,
+    "ast_hash": "96ec9035944540a8d95baf30a7561b71",
+    "semantic_hash": "96ec9035944540a8d95baf30a7561b71"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-283.spec.ts": {
+    "mtime": 1787237604.8475616,
+    "ast_hash": "2caf8030e267a25f10f08e419e1ca65e",
+    "semantic_hash": "2caf8030e267a25f10f08e419e1ca65e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-284.spec.ts": {
+    "mtime": 1787237607.9990165,
+    "ast_hash": "36d686befa8f216d9b458f398fc20df1",
+    "semantic_hash": "36d686befa8f216d9b458f398fc20df1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-285.spec.ts": {
+    "mtime": 1787237610.9565537,
+    "ast_hash": "1f875fba4c8aed8ceaf1caa788bd4fbd",
+    "semantic_hash": "1f875fba4c8aed8ceaf1caa788bd4fbd"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-286.spec.ts": {
+    "mtime": 1787237614.651714,
+    "ast_hash": "ac89de029cf27a374a09900600fa56fb",
+    "semantic_hash": "ac89de029cf27a374a09900600fa56fb"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-287.spec.ts": {
+    "mtime": 1788472873.7042255,
+    "ast_hash": "d0dfdc0b5d710abba20b0f6f233c7a70",
+    "semantic_hash": "d0dfdc0b5d710abba20b0f6f233c7a70"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-288.spec.ts": {
+    "mtime": 1787237617.4281447,
+    "ast_hash": "e7012d7bec6b689c06a5ae2b3b7283a7",
+    "semantic_hash": "e7012d7bec6b689c06a5ae2b3b7283a7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-289.spec.ts": {
+    "mtime": 1788473695.1212103,
+    "ast_hash": "563ffec45ba392c1c5c72411c4eae678",
+    "semantic_hash": "563ffec45ba392c1c5c72411c4eae678"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-290.spec.ts": {
+    "mtime": 1787237619.899566,
+    "ast_hash": "ef3af190f8458a09f3b94b7288c5cd93",
+    "semantic_hash": "ef3af190f8458a09f3b94b7288c5cd93"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-291.spec.ts": {
+    "mtime": 1787237623.213635,
+    "ast_hash": "1f912a6b70b492429c8e131a4daefc58",
+    "semantic_hash": "1f912a6b70b492429c8e131a4daefc58"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-292.spec.ts": {
+    "mtime": 1788473880.0269432,
+    "ast_hash": "bcaab53f6c6a11ab4a7b4a5e09aa497f",
+    "semantic_hash": "bcaab53f6c6a11ab4a7b4a5e09aa497f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-293.spec.ts": {
+    "mtime": 1787237625.9767146,
+    "ast_hash": "443ba876d95b0e177c974f32d70fc698",
+    "semantic_hash": "443ba876d95b0e177c974f32d70fc698"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-294.spec.ts": {
+    "mtime": 1788474088.0152175,
+    "ast_hash": "3d85c3c60bbfdd4058cba82c84a70e8d",
+    "semantic_hash": "3d85c3c60bbfdd4058cba82c84a70e8d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-295.spec.ts": {
+    "mtime": 1788474192.6172214,
+    "ast_hash": "54e5abba9389f49ceb44237421aae3af",
+    "semantic_hash": "54e5abba9389f49ceb44237421aae3af"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-296.spec.ts": {
+    "mtime": 1788474289.6930387,
+    "ast_hash": "72b201c40ee5c98a1f12eaa30d4f5576",
+    "semantic_hash": "72b201c40ee5c98a1f12eaa30d4f5576"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-297.spec.ts": {
+    "mtime": 1787237631.3493426,
+    "ast_hash": "77244822e56aca19627b3779de5cb1b1",
+    "semantic_hash": "77244822e56aca19627b3779de5cb1b1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-298.spec.ts": {
+    "mtime": 1788474410.2474136,
+    "ast_hash": "1eedcf1a8c2f9603f2f7b09b83522d73",
+    "semantic_hash": "1eedcf1a8c2f9603f2f7b09b83522d73"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-299.spec.ts": {
+    "mtime": 1787237634.3627174,
+    "ast_hash": "a2d8a6c85be4a680955749d4e44bb015",
+    "semantic_hash": "a2d8a6c85be4a680955749d4e44bb015"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-300.spec.ts": {
+    "mtime": 1787237640.0702975,
+    "ast_hash": "8c84fe68f6ef5b15e03135d63e385655",
+    "semantic_hash": "8c84fe68f6ef5b15e03135d63e385655"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-301.spec.ts": {
+    "mtime": 1787237652.0193777,
+    "ast_hash": "17dd8e82dee0630233134c087d2d7014",
+    "semantic_hash": "17dd8e82dee0630233134c087d2d7014"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-302.spec.ts": {
+    "mtime": 1787237636.9254475,
+    "ast_hash": "3dd544af40494b1421edfd9fdfa96fe7",
+    "semantic_hash": "3dd544af40494b1421edfd9fdfa96fe7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-303.spec.ts": {
+    "mtime": 1788474493.610945,
+    "ast_hash": "334bafd857fcaff63fbecaf857abce04",
+    "semantic_hash": "334bafd857fcaff63fbecaf857abce04"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-304.spec.ts": {
+    "mtime": 1788507876.7433345,
+    "ast_hash": "426b77baaf00abe45c9bc6ebf0e9ee98",
+    "semantic_hash": "426b77baaf00abe45c9bc6ebf0e9ee98"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-305.spec.ts": {
+    "mtime": 1788527997.2933843,
+    "ast_hash": "2efe1caa9cf1b637df014623fedc7770",
+    "semantic_hash": "2efe1caa9cf1b637df014623fedc7770"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-306.spec.ts": {
+    "mtime": 1788528288.491513,
+    "ast_hash": "36c613c6233a6d0070de853a2d3f97ab",
+    "semantic_hash": "36c613c6233a6d0070de853a2d3f97ab"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-307.spec.ts": {
+    "mtime": 1787237646.2299771,
+    "ast_hash": "1b98df9817cf1d7b4bcbd5d1f8094615",
+    "semantic_hash": "1b98df9817cf1d7b4bcbd5d1f8094615"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-308.spec.ts": {
+    "mtime": 1787237643.1779945,
+    "ast_hash": "d47f0c3016065bf29a9bda281c3343a9",
+    "semantic_hash": "d47f0c3016065bf29a9bda281c3343a9"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-309.spec.ts": {
+    "mtime": 1788528559.9535048,
+    "ast_hash": "c9a5506d4fdf7c6c4a167ed5cd2789d9",
+    "semantic_hash": "c9a5506d4fdf7c6c4a167ed5cd2789d9"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-310.spec.ts": {
+    "mtime": 1787237648.98386,
+    "ast_hash": "07dd9c4b38577cdc942c4b3634b08123",
+    "semantic_hash": "07dd9c4b38577cdc942c4b3634b08123"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-311.spec.ts": {
+    "mtime": 1788528894.9037468,
+    "ast_hash": "8b473d0bebc895fd2c12c14cdd46f5e9",
+    "semantic_hash": "8b473d0bebc895fd2c12c14cdd46f5e9"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-312.spec.ts": {
+    "mtime": 1787237654.855165,
+    "ast_hash": "56dbc8e7a52a1bb770a4759803b263cd",
+    "semantic_hash": "56dbc8e7a52a1bb770a4759803b263cd"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-313.spec.ts": {
+    "mtime": 1788530577.7985485,
+    "ast_hash": "c2b66ec30f132a5514b1ba437ccf973f",
+    "semantic_hash": "c2b66ec30f132a5514b1ba437ccf973f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-314.spec.ts": {
+    "mtime": 1787237657.8327632,
+    "ast_hash": "13fc271e56043f36a63b7b55307491cc",
+    "semantic_hash": "13fc271e56043f36a63b7b55307491cc"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-315.spec.ts": {
+    "mtime": 1787237663.9131334,
+    "ast_hash": "aef4fb6b11feea7c5855a8988830646d",
+    "semantic_hash": "aef4fb6b11feea7c5855a8988830646d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-316.spec.ts": {
+    "mtime": 1788533953.772276,
+    "ast_hash": "eee194d8c59ac026eb665f0363a63698",
+    "semantic_hash": "eee194d8c59ac026eb665f0363a63698"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-317.spec.ts": {
+    "mtime": 1788534237.3159232,
+    "ast_hash": "845aa9b940ec347035c8563a0adc87f2",
+    "semantic_hash": "845aa9b940ec347035c8563a0adc87f2"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-318.spec.ts": {
+    "mtime": 1787237667.4965134,
+    "ast_hash": "57c56d09ce187e5d922ee4288ef3a884",
+    "semantic_hash": "57c56d09ce187e5d922ee4288ef3a884"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-319.spec.ts": {
+    "mtime": 1787237679.3176982,
+    "ast_hash": "30f2889b96aa40fb97350c45bcceb1e7",
+    "semantic_hash": "30f2889b96aa40fb97350c45bcceb1e7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-320.spec.ts": {
+    "mtime": 1787237670.1987262,
+    "ast_hash": "c27c4611892ac6ecb8abae1ac395703e",
+    "semantic_hash": "c27c4611892ac6ecb8abae1ac395703e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-321.spec.ts": {
+    "mtime": 1787237672.7412803,
+    "ast_hash": "92314d0d46b113559c63c32386738daa",
+    "semantic_hash": "92314d0d46b113559c63c32386738daa"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-322.spec.ts": {
+    "mtime": 1788554346.5527034,
+    "ast_hash": "d969be475584babb841d7adcab381ae7",
+    "semantic_hash": "d969be475584babb841d7adcab381ae7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-323.spec.ts": {
+    "mtime": 1787237675.7332888,
+    "ast_hash": "4f30735f0f222cb317ee76f02567413e",
+    "semantic_hash": "4f30735f0f222cb317ee76f02567413e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-324.spec.ts": {
+    "mtime": 1787237681.8860936,
+    "ast_hash": "50b1b076f06bfe19557d9fd6fca85960",
+    "semantic_hash": "50b1b076f06bfe19557d9fd6fca85960"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-325.spec.ts": {
+    "mtime": 1788556008.5235069,
+    "ast_hash": "4e60348efaf85bc11f456706b2366ed8",
+    "semantic_hash": "4e60348efaf85bc11f456706b2366ed8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-326.spec.ts": {
+    "mtime": 1788556075.8813884,
+    "ast_hash": "6439389f82fa1983d66233088c821490",
+    "semantic_hash": "6439389f82fa1983d66233088c821490"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-327.spec.ts": {
+    "mtime": 1788608869.4809499,
+    "ast_hash": "b9929c0994a97b6b27a53217b640b7d1",
+    "semantic_hash": "b9929c0994a97b6b27a53217b640b7d1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-328.spec.ts": {
+    "mtime": 1788609026.5602458,
+    "ast_hash": "6488060dc96efe77358034a3783c15a6",
+    "semantic_hash": "6488060dc96efe77358034a3783c15a6"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-329.spec.ts": {
+    "mtime": 1787237689.021785,
+    "ast_hash": "0d3e5b0dfdbf7f3ae88e7ee474d123d2",
+    "semantic_hash": "0d3e5b0dfdbf7f3ae88e7ee474d123d2"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-330.spec.ts": {
+    "mtime": 1788894511.8789544,
+    "ast_hash": "970668d0f00b08431bfb83aa6ea009b1",
+    "semantic_hash": "970668d0f00b08431bfb83aa6ea009b1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-331.spec.ts": {
+    "mtime": 1788609508.4018252,
+    "ast_hash": "8367277782d82bf757e96b8c8cb44735",
+    "semantic_hash": "8367277782d82bf757e96b8c8cb44735"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-332.spec.ts": {
+    "mtime": 1787237689.0553,
+    "ast_hash": "762d3a6e60ae31c1f9810b2233975b14",
+    "semantic_hash": "762d3a6e60ae31c1f9810b2233975b14"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-333.spec.ts": {
+    "mtime": 1788682613.2550607,
+    "ast_hash": "c56a12fc9b93920d4008803eb7a0ee3f",
+    "semantic_hash": "c56a12fc9b93920d4008803eb7a0ee3f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-334.spec.ts": {
+    "mtime": 1788695282.312558,
+    "ast_hash": "c3119827ab3f23e3198b2fde33ea8807",
+    "semantic_hash": "c3119827ab3f23e3198b2fde33ea8807"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-335.spec.ts": {
+    "mtime": 1787237690.9796157,
+    "ast_hash": "2bcb92a89351f9fbdb73e33e70141b1d",
+    "semantic_hash": "2bcb92a89351f9fbdb73e33e70141b1d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-336.spec.ts": {
+    "mtime": 1788695348.8422978,
+    "ast_hash": "6d797b2e9ad6df74fe99fa1debe5bc0b",
+    "semantic_hash": "6d797b2e9ad6df74fe99fa1debe5bc0b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-337.spec.ts": {
+    "mtime": 1787237706.051606,
+    "ast_hash": "be6fc50abd7271a942d1519089a8580b",
+    "semantic_hash": "be6fc50abd7271a942d1519089a8580b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-338.spec.ts": {
+    "mtime": 1788894118.730276,
+    "ast_hash": "471700dc7683a777d4c26c3480ae6d05",
+    "semantic_hash": "471700dc7683a777d4c26c3480ae6d05"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-339.spec.ts": {
+    "mtime": 1788698215.3167336,
+    "ast_hash": "433438309c301b8767e6a5fec0d3949d",
+    "semantic_hash": "433438309c301b8767e6a5fec0d3949d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-340.spec.ts": {
+    "mtime": 1788699421.6251154,
+    "ast_hash": "b6017af6d73770d0b1a3bc7a5eb6a0e8",
+    "semantic_hash": "b6017af6d73770d0b1a3bc7a5eb6a0e8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-341.spec.ts": {
+    "mtime": 1787237703.5471365,
+    "ast_hash": "1efcc7ca54129e17b82f68b0546e5e7f",
+    "semantic_hash": "1efcc7ca54129e17b82f68b0546e5e7f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-342.spec.ts": {
+    "mtime": 1788699616.8977528,
+    "ast_hash": "4dfa3f9eb1dbfdeb4d0ce90aeda7d5c7",
+    "semantic_hash": "4dfa3f9eb1dbfdeb4d0ce90aeda7d5c7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-343.spec.ts": {
+    "mtime": 1788699691.110867,
+    "ast_hash": "6f455fb1eb50252f43971c72d3bf8e50",
+    "semantic_hash": "6f455fb1eb50252f43971c72d3bf8e50"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-344.spec.ts": {
+    "mtime": 1788702089.8952456,
+    "ast_hash": "5d317a2f5705f3113f20f21a7509d16d",
+    "semantic_hash": "5d317a2f5705f3113f20f21a7509d16d"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-345.spec.ts": {
+    "mtime": 1788503789.2021961,
+    "ast_hash": "e0ff1093d32af234ee70dcb98e957a82",
+    "semantic_hash": "e0ff1093d32af234ee70dcb98e957a82"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-346.spec.ts": {
+    "mtime": 1788724068.095551,
+    "ast_hash": "60f79a4aaf50d956c37a361c04abaa2f",
+    "semantic_hash": "60f79a4aaf50d956c37a361c04abaa2f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-347.spec.ts": {
+    "mtime": 1787237713.5514264,
+    "ast_hash": "ad799baa255750adc1f323c4e574b93b",
+    "semantic_hash": "ad799baa255750adc1f323c4e574b93b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-348.spec.ts": {
+    "mtime": 1788724311.9110396,
+    "ast_hash": "87c2c6953aad7e290d2b1917b0fd5dbf",
+    "semantic_hash": "87c2c6953aad7e290d2b1917b0fd5dbf"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-349.spec.ts": {
+    "mtime": 1787237715.439524,
+    "ast_hash": "0d63fe82bb9038873248786200c913e9",
+    "semantic_hash": "0d63fe82bb9038873248786200c913e9"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-351.spec.ts": {
+    "mtime": 1787237717.9534254,
+    "ast_hash": "36394fb7914661d429946d203d03bad7",
+    "semantic_hash": "36394fb7914661d429946d203d03bad7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-353.spec.ts": {
+    "mtime": 1787237709.0975819,
+    "ast_hash": "71317585c69a3f538a6a92c44f6cd270",
+    "semantic_hash": "71317585c69a3f538a6a92c44f6cd270"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-354.spec.ts": {
+    "mtime": 1787237697.083999,
+    "ast_hash": "cbce75cea2bf2fa27e863de0b77f74a0",
+    "semantic_hash": "cbce75cea2bf2fa27e863de0b77f74a0"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-356.spec.ts": {
+    "mtime": 1787237720.6590235,
+    "ast_hash": "4aa837d50c1a8ea08a0f70f53941edb7",
+    "semantic_hash": "4aa837d50c1a8ea08a0f70f53941edb7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-357.spec.ts": {
+    "mtime": 1787237743.9199197,
+    "ast_hash": "12f461b421d0e80bc2f6857e9231e5c1",
+    "semantic_hash": "12f461b421d0e80bc2f6857e9231e5c1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-359.spec.ts": {
+    "mtime": 1787237748.869951,
+    "ast_hash": "9df089d4672b1b33285c1e5038e28fb8",
+    "semantic_hash": "9df089d4672b1b33285c1e5038e28fb8"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-360.spec.ts": {
+    "mtime": 1787237726.1353903,
+    "ast_hash": "d6096e52be34e6217e6144f4125f3589",
+    "semantic_hash": "d6096e52be34e6217e6144f4125f3589"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-362.spec.ts": {
+    "mtime": 1787237728.8550513,
+    "ast_hash": "08a1286e28ae5129a53c16945d42a958",
+    "semantic_hash": "08a1286e28ae5129a53c16945d42a958"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-363.spec.ts": {
+    "mtime": 1787237731.951098,
+    "ast_hash": "acdeee69d1d4ff869342c3b1a00489c5",
+    "semantic_hash": "acdeee69d1d4ff869342c3b1a00489c5"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-364.spec.ts": {
+    "mtime": 1787237735.039839,
+    "ast_hash": "d631e9679388185d1e0044dc57fbae15",
+    "semantic_hash": "d631e9679388185d1e0044dc57fbae15"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-366.spec.ts": {
+    "mtime": 1787237737.919408,
+    "ast_hash": "03c2b84678bdf1e379f30cce3c7221ad",
+    "semantic_hash": "03c2b84678bdf1e379f30cce3c7221ad"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-367.spec.ts": {
+    "mtime": 1787237740.9049397,
+    "ast_hash": "ae168e21c35efa2452f9ff5403f95f11",
+    "semantic_hash": "ae168e21c35efa2452f9ff5403f95f11"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-373.spec.ts": {
+    "mtime": 1787237757.199132,
+    "ast_hash": "4ae048220e2a3f6c6a503751d04b673b",
+    "semantic_hash": "4ae048220e2a3f6c6a503751d04b673b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-375.spec.ts": {
+    "mtime": 1787237761.063663,
+    "ast_hash": "e00ead9385013d53e19642e7d772224e",
+    "semantic_hash": "e00ead9385013d53e19642e7d772224e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-378.spec.ts": {
+    "mtime": 1787237775.287614,
+    "ast_hash": "25ffea46fefe808c78057e90c8ce8183",
+    "semantic_hash": "25ffea46fefe808c78057e90c8ce8183"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-380.spec.ts": {
+    "mtime": 1787237762.8055503,
+    "ast_hash": "bbc7aca9c01ea63adf5cc33145fb18dc",
+    "semantic_hash": "bbc7aca9c01ea63adf5cc33145fb18dc"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-381.spec.ts": {
+    "mtime": 1787237768.6366124,
+    "ast_hash": "597ea963cfe54aff16723439230880a1",
+    "semantic_hash": "597ea963cfe54aff16723439230880a1"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-382.spec.ts": {
+    "mtime": 1787237778.1559813,
+    "ast_hash": "0978ac00b92a8709c5f5ee0762942bb4",
+    "semantic_hash": "0978ac00b92a8709c5f5ee0762942bb4"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-384.spec.ts": {
+    "mtime": 1787237765.6901875,
+    "ast_hash": "d7dd828dac6b9fd2e41dc5e45469e8e5",
+    "semantic_hash": "d7dd828dac6b9fd2e41dc5e45469e8e5"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-385.spec.ts": {
+    "mtime": 1787237790.2505398,
+    "ast_hash": "0f21e937107c36ce43692c7df99d3780",
+    "semantic_hash": "0f21e937107c36ce43692c7df99d3780"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-386.spec.ts": {
+    "mtime": 1787237793.209697,
+    "ast_hash": "27cd29e0a4bdde38a764f2cd96905dab",
+    "semantic_hash": "27cd29e0a4bdde38a764f2cd96905dab"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-391.spec.ts": {
+    "mtime": 1787237772.2560587,
+    "ast_hash": "01193e9dc7912c7ef6cf59f3dd392b0f",
+    "semantic_hash": "01193e9dc7912c7ef6cf59f3dd392b0f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-392.spec.ts": {
+    "mtime": 1787237754.609679,
+    "ast_hash": "5d1a56ecc133991b0ee52df6d40b1ce6",
+    "semantic_hash": "5d1a56ecc133991b0ee52df6d40b1ce6"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-397.spec.ts": {
+    "mtime": 1787237783.969304,
+    "ast_hash": "319201bbce001db6a10b66306df81f09",
+    "semantic_hash": "319201bbce001db6a10b66306df81f09"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-398.spec.ts": {
+    "mtime": 1787237786.9000223,
+    "ast_hash": "9c886a1969437406ce8ed3147d5ba309",
+    "semantic_hash": "9c886a1969437406ce8ed3147d5ba309"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-399.spec.ts": {
+    "mtime": 1787237795.8737125,
+    "ast_hash": "790ea730571a45ae5d5cb86f484a9464",
+    "semantic_hash": "790ea730571a45ae5d5cb86f484a9464"
+  },
+  "tests/e2e/helpers/combatTests.ts": {
+    "mtime": 1788800130.0118418,
+    "ast_hash": "9b2b37ac7b28487416ffe4521e1d37fa",
+    "semantic_hash": "9b2b37ac7b28487416ffe4521e1d37fa"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-350.spec.ts": {
+    "mtime": 1788795824.0698733,
+    "ast_hash": "a0cab9960eca5a7bea4e96eed7413d50",
+    "semantic_hash": "a0cab9960eca5a7bea4e96eed7413d50"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-352.spec.ts": {
+    "mtime": 1788796021.0292585,
+    "ast_hash": "2986cf1d332b924da730392d875a64ed",
+    "semantic_hash": "2986cf1d332b924da730392d875a64ed"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-355.spec.ts": {
+    "mtime": 1788796093.3797266,
+    "ast_hash": "21e9477d1249d324cbe7d8e1a3199270",
+    "semantic_hash": "21e9477d1249d324cbe7d8e1a3199270"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-358.spec.ts": {
+    "mtime": 1788796155.5064385,
+    "ast_hash": "e0126951f1e6eba326944a6b8f7b45dc",
+    "semantic_hash": "e0126951f1e6eba326944a6b8f7b45dc"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-361.spec.ts": {
+    "mtime": 1788799804.759683,
+    "ast_hash": "8afcd2c31ae3d34610cc39a687ff4cc3",
+    "semantic_hash": "8afcd2c31ae3d34610cc39a687ff4cc3"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-365.spec.ts": {
+    "mtime": 1788800201.334241,
+    "ast_hash": "60afa7219d808a829a0c1d0cf7cf4527",
+    "semantic_hash": "60afa7219d808a829a0c1d0cf7cf4527"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-368.spec.ts": {
+    "mtime": 1788800300.8329115,
+    "ast_hash": "40b7358d22603e32596b35e9e43df656",
+    "semantic_hash": "40b7358d22603e32596b35e9e43df656"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-369.spec.ts": {
+    "mtime": 1788800881.437567,
+    "ast_hash": "f440a02307bd26fe6d473c5c9a59e130",
+    "semantic_hash": "f440a02307bd26fe6d473c5c9a59e130"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-370.spec.ts": {
+    "mtime": 1788800940.067971,
+    "ast_hash": "a1d6e3e3123563bca6378f56eff48918",
+    "semantic_hash": "a1d6e3e3123563bca6378f56eff48918"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-371.spec.ts": {
+    "mtime": 1788801057.9951694,
+    "ast_hash": "5449f42660b08ca58387dc53d0b76e7b",
+    "semantic_hash": "5449f42660b08ca58387dc53d0b76e7b"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-372.spec.ts": {
+    "mtime": 1788804890.5155973,
+    "ast_hash": "1df75f79987de38c78761b6a715f9a2f",
+    "semantic_hash": "1df75f79987de38c78761b6a715f9a2f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-374.spec.ts": {
+    "mtime": 1788807305.9739666,
+    "ast_hash": "45b1ff33b8c84d1d6199dabef675cd34",
+    "semantic_hash": "45b1ff33b8c84d1d6199dabef675cd34"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-376.spec.ts": {
+    "mtime": 1788807399.4306445,
+    "ast_hash": "e3c1e9159688a6cb3ef71b56a6321143",
+    "semantic_hash": "e3c1e9159688a6cb3ef71b56a6321143"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-377.spec.ts": {
+    "mtime": 1788807464.711355,
+    "ast_hash": "9e5194327cf952c30e1b82ed4da54d63",
+    "semantic_hash": "9e5194327cf952c30e1b82ed4da54d63"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-379.spec.ts": {
+    "mtime": 1788812287.3605602,
+    "ast_hash": "9ff4e232621afd99bf0073749b24578c",
+    "semantic_hash": "9ff4e232621afd99bf0073749b24578c"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-383.spec.ts": {
+    "mtime": 1788813584.2967832,
+    "ast_hash": "a0d66081a30cee8d19b8af5359e1e8eb",
+    "semantic_hash": "a0d66081a30cee8d19b8af5359e1e8eb"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-387.spec.ts": {
+    "mtime": 1788813707.1581347,
+    "ast_hash": "af80a26e3abdb44bf3cda266bb74ae2a",
+    "semantic_hash": "af80a26e3abdb44bf3cda266bb74ae2a"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-388.spec.ts": {
+    "mtime": 1788813790.3353722,
+    "ast_hash": "a5cf112ec629d5ad29a1453563aeabf7",
+    "semantic_hash": "a5cf112ec629d5ad29a1453563aeabf7"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-389.spec.ts": {
+    "mtime": 1788813958.8633943,
+    "ast_hash": "277172966150e480222a8847e3197389",
+    "semantic_hash": "277172966150e480222a8847e3197389"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-390.spec.ts": {
+    "mtime": 1788814144.808936,
+    "ast_hash": "2fbfcbcba01bd21eaef852e083beaf82",
+    "semantic_hash": "2fbfcbcba01bd21eaef852e083beaf82"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-393.spec.ts": {
+    "mtime": 1788814359.911516,
+    "ast_hash": "fe7096793a69ded90b22933033a0495e",
+    "semantic_hash": "fe7096793a69ded90b22933033a0495e"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-394.spec.ts": {
+    "mtime": 1788879853.1441958,
+    "ast_hash": "94a2dbb8575a53d62794aa520029c57f",
+    "semantic_hash": "94a2dbb8575a53d62794aa520029c57f"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-395.spec.ts": {
+    "mtime": 1788844568.6980748,
+    "ast_hash": "e0d3007d60fab61d963cc6e8f24a3513",
+    "semantic_hash": "e0d3007d60fab61d963cc6e8f24a3513"
+  },
+  "tests/e2e/adventures/Defis_Fantastiques_01/section-396.spec.ts": {
+    "mtime": 1788845807.1777062,
+    "ast_hash": "8b72e825a6ceb4bef2b8b096e878c0e6",
+    "semantic_hash": "8b72e825a6ceb4bef2b8b096e878c0e6"
   }
 }

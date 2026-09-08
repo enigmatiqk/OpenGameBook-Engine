@@ -1,6 +1,6 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testNavigation, testStat, testCombatStart, testCombatRound, testRoundSuivant, screenshotOnFailure } from '../../helpers/commonTests'
-
+import { testSection, testChoiceButtons, testNavigation, testStat, screenshotOnFailure, gotoWithParams } from '../../helpers/commonTests'
+import { combatStart, combatRound, combatRoundSuivant, combatResultat } from '../../helpers/combatTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 33
@@ -33,23 +33,20 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Combat gagné avec habilete=12 et lance_de=1', async ({ page }) => {
     // Charger avec habilete élevée et dés favorables
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=12&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {chance: '10', habilete: '12', lance_de: '1'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 2
-    await testCombatRound(page)
+    await combatRound(page)
     //résultat
-    await page.click('button.combat-next-btn')
+    await combatResultat(page)
 
     // Vérifier qu'on a gagné et qu'on est à la bonne section
-    await page.waitForSelector('[data-section="147"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="147"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page, 147)
   })
 
   test('Combat perdu avec endurance habilete=5 et lance_de=6', async ({ page }) => {
@@ -58,12 +55,12 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //résultat
-    await page.click('button.combat-next-btn')
+    await combatResultat(page)
     
     // Vérifier qu'on a perdu (on devrait voir un message de défaite ou être redirigé)
     // Le héros devrait avoir perdu de l'endurance
@@ -76,6 +73,6 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
     await page.waitForSelector('.section-text')
 
     await testNavigation(page, SECTION_CHOICES, 1)
-    testStat(page,"endurance",8)
+    await testStat(page,"endurance",8)
   })
 })

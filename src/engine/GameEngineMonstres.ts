@@ -144,7 +144,43 @@ export class GameEngineMonstres {
   }
 
   /**
-   * Sauvegarde les stats du monstre persistant en cours de combat
+   * Crée l'entrée initiale d'un monstre persistant au début du combat (si absente).
+   * endurance_start est fixé une seule fois — il représente l'endurance au premier engagement.
+   * À appeler juste après initCombat, avant le premier round.
+   */
+  initPersistentMonsterEntry(
+    adventure: Adventure | null,
+    hero: Hero | null,
+    combatState: CombatState | null,
+    currentSection: number
+  ): void {
+    if (!combatState || !hero || !adventure) return
+
+    const section = adventure.sections.find(s => s.numero === currentSection)
+    if (!section?.combat?.phases) return
+
+    for (const phase of section.combat.phases) {
+      for (const monstre of phase.monstres) {
+        if (monstre.id && monstre.persistant) {
+          if (!hero.monstres_stats) hero.monstres_stats = {}
+          // Ne crée l'entrée que si elle n'existe pas encore (premier contact)
+          if (!hero.monstres_stats[monstre.id]) {
+            const enduranceStart = combatState.enemyVie
+            hero.monstres_stats[monstre.id] = {
+              habilete: combatState.enemy.habilete,
+              endurance: enduranceStart,
+              endurance_start: enduranceStart,
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Sauvegarde les stats du monstre persistant en cours de combat.
+   * À appeler à chaque fin de round et à la mort du monstre.
+   * Préserve endurance_start (fixé à initPersistentMonsterEntry, ne change jamais).
    */
   savePersistentMonsterStats(
     adventure: Adventure | null, 
@@ -160,12 +196,13 @@ export class GameEngineMonstres {
     for (const phase of section.combat.phases) {
       for (const monstre of phase.monstres) {
         if (monstre.id && monstre.persistant) {
-          if (!hero.monstres_stats) {
-            hero.monstres_stats = {}
-          }
+          if (!hero.monstres_stats) hero.monstres_stats = {}
+          const existing = hero.monstres_stats[monstre.id]
           hero.monstres_stats[monstre.id] = {
             habilete: combatState.enemy.habilete,
-            endurance: Math.max(0, combatState.enemyVie)
+            endurance: Math.max(0, combatState.enemyVie),
+            // endurance_start est fixé une fois pour toutes — ne pas l'écraser
+            endurance_start: existing?.endurance_start ?? combatState.enemyVie,
           }
         }
       }

@@ -168,10 +168,19 @@ Avec `jeter: true`, l'item est supprimé définitivement au lieu de retourner da
 
 | Champ | Obligatoire | Description |
 |-------|-------------|-------------|
-| `id` | ★ | Identifiant de l'item à déséquiper |
+| `id` | ★ (ou `name`) | Identifiant exact de l'item à déséquiper |
+| `name` | ★ (ou `id`) | Texte à chercher dans l'`id` ou le `label` de l'item équipé (voir `contains`) |
+| `contains` | — | `true` = recherche par inclusion dans `name` (défaut), `false` = égalité stricte |
 | `jeter` | — | Si `true`, supprime l'item au lieu de le remettre dans l'inventaire (défaut : `false`) |
 
-> Si l'item n'est pas équipé, l'effet est silencieusement ignoré (Option A). Pour retirer un item qu'il soit équipé ou dans l'inventaire, utiliser `type: "item"` avec `delta: -1`.
+`id` et `name` sont mutuellement exclusifs. `id` est prioritaire si les deux sont présents.
+
+> Si aucun item équipé ne correspond, l'effet est silencieusement ignoré (Option A). Pour retirer un item qu'il soit équipé ou dans l'inventaire, utiliser `type: "item"` avec `delta: -1`.
+
+**Exemple — détruire n'importe quelle épée équipée (id contient "epee") :**
+```json
+{ "type": "desequiper", "desequiper": { "name": "epee", "contains": true, "jeter": true } }
+```
 
 **Exemple — remplacer une arme équipée par une autre de l'inventaire :**
 ```json

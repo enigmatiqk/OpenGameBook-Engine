@@ -181,8 +181,13 @@ export function resolveDeltaResultat(resultats: Record<string, string | { delta:
   const entry = resolveResultatDe(resultats, diceResult)
   if (entry === undefined) return 0
   if (typeof entry === 'string') {
-    const m = entry.match(/^([+-]\d+)$/)
-    return m ? parseInt(m[1], 10) : 0
+    // Format numérique seul : "-4", "+2"
+    const mSimple = entry.match(/^([+-]?\d+)$/)
+    if (mSimple) return parseInt(mSimple[1], 10)
+    // Format avec stat : "-4 endurance", "+2 habilete"
+    const mStat = entry.match(/^([+-]?\d+)\s+[a-z_]+$/i)
+    if (mStat) return parseInt(mStat[1], 10)
+    return 0
   }
   return entry.delta ?? 0
 }

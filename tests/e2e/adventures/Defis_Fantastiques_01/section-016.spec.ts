@@ -1,6 +1,6 @@
 ﻿import { test, expect } from '@playwright/test'
-import { testSection, testChoiceButtons, testCombatStart, testCombatRound, testRoundSuivant, screenshotOnFailure } from '../../helpers/commonTests'
-
+import { testSection, testChoiceButtons, screenshotOnFailure, gotoWithParams, testMort } from '../../helpers/commonTests'
+import { combatStart, combatRound, combatRoundSuivant, combatResultat } from '../../helpers/combatTests'
 
 const ADVENTURE_ID = 1
 const SECTION_NUMBER = 16
@@ -32,27 +32,26 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Combat gagné avec endurance=1 habilete=12 et lance_de=1', async ({ page }) => {
     // Charger avec habilete élevée et dés favorables
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=12&lance_de=1`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {habilete: '12', lance_de: '1'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 2
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 3
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 4
-    await testCombatRound(page)
-    await testRoundSuivant(page)
+    await combatRound(page)
+    await combatRoundSuivant(page)
     // round 5
-    await testCombatRound(page)
+    await combatRound(page)
     //résultat
-    await page.click('button.combat-next-btn')
+    await combatResultat(page)
 
     // Vérifier qu'on a gagné et qu'on est à la section 50
      await testSection(page, 50)
@@ -60,32 +59,28 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Combat perdu avec habilete=5 et lance_de=6', async ({ page }) => {
     // Charger avec habilete faible et dés défavorables
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=1&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {endurance: '1', habilete: '5', lance_de: '6'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //résultat
-    await page.click('button.combat-next-btn')
+    await combatResultat(page)
     
     // Vérifier qu'on a perdu (on devrait voir un message de défaite ou être redirigé)
     // Le héros devrait avoir perdu de l'endurance
-    const deathInfo = page.locator('div#view-defeat')
-    await expect(deathInfo).toBeVisible()
+    await testMort(page)
   })
 
     test('Pas de fuite si le hero meurt', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&endurance=1&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {endurance: '1', habilete: '5', lance_de: '6'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     // Vérifier que me bouton fuite n'apparait pas
     const sectionContent = page.locator('button.combat-fuite-direct-btn')
@@ -94,28 +89,24 @@ test.describe(`Section ${String(SECTION_NUMBER).padStart(3, '0')}`, () => {
 
   test('Possibilité de fuir vers section 269', async ({ page }) => {    
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //fuite directe
     await page.click('button.combat-fuite-direct-btn')
 
     // Vérifier qu'on a fuit et qu'on est à la section 269
-    await page.waitForSelector('[data-section="269"]', { timeout: 5000 })
-    const sectionContent = page.locator('[data-section="269"]')
-    await expect(sectionContent).toBeVisible()
+    await testSection(page,269)
   })
 
   test('Possibilité de fuir avec chance vers section 269', async ({ page }) => {
-    // Charger la page
-    await page.goto(`/?adventure=${ADVENTURE_ID}&section=${SECTION_NUMBER}&habilete=5&lance_de=6`)
-    await page.waitForSelector('.section-text')
+    await gotoWithParams(page, {habilete: '5', lance_de: '4'})
     
     // Lancer le combat
-    await testCombatStart(page)
+    await combatStart(page)
     // round 1
-    await testCombatRound(page)
+    await combatRound(page)
 
     //fuite chance
     await page.click('button.combat-fuite-chance-btn')

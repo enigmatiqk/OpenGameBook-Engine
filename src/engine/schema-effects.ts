@@ -310,15 +310,25 @@ export function applyEffect(
   } else if (effet.type === 'item' && effet.item) {
     applyItemEffect(effet.item, hero, emplacements, removeItemEffects, applyItemEffects)
   } else if (effet.type === 'desequiper' && effet.desequiper) {
+    const d = effet.desequiper
+    const matchItem = (e: InventaireItem): boolean => {
+      if (d.id) return e.id === d.id
+      if (d.name) {
+        const haystack = `${e.id} ${e.label ?? ''}`.toLowerCase()
+        const needle = d.name.toLowerCase()
+        return d.contains === false ? (e.id === needle || (e.label ?? '').toLowerCase() === needle) : haystack.includes(needle)
+      }
+      return false
+    }
     // Cherche l'item dans l'équipement
-    const equipSlot = Object.entries(hero.equipement).find(([, e]) => e.id === effet.desequiper!.id)
+    const equipSlot = Object.entries(hero.equipement).find(([, e]) => matchItem(e))
     if (equipSlot) {
       const [slotName, equippedItem] = equipSlot
       // Retire les effets passifs de l'item
       if (equippedItem.effets && removeItemEffects) removeItemEffects(hero, equippedItem)
       equippedItem.equipe = false
       delete hero.equipement[slotName]
-      if (effet.desequiper.jeter) {
+      if (d.jeter) {
         // jeter: true → supprime définitivement, ne remet pas dans l'inventaire
         logItemLoss(hero, equippedItem.id, 1, !!equippedItem.type, true)
       } else {
