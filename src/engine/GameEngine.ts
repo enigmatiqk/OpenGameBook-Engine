@@ -26,8 +26,6 @@ export class GameEngine {
   private victory: boolean = false
   private finalTimeMs: number | null = null
   private saveState: SaveState | null = null
-  private sectionsDepuisChargement: number = 0
-  private readonly SECTIONS_AVANT_SAUVEGARDE = 10
 
   // État combat en cours
   private combatState: CombatState | null = null
@@ -103,7 +101,6 @@ export class GameEngine {
     )
 
     this.timer.reset()
-    this.sectionsDepuisChargement = this.SECTIONS_AVANT_SAUVEGARDE
     
     return this.rollsModule.startHeroInit(this.adventure, this.hero)
   }
@@ -234,7 +231,6 @@ export class GameEngine {
     this.hero = result.hero
     this.currentSection = result.currentSection
     this.navigation.init()
-    this.sectionsDepuisChargement = 0
     // Charger les utilisations des choix locaux
     if (save.choixUtilisations) {
       this.choixUtilisations = { ...save.choixUtilisations }
@@ -302,9 +298,6 @@ export class GameEngine {
 
 
     this.currentSection = target
-    if (this.sectionsDepuisChargement < this.SECTIONS_AVANT_SAUVEGARDE) {
-      this.sectionsDepuisChargement++
-    }
 
     if (section.choix.length === 0 && !section.end && !section.combat) {
       console.warn(`[GameEngine] Section ${sectionNumber} incomplète : aucun choix, fin ni combat.`)
@@ -377,6 +370,13 @@ export class GameEngine {
       this.timer.pause()
       if (section.end === 'defaite' && this.adventure) {
         this.saveModule.deleteSave(this.adventure.titre)
+      }
+    } else {
+      // Auto-sauvegarde à chaque changement de section
+      try {
+        this.saveGame()
+      } catch (err) {
+        console.error('[GameEngine] Auto-save failed:', err)
       }
     }
 
@@ -1404,14 +1404,15 @@ export class GameEngine {
 
   // ─── Accesseurs ───────────────────────────────────────────────────────────
 
+  pauseTimer(): void { this.timer.pause() }
+  resumeTimer(): void { this.timer.resume() }
+
   getHero(): Hero | null { return this.hero }
   getCurrentSection(): number { return this.currentSection }
   getAdventure(): Adventure | null { return this.adventure }
   getCombatResolver(): CombatResolver { return this.combatResolver }
   getSaveState(): SaveState | null { return this.saveState }
   getFinalTimeMs(): number { return this.finalTimeMs ?? 0 }
-  canSave(): boolean { return this.sectionsDepuisChargement >= this.SECTIONS_AVANT_SAUVEGARDE }
-  getSectionsAvantSauvegarde(): number { return Math.max(0, this.SECTIONS_AVANT_SAUVEGARDE - this.sectionsDepuisChargement) }
 
   getGameState() {
     return {

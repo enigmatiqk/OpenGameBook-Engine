@@ -73,6 +73,9 @@ export class GameView {
     const container = this.container
     if (!container) return
 
+    // Revenir en haut de page à chaque changement de section
+    window.scrollTo({ top: 0, behavior: 'instant' })
+
     const state = this.engine.getGameState()
     const { adventure, hero, gameOver, victory } = state
 
@@ -171,24 +174,16 @@ export class GameView {
     const toolbar = document.createElement('div')
     toolbar.className = 'game-toolbar'
 
-    const remaining = this.engine.getSectionsAvantSauvegarde()
-    const canSave = this.engine.canSave()
-    const saveLabel = canSave ? '💾 Sauver / Quitter' : `💾 Sauver / Quitter (${String(remaining).padStart(2, '0')})`
-    const saveBtn = this._btn(saveLabel, 'btn btn-secondary btn-save-quit', () => this._onSave(toolbar))
-    if (!canSave) saveBtn.disabled = true
-
     const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<pre class="modal-text">${this._escHtml(adventure.mode_emploi)}</pre>`))
     const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => this._showHeroModal())
     const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => this._showImagesModal(adventure))
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
-      if (confirm('Quitter sans sauvegarder ? La partie en cours sera perdue.')) {
-        this.callbacks.onBackToLibrary()
-      }
+      this.callbacks.onBackToLibrary()
     })
 
     if (resolveImages(adventure.images_annexes, adventure.images_annexes_ia).length === 0) imagesBtn.disabled = true
 
-    toolbar.append(saveBtn, manualBtn, heroBtn, imagesBtn, backBtn)
+    toolbar.append(manualBtn, heroBtn, imagesBtn, backBtn)
     return toolbar
   }
 
@@ -563,15 +558,6 @@ export class GameView {
       this._render()
     })
     combatView.render(container)
-  }
-
-  private _onSave(_toolbar: HTMLElement): void {
-    try {
-      this.engine.saveGame()
-      this.callbacks.onBackToLibrary()
-    } catch (err) {
-      console.error('[GameView] saveGame error:', err)
-    }
   }
 
   private _showHeroModal(): void {

@@ -31,11 +31,13 @@ function showView(name: ViewName): void {
   }
 }
 
+let libraryView: LibraryView | null = null
+
 function initLibrary(): void {
   const container = document.getElementById('view-library')
   if (!container) return
 
-  const libraryView = new LibraryView({
+  libraryView = new LibraryView({
     onStartNewGame: (adventure: AdventureMetadata) => { void startGame(adventure, false) },
     onContinueGame: (adventure: AdventureMetadata) => { void startGame(adventure, true) },
     onShowLeaderboard: (adventure: AdventureMetadata) => { showLeaderboardModal(adventure) },
@@ -124,11 +126,28 @@ function launchGameView(engine: GameEngine): void {
   
   // Applique les conditions de debug si en mode développement
   engine.applyDebugConditions()
-  
+
+  // Pause/resume automatique selon la visibilité de la page
+  // (veille téléphone, changement d'onglet/application)
+  const onVisibilityChange = () => {
+    if (document.hidden) {
+      engine.pauseTimer()
+    } else {
+      // Ne reprendre que si la partie est toujours en cours
+      const { gameOver } = engine.getGameState()
+      if (!gameOver) engine.resumeTimer()
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange)
+
+  const stopVisibilityListener = () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  }
+
   const gameView = new GameView(engine, {
-    onVictory: () => { showView('victory'); initVictoryView(engine) },
-    onDefeat: () => { showView('defeat'); initDefeatView(engine) },
-    onBackToLibrary: () => showView('library'),
+    onVictory:       () => { stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
+    onDefeat:        () => { stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
+    onBackToLibrary: () => { stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh() },
   })
   showView('game')
   gameView.render(gameContainer)
@@ -222,12 +241,13 @@ function initVictoryView(engine: GameEngine): void {
       nombreSauvegardes,
       statistiques
     })
+    saveStore.deleteSave(adventure.titre)
     renderLeaderboard()
     const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
     if (inputGroup) inputGroup.style.display = 'none'
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => showView('library'))
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { showView('library'); libraryView?.refresh() })
   renderLeaderboard()
 }
 
@@ -253,7 +273,7 @@ function initDefeatView(engine: GameEngine): void {
     showHeroCreationAndLaunch(newEngine)
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => showView('library'))
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { showView('library'); libraryView?.refresh() })
 }
 
 document.addEventListener('DOMContentLoaded', () => {

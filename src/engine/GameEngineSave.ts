@@ -24,8 +24,6 @@ export class GameEngineSave {
   ): SaveState | null {
     if (!adventure || !hero) throw new Error('No active game to save')
     
-    this.timer.pause()
-    
     const state: SaveState = {
       adventureId: adventure.titre,
       sectionCourante: currentSection,

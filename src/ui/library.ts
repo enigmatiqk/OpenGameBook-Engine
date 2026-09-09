@@ -136,6 +136,10 @@ export class LibraryView {
     })
   }
 
+  refresh(): void {
+    this._renderList()
+  }
+
   private _renderList(): void {
     if (!this.listEl) return
     const filtered = this._applyFilters()

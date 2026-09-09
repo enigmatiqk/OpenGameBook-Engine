@@ -104,8 +104,8 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .hero-stat .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
 
 #view-combat { max-width: 700px; margin: 0 auto; }
-.combat-log { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; max-height: 400px; overflow-y: auto; font-size: 0.95rem; line-height: 1.7; margin-bottom: 1.5rem; }
-.combat-round { padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.combat-log { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; max-height: 220px; overflow-y: auto; font-size: 0.82rem; line-height: 1.5; margin-bottom: 1rem; }
+.combat-round { padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
 .combat-round:last-child { border-bottom: none; }
 
 #view-victory, #view-defeat { max-width: 600px; margin: 0 auto; text-align: center; padding-top: 4rem; }
@@ -203,7 +203,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 
 /* ─── Combat view extras ───────────────────────────────────────────────────── */
 .combat-view { max-width: 700px; margin: 0 auto; }
-.combat-title { font-size: 1.75rem; margin-bottom: 1rem; color: var(--accent); }
+.combat-title { font-size: 1.25rem; margin-bottom: 0.75rem; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .round-header { font-weight: bold; color: var(--text-secondary); font-size: 0.875rem; text-transform: uppercase; margin-bottom: 0.25rem; }
 .round-roll { font-size: 0.95rem; color: var(--text-primary); }
 .round-outcome { font-style: italic; color: var(--text-secondary); margin-top: 0.25rem; }

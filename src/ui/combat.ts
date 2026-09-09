@@ -24,6 +24,7 @@ export class CombatView {
     const state = this.engine.getCombatState()
     if (!state) { this.onCombatEnd(); return }
 
+    window.scrollTo({ top: 0, behavior: 'instant' })
     container.innerHTML = ''
     const wrap = document.createElement('div')
     wrap.className = 'combat-view'
@@ -56,7 +57,7 @@ export class CombatView {
     if (state.rounds.length > 0) {
       const log = document.createElement('div')
       log.className = 'combat-log'
-      for (const r of state.rounds) log.appendChild(this._buildRound(r, state.enemy.nom))
+      for (let i = state.rounds.length - 1; i >= 0; i--) log.appendChild(this._buildRound(state.rounds[i], state.enemy.nom))
       wrap.appendChild(log)
     }
 
