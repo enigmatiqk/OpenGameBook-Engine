@@ -5,8 +5,21 @@
  */
 
 import { isDevMode } from '../engine/GameEngineDebug'
+import type { Adventure } from '../types'
+import { openAdventureTree } from './adventureTree'
 
 const PANEL_ID = 'debug-panel'
+
+// Provider optionnel — enregistré par main.ts une fois l'adventure chargée
+let _adventureProvider: (() => Adventure | null) | null = null
+
+/**
+ * Enregistre un callback permettant à la modal de debug d'accéder à l'adventure courante.
+ * À appeler depuis main.ts dès qu'une adventure est chargée.
+ */
+export function setAdventureProvider(fn: () => Adventure | null): void {
+  _adventureProvider = fn
+}
 
 interface AdventureEntry {
   index: number
@@ -540,6 +553,19 @@ export function showDebugPanel(): void {
     window.location.href = buildUrl(params)
   })
   panel.appendChild(applyBtn)
+
+  // ── Bouton Arbre de l'aventure ────────────────────────────────────────────
+  const adventure = _adventureProvider?.()
+  if (adventure) {
+    const treeBtn = document.createElement('button')
+    treeBtn.setAttribute('style', S.copyBtn + ';margin-top:6px;width:100%;color:#a5d6a7;border-color:#4caf50')
+    treeBtn.textContent = '🗺 Voir l\'arbre de l\'aventure'
+    treeBtn.addEventListener('click', () => {
+      overlay.remove()
+      openAdventureTree(adventure)
+    })
+    panel.appendChild(treeBtn)
+  }
 
   // ── Bouton Réinitialiser tous les params ───────────────────────────────────
   const clearBtn = document.createElement('button')

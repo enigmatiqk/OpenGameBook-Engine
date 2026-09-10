@@ -8,7 +8,7 @@ import { SaveStore } from './engine/SaveStore'
 import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
 import { initImagePrefsButton } from './ui/imagePreferences'
-import { initDebugButton } from './ui/debugPanel'
+import { initDebugButton, setAdventureProvider } from './ui/debugPanel'
 import { initSectionNotesButton } from './ui/sectionNotes'
 import type { AdventureMetadata } from './types'
 import { resolveImage } from './utils/imageUtils'
@@ -56,6 +56,9 @@ async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void
   try {
     const adventure = await libraryManager.loadAdventure(meta.path)
     engine.loadAdventure(adventure)
+
+    // Rend l'adventure accessible à la modal de debug
+    setAdventureProvider(() => engine.getAdventure())
 
     if (resume) {
       const save = saveStore.load(adventure.titre)
