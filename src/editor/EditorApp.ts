@@ -7,10 +7,12 @@ import type { CouvertureData } from './CouvertureEditor'
 import { LivreEditor } from './LivreEditor'
 import type { LivreData } from './LivreEditor'
 import { PersonnageEditor } from './PersonnageEditor'
+import { ReglesEditor } from './ReglesEditor'
+import type { Regles } from '../types'
 
 // ─── Onglets disponibles ──────────────────────────────────────────────────────
 
-type TabId = 'sections' | 'couverture' | 'livre' | 'personnage'
+type TabId = 'sections' | 'couverture' | 'livre' | 'personnage' | 'regles'
 
 interface Tab {
   id:    TabId
@@ -22,6 +24,7 @@ const TABS: Tab[] = [
   { id: 'livre',      label: 'Livre',       icon: '📚' },
   { id: 'couverture', label: 'Couverture',  icon: '🎭' },
   { id: 'personnage', label: 'Personnage',  icon: '🧙' },
+  { id: 'regles',     label: 'Règles',      icon: '⚙️' },
   { id: 'sections',   label: 'Sections',    icon: '📖' },
 ]
 
@@ -46,6 +49,7 @@ export class EditorApp {
   private savedCouverture: Partial<CouvertureData> | null = null
   private savedLivre:      Partial<LivreData> | null = null
   private savedPersonnage: PersonnageTemplate | null = null
+  private savedRegles:     Regles | null = null
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   private sectionEditorEl!: HTMLElement
@@ -56,6 +60,7 @@ export class EditorApp {
   private couvertureEditor!: CouvertureEditor
   private livreEditor!:      LivreEditor
   private personnageEditor!: PersonnageEditor
+  private reglesEditor!:     ReglesEditor
 
   private sectionInput!:      HTMLInputElement
   private sectionTotal!:      HTMLElement
@@ -176,10 +181,17 @@ export class EditorApp {
       onChange: (data) => { this.savedPersonnage = data; this._updateDirtyButtons() },
     })
 
+    const reglesEl = document.createElement('div')
+    reglesEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
+    this.reglesEditor = new ReglesEditor(reglesEl, {
+      onChange: (data) => { this.savedRegles = data; this._updateDirtyButtons() },
+    })
+
     // Tous les panneaux dans tabContent — ordre identique à TABS
     this.tabContentEl.appendChild(livreEl)
     this.tabContentEl.appendChild(couvertureEl)
     this.tabContentEl.appendChild(personnageEl)
+    this.tabContentEl.appendChild(reglesEl)
     this.tabContentEl.appendChild(this.sectionEditorEl)
 
     // Écouteurs toolbar
@@ -241,6 +253,7 @@ export class EditorApp {
       this.savedCouverture = null
       this.savedLivre      = null
       this.savedPersonnage = null
+      this.savedRegles     = null
       this.dirtyState      = null
       this.currentIndex    = 0
 
@@ -261,6 +274,7 @@ export class EditorApp {
       this.couvertureEditor.render(this.adventure)
       this.livreEditor.render(this.adventure)
       this.personnageEditor.render(this.adventure)
+      this.reglesEditor.render(this.adventure)
 
       splash.style.display = 'none'
       this.tabContentEl.style.display = 'flex'
@@ -299,21 +313,13 @@ export class EditorApp {
     const showSectionNav = this.activeTab === 'sections'
     this.sectionNavEl.style.display = showSectionNav ? 'flex' : 'none'
 
-    // Affiche/cache chaque panneau
-    const panelMap: Record<TabId, HTMLElement> = {
-      sections:   this.sectionEditorEl,
-      couverture: this.couvertureEditor['container' as keyof CouvertureEditor] as unknown as HTMLElement,
-      livre:      this.livreEditor['container' as keyof LivreEditor] as unknown as HTMLElement,
-      personnage: this.personnageEditor['container' as keyof PersonnageEditor] as unknown as HTMLElement,
-    }
-
-    // Accès direct aux conteneurs via les enfants de tabContentEl
+    // Affiche/cache chaque panneau via les enfants de tabContentEl (ordre = TABS)
     const panels = this.tabContentEl.children
-    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'sections']
+    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'regles', 'sections']
     panelIds.forEach((id, i) => {
       (panels[i] as HTMLElement).style.display = id === this.activeTab ? 'block' : 'none'
     })
-    void panelMap // utilisé implicitement
+    void 0 // ancienne référence panelMap supprimée
 
     // Sidebar : seulement sur Sections
     this.sidebarEl.style.display = this.activeTab === 'sections' ? 'flex' : 'none'
@@ -400,6 +406,7 @@ export class EditorApp {
       case 'couverture': return this.savedCouverture !== null
       case 'livre':      return this.savedLivre !== null
       case 'personnage': return this.savedPersonnage !== null
+      case 'regles':     return this.savedRegles !== null
     }
   }
 
@@ -431,6 +438,7 @@ export class EditorApp {
       case 'couverture': this.savedCouverture = null; if (this.adventure) this.couvertureEditor.render(this.adventure); break
       case 'livre':      this.savedLivre = null;      if (this.adventure) this.livreEditor.render(this.adventure);      break
       case 'personnage': this.savedPersonnage = null; if (this.adventure) this.personnageEditor.render(this.adventure); break
+      case 'regles':     this.savedRegles = null;     if (this.adventure) this.reglesEditor.render(this.adventure);     break
     }
     this._updateDirtyButtons()
   }
@@ -459,6 +467,11 @@ export class EditorApp {
       case 'personnage':
         this.savedPersonnage = this.personnageEditor.getData()
         this._showToast('Personnage enregistré (à exporter)', 'success')
+        this._updateExportButton()
+        break
+      case 'regles':
+        this.savedRegles = this.reglesEditor.getData()
+        this._showToast('Règles enregistrées (à exporter)', 'success')
         this._updateExportButton()
         break
     }
@@ -492,6 +505,7 @@ export class EditorApp {
       + (this.savedCouverture !== null ? 1 : 0)
       + (this.savedLivre      !== null ? 1 : 0)
       + (this.savedPersonnage !== null ? 1 : 0)
+      + (this.savedRegles     !== null ? 1 : 0)
     this.btnExport.textContent = count > 0 ? `💾 Exporter (${count})` : '💾 Exporter'
   }
 
@@ -617,6 +631,12 @@ export class EditorApp {
     if (this.savedPersonnage !== null) {
       this._download('personnage.json', this.savedPersonnage)
       exported.push('personnage.json')
+    }
+
+    // regles.json
+    if (this.savedRegles !== null) {
+      this._download('regles.json', this.savedRegles)
+      exported.push('regles.json')
     }
 
     if (exported.length === 0) {

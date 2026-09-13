@@ -1775,3 +1775,123 @@ html, body {
 /* Avancé */
 .combat-adv-section { gap: 0.4rem; }
 .combat-adv-body    { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem; }
+
+/* ── Éditeur de règles ────────────────────────────────────────────────────── */
+
+.regles-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 0.6rem;
+}
+
+.regles-subsection-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Drop rows */
+.regles-drop-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+/* Règles nommées */
+.regles-nommees-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.regles-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.regles-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.regles-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.regles-card-name:hover { color: var(--accent); }
+
+.regles-name-input { flex: 1; min-width: 0; }
+
+.regles-type-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  background: #1a2a3a;
+  color: #80c0ff;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.regles-card-body { padding: 0.6rem; }
+
+/* Formulaire interne d'une règle */
+.regles-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Stats testées (test_stat) */
+.regles-stats-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.regles-stat-row   { display: flex; align-items: center; gap: 0.35rem; }
+
+/* Composite résultats */
+.regles-composite-res {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.3rem;
+}
+.regles-composite-res-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+/* Bouton ajouter une règle */
+.regles-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Sections collapsibles dans ReglesEditor */
+.regles-section-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+.regles-section-header:hover { color: var(--text-primary); }
+.regles-section-body { display: flex; flex-direction: column; gap: 0.4rem; padding-top: 0.5rem; }
