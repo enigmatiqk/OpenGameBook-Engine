@@ -21,6 +21,7 @@ import type {
 } from '../types'
 import { EffetsEditor } from './EffetsEditor'
 import { ConditionEditor } from './ConditionEditor'
+import { CarteEditorBlock } from './CarteEditorBlock'
 
 export interface ChoicePropertyModalOptions {
   onSave: (updated: Choice) => void
@@ -42,6 +43,7 @@ const PROP_DEFAULTS: Partial<Record<keyof Choice, () => unknown>> = {
   section_params:  () => ({}),
   regle_surcharge: () => ({}),
   stat_monstre:    () => '',
+  carte:           () => ({ chemin: [] }),
 }
 
 // Propriétés gérées par la modal (hors texte et section éditées inline)
@@ -49,7 +51,7 @@ export const MODAL_PROPS: Array<keyof Choice> = [
   'local', 'utilisations', 'groupe', 'end', 'stat_monstre',
   'condition', 'cout', 'items', 'action',
   'section_saisie', 'section_params',
-  'effets', 'regle_surcharge',
+  'effets', 'regle_surcharge', 'carte',
 ]
 
 // ─── Labels affichés ──────────────────────────────────────────────────────────
@@ -68,6 +70,7 @@ const PROP_LABELS: Record<string, string> = {
   section_params:  'Paramètres de section',
   effets:          'Effets',
   regle_surcharge: 'Surcharge de règle (JSON)',
+  carte:           '🗺 Déplacement carte',
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -286,6 +289,7 @@ export class ChoicePropertyModal {
       case 'section_params': return this._buildSectionParams()
       case 'effets':          return this._buildEffetsSection()
       case 'regle_surcharge': return this._buildJsonRaw(key)
+      case 'carte':           return this._buildCarteChoix()
       default:             return this._buildJsonRaw(key)
     }
   }
@@ -674,13 +678,17 @@ export class ChoicePropertyModal {
   }
 
   private _buildOutcomeRow(key: 'si_reussi' | 'si_echoue', regle: ActionRegle): HTMLElement {
-    const row = document.createElement('div')
-    row.className = 'cpm-outcome-row'
+    const wrap = document.createElement('div')
+    wrap.className = 'cpm-outcome-wrap'
+
+    // Ligne section
+    const secRow = document.createElement('div')
+    secRow.className = 'cpm-outcome-row'
 
     const lbl = document.createElement('span')
     lbl.className = 'cpm-outcome-lbl'
     lbl.textContent = key === 'si_reussi' ? '✔ Si réussi → §' : '✘ Si échoué → §'
-    row.appendChild(lbl)
+    secRow.appendChild(lbl)
 
     const secInput = document.createElement('input')
     secInput.type = 'number'
@@ -689,17 +697,43 @@ export class ChoicePropertyModal {
     secInput.placeholder = '—'
     const current = regle[key]?.choix?.section
     if (typeof current === 'number') secInput.value = String(current)
+
+    const ensureOutcome = (): void => {
+      if (!regle[key]) regle[key] = { choix: { texte: '', section: 0 } }
+      if (!regle[key]!.choix) regle[key]!.choix = { texte: '', section: 0 }
+    }
+
     secInput.addEventListener('input', () => {
       const n = parseInt(secInput.value, 10)
       if (isNaN(n)) {
         regle[key] = undefined
       } else {
-        regle[key] = { choix: { texte: '', section: n } }
+        ensureOutcome()
+        regle[key]!.choix!.section = n
       }
     })
-    row.appendChild(secInput)
+    secRow.appendChild(secInput)
+    wrap.appendChild(secRow)
 
-    return row
+    // Bloc carte (chemin du déplacement pour cet outcome)
+    const carteLabel = document.createElement('div')
+    carteLabel.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem;'
+    carteLabel.textContent = 'Déplacement carte :'
+    wrap.appendChild(carteLabel)
+
+    const carteEl = document.createElement('div')
+    const initialCarte = regle[key]?.choix?.carte
+    new CarteEditorBlock(carteEl, {
+      initial: initialCarte ? { chemin: [...(initialCarte.chemin ?? [])] } : { chemin: [] },
+      onChange: (data) => {
+        ensureOutcome()
+        regle[key]!.choix!.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+      },
+      showEnv: false,
+    })
+    wrap.appendChild(carteEl)
+
+    return wrap
   }
 
   // ─── Section saisie ───────────────────────────────────────────────────────
@@ -797,6 +831,35 @@ export class ChoicePropertyModal {
     rebuild()
     wrap.appendChild(listEl)
     wrap.appendChild(addBtn)
+    return wrap
+  }
+
+  // ─── Déplacement carte (CarteChoixData) ──────────────────────────────────
+
+  private _buildCarteChoix(): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'cpm-list-wrap'
+
+    // CarteChoixData n'a que `chemin` (pas d'env)
+    // On réutilise CarteEditorBlock en mode "chemin uniquement"
+    // en lui passant des données CarteSectionData-compatibles (env toujours undefined)
+    const initial = this.working.carte
+      ? { chemin: [...(this.working.carte.chemin ?? [])] }
+      : { chemin: [] }
+
+    new CarteEditorBlock(wrap, {
+      initial,
+      onChange: (data) => {
+        if (!data || !data.chemin?.length) {
+          this.working.carte = undefined
+        } else {
+          this.working.carte = { chemin: data.chemin }
+        }
+      },
+      showEnv: false,
+      // Pas d'adventure ni de sectionNum : l'aperçu carte n'est pas disponible ici
+    })
+
     return wrap
   }
 

@@ -9,6 +9,8 @@ import type { LivreData } from './LivreEditor'
 import { PersonnageEditor } from './PersonnageEditor'
 import { ReglesEditor } from './ReglesEditor'
 import type { Regles } from '../types'
+import { buildCarte } from '../carte/CarteEngine'
+import type { CarteState } from '../carte/CarteEngine'
 
 // ─── Onglets disponibles ──────────────────────────────────────────────────────
 
@@ -50,6 +52,7 @@ export class EditorApp {
   private savedLivre:      Partial<LivreData> | null = null
   private savedPersonnage: PersonnageTemplate | null = null
   private savedRegles:     Regles | null = null
+  private carteState:      CarteState | null = null
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   private sectionEditorEl!: HTMLElement
@@ -68,6 +71,7 @@ export class EditorApp {
   private btnNext!:           HTMLButtonElement
   private btnSectionSave!:    HTMLButtonElement
   private btnSectionCancel!:  HTMLButtonElement
+  private sepSectionActions!: HTMLElement
   private btnExport!:         HTMLButtonElement
   private sectionNavEl!:      HTMLElement
   private treePanel:          AdventureTreePanel | null = null
@@ -97,16 +101,16 @@ export class EditorApp {
         <div class="toolbar-sep"></div>
         <nav class="editor-tabs" id="editor-tabs" aria-label="Parties de l'aventure"></nav>
         <div class="toolbar-sep"></div>
-        <div class="section-nav" id="section-nav">
+        <div class="section-nav" id="section-nav" style="display:none">
           <button id="btn-prev" class="btn btn-icon" title="Section précédente" disabled>◀</button>
           <label for="section-input" style="font-size:0.8rem;color:var(--text-secondary)">§</label>
           <input id="section-input" type="number" min="1" value="1" disabled />
           <span id="section-total" class="section-total">/ —</span>
           <button id="btn-next" class="btn btn-icon" title="Section suivante" disabled>▶</button>
         </div>
-        <div class="toolbar-sep" id="sep-section-actions"></div>
-        <button id="btn-section-save"   class="btn btn-success" disabled title="Enregistrer les modifications">✔ Enregistrer</button>
-        <button id="btn-section-cancel" class="btn btn-ghost"   disabled title="Annuler les modifications">✕ Annuler</button>
+        <div class="toolbar-sep" id="sep-section-actions" style="display:none"></div>
+        <button id="btn-section-save"   class="btn btn-success" disabled title="Enregistrer les modifications" style="display:none">✔ Enregistrer</button>
+        <button id="btn-section-cancel" class="btn btn-ghost"   disabled title="Annuler les modifications" style="display:none">✕ Annuler</button>
         <div class="toolbar-sep"></div>
         <button id="btn-export" class="btn btn-primary" disabled title="Exporter les fichiers JSON modifiés">💾 Exporter</button>
         <button id="btn-tree"   class="btn btn-ghost"   disabled title="Visualiser l'arbre de l'aventure">🗺 Arbre</button>
@@ -145,6 +149,8 @@ export class EditorApp {
     this.btnSectionCancel  = this.root.querySelector<HTMLButtonElement>('#btn-section-cancel')!
     this.btnExport         = this.root.querySelector<HTMLButtonElement>('#btn-export')!
     this.sectionNavEl      = this.root.querySelector<HTMLElement>('#section-nav')!
+    const sepSectionActions = this.root.querySelector<HTMLElement>('#sep-section-actions')!
+    this.sepSectionActions = sepSectionActions
     this.tabContentEl      = this.root.querySelector<HTMLElement>('#tab-content')!
     this.sidebarEl         = this.root.querySelector<HTMLElement>('#editor-sidebar')!
     const btnTree          = this.root.querySelector<HTMLButtonElement>('#btn-tree')!
@@ -160,6 +166,7 @@ export class EditorApp {
       onChoicesChange: (choix)          => this._onDirtyChange({ choix }),
       onEffetsChange:  (effets)         => this._onDirtyChange({ effets }),
       onCombatChange:  (combat)         => this._onDirtyChange({ combat: combat ?? undefined }),
+      onCarteChange:   (carte)          => this._onDirtyChange({ carte: carte ?? undefined }),
       onPropsChange:   (patch)          => this._onDirtyChange(patch),
     })
 
@@ -276,6 +283,9 @@ export class EditorApp {
       this.personnageEditor.render(this.adventure)
       this.reglesEditor.render(this.adventure)
 
+      // Construit la carte pour la sidebar
+      this.carteState = buildCarte(this.adventure.sections)
+
       splash.style.display = 'none'
       this.tabContentEl.style.display = 'flex'
       this.sidebarEl.style.display = 'flex'
@@ -310,8 +320,15 @@ export class EditorApp {
   }
 
   private _applyTab(): void {
-    const showSectionNav = this.activeTab === 'sections'
+    const showSectionNav = this.activeTab === 'sections' && this.adventure !== null
     this.sectionNavEl.style.display = showSectionNav ? 'flex' : 'none'
+    // sep + boutons save/cancel : visibles sur tous les onglets avec aventure
+    const actionsVisible = this.adventure !== null
+    ;[
+      this.sepSectionActions,
+      this.btnSectionSave,
+      this.btnSectionCancel,
+    ].forEach(el => { if (el) el.style.display = actionsVisible ? '' : 'none' })
 
     // Affiche/cache chaque panneau via les enfants de tabContentEl (ordre = TABS)
     const panels = this.tabContentEl.children
@@ -390,7 +407,7 @@ export class EditorApp {
     this.btnNext.disabled      = this.currentIndex === this.sortedSections.length - 1
 
     const imageBaseUrl = this.adventure.repertoire_images ?? ''
-    this.sectionEditor.render(section, imageBaseUrl)
+    this.sectionEditor.render(section, imageBaseUrl, this.adventure)
     this.initialHtml = this.sectionEditor.getCurrentText()
 
     this._updateDirtyButtons()
@@ -497,6 +514,8 @@ export class EditorApp {
     this._updateDirtyButtons()
     this._updateExportButton()
     this._renderSidebar({ ...section, ...this.savedSections.get(section.numero) })
+    // Remet à jour la carte (les chemins peuvent avoir changé)
+    if (this.adventure) this.carteState = buildCarte(this.adventure.sections)
     this._showToast(`Section §${section.numero} enregistrée`, 'success')
   }
 
@@ -516,6 +535,9 @@ export class EditorApp {
     const numMonstres = section.combat?.phases?.reduce((n, p) => n + p.monstres.length, 0) ?? 0
     const hasEffets   = (section.effets?.length ?? 0) > 0
     const isSaved     = this.savedSections.has(section.numero)
+
+    // ── Infos carte ─────────────────────────────────────────────────────────
+    const carteInfos = this._buildCarteInfos(section.numero)
 
     this.sidebarEl.innerHTML = `
       <div class="sidebar-section">
@@ -547,12 +569,88 @@ export class EditorApp {
           ${(section.questions ?? []).map(q => `<div class="question-item">${_esc(q)}</div>`).join('')}
         </div>
       </div>` : ''}
+      ${carteInfos}
       <div class="sidebar-section">
         <div class="sidebar-section-title">Export</div>
         <div class="sidebar-stat"><span class="label">Index</span><span class="value">${this.currentIndex + 1} / ${this.sortedSections.length}</span></div>
         <div class="sidebar-stat"><span class="label">Sections modif.</span><span class="value">${this.savedSections.size}</span></div>
       </div>
     `
+
+    // Branche les boutons de navigation depuis la sidebar carte
+    this.sidebarEl.querySelectorAll<HTMLButtonElement>('.sidebar-carte-nav').forEach(btn => {
+      const target = parseInt(btn.dataset.section ?? '', 10)
+      if (!isNaN(target)) {
+        btn.addEventListener('click', () => { void this._navigateToNum(target) })
+      }
+    })
+  }
+
+  private _buildCarteInfos(sectionNum: number): string {
+    if (!this.carteState) return ''
+    const c = this.carteState.cases.get(sectionNum)
+    if (!c) return `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">🗺 Carte</div>
+        <div class="sidebar-flag">○ Non positionnée</div>
+      </div>`
+
+    // Sections partageant la même case (aliases)
+    const aliasNums = c.aliasNums ?? []
+
+    // Sections qui arrivent sur cette case ou ses aliases
+    // = sections dont un choix/outcome a un chemin qui atterrit sur (c.x, c.y)
+    // On retrouve via la grid : toutes les cases qui ont un mur ouvert vers (c.x,c.y)
+    const incomingNums = this._findIncomingSections(sectionNum, c.x, c.y)
+
+    const numsToBtn = (nums: number[]): string =>
+      nums.map(n => `<button class="sidebar-carte-nav sidebar-carte-btn" data-section="${n}" title="Aller à §${n}">§${n}</button>`).join('')
+
+    return `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">🗺 Carte</div>
+        <div class="sidebar-stat"><span class="label">Position</span><span class="value" style="font-family:var(--font-mono)">(${c.x}, ${c.y})</span></div>
+        ${c.isPath ? `<div class="sidebar-flag active">📍 Case de chemin de §${c.sectionNum}</div>` : ''}
+        ${aliasNums.length > 0 ? `
+        <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
+          <span class="label">Partagée avec</span>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtn(aliasNums)}</div>
+        </div>` : ''}
+        ${incomingNums.length > 0 ? `
+        <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
+          <span class="label">Accessible depuis</span>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtn(incomingNums)}</div>
+        </div>` : ''}
+      </div>`
+  }
+
+  /**
+   * Retrouve les sections qui ont un chemin menant à la case (x,y).
+   * On cherche dans toutes les cases les murs ouverts pointant vers (x,y).
+   */
+  private _findIncomingSections(targetNum: number, x: number, y: number): number[] {
+    if (!this.carteState) return []
+    const result = new Set<number>()
+    const { DELTA } = { DELTA: { N:{dx:0,dy:-1}, S:{dx:0,dy:1}, E:{dx:1,dy:0}, O:{dx:-1,dy:0} } }
+
+    for (const c of this.carteState.cases.values()) {
+      // Pour chaque direction ouverte de cette case, vérifie si elle pointe vers (x,y)
+      for (const [dir, murType] of Object.entries(c.murs) as [keyof typeof DELTA, string][]) {
+        if (murType === 'ferme') continue
+        const { dx, dy } = DELTA[dir]
+        // La case voisine dans cette direction
+        const nx = c.x + dx, ny = c.y + dy
+        if (nx === x && ny === y) {
+          // Cette case pointe vers la case cible
+          const num = c.isPath ? c.sectionNum : c.num
+          if (num !== targetNum && num > 0 && !c.aliasNums?.includes(targetNum)) {
+            result.add(num)
+          }
+        }
+      }
+    }
+
+    return [...result].sort((a, b) => a - b)
   }
 
   // ── Arbre ─────────────────────────────────────────────────────────────────

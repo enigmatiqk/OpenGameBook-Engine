@@ -1895,3 +1895,142 @@ html, body {
 }
 .regles-section-header:hover { color: var(--text-primary); }
 .regles-section-body { display: flex; flex-direction: column; gap: 0.4rem; padding-top: 0.5rem; }
+
+/* ── Éditeur de carte ─────────────────────────────────────────────────────── */
+
+.carte-editor-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.carte-block-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.carte-field-lbl {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.carte-env-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.carte-chemin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Liste des étapes */
+.carte-chemin-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-height: 24px;
+}
+
+.carte-chemin-empty {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.carte-chemin-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+  cursor: grab;
+}
+.carte-chemin-item:active { cursor: grabbing; }
+
+.carte-step-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+.step-dir    { background: #1a3a6a; color: #90bfff; }
+.step-env    { background: #1a3a1a; color: #90df90; }
+.step-action { background: #3a1a3a; color: #df90df; }
+.step-unknown{ background: #3a3a1a; color: #dfdf90; }
+
+/* Boutons rapides */
+.carte-quick-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.carte-quick-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.carte-quick-btn {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+}
+.quick-dir { color: #90bfff; }
+.quick-env { color: #90df90; }
+.quick-act { color: #df90df; }
+
+/* Saisie libre */
+.carte-free-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Aperçu carte */
+.carte-preview-container {
+  display: none;
+  height: 500px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+.carte-preview-container--open {
+  display: block;
+}
+
+/* Outcome row (si_reussi / si_echoue) avec carte */
+.cpm-outcome-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+/* ── Boutons de navigation carte dans la sidebar ─────────────────────────── */
+
+.sidebar-carte-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  background: var(--bg-secondary);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sidebar-carte-btn:hover { background: var(--accent); color: #fff; }

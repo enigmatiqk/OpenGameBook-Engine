@@ -10,6 +10,7 @@
 
 import type { CombatData, CombatPhaseData, MonstreData, SectionRef } from '../types'
 import { ConditionEditor } from './ConditionEditor'
+import { CarteEditorBlock } from './CarteEditorBlock'
 
 export interface CombatEditorOptions {
   onChange: (combat: CombatData | null) => void
@@ -177,16 +178,31 @@ export class CombatEditor {
     this.bodyEl.appendChild(phasesSection)
 
     // ── Destinations globales ─────────────────────────────────────────────────
+    // ── Destinations globales — chacune avec carte ────────────────────────────
     const outSection = this._sectionBlock('Destinations globales')
-    const outInline = document.createElement('div')
-    outInline.className = 'combat-dests-inline'
-    outInline.appendChild(this._destField('🏆 Victoire → §', resolveRef(c.victoire?.section),
-      n => { c.victoire = n ? { ...c.victoire, section: n } : undefined; this._notify() }))
-    outInline.appendChild(this._destField('🏃 Fuite → §', resolveRef(c.fuite?.section),
-      n => { c.fuite = n ? { ...c.fuite, section: n } : undefined; this._notify() }))
-    outInline.appendChild(this._destField('💀 Mort → §', resolveRef(c.mort?.section),
-      n => { c.mort = n ? { ...c.mort, section: n } : undefined; this._notify() }))
-    outSection.appendChild(outInline)
+
+    // On étend c.victoire/fuite/mort avec une propriété carte non typée
+    const cv = c as unknown as Record<string, { section?: unknown; carte?: { chemin?: string[] } }>
+
+    outSection.appendChild(this._destBlock(
+      '🏆 Victoire → §', resolveRef(c.victoire?.section),
+      () => (cv['victoire'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
+      n => { c.victoire = n ? { ...c.victoire, section: n } : undefined; this._notify() },
+      ch => { if (c.victoire) (cv['victoire'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
+    outSection.appendChild(this._destBlock(
+      '🏃 Fuite → §', resolveRef(c.fuite?.section),
+      () => (cv['fuite'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
+      n => { c.fuite = n ? { ...c.fuite, section: n } : undefined; this._notify() },
+      ch => { if (c.fuite) (cv['fuite'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
+    outSection.appendChild(this._destBlock(
+      '💀 Mort → §', resolveRef(c.mort?.section),
+      () => (cv['mort'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
+      n => { c.mort = n ? { ...c.mort, section: n } : undefined; this._notify() },
+      ch => { if (c.mort) (cv['mort'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
+
     this.bodyEl.appendChild(outSection)
 
     // ── Condition ─────────────────────────────────────────────────────────────
@@ -489,26 +505,54 @@ export class CombatEditor {
     return row
   }
 
-  // ── Destination field compact (label emoji + input, pour inline) ──────────
+  // ── Destination block (numéro § + chemin carte) ───────────────────────────
 
-  private _destField(label: string, value: number, onChange: (n: number | undefined) => void): HTMLElement {
+  private _destBlock(
+    label: string,
+    value: number,
+    getCarte: () => string[] | undefined,
+    onChangeNum: (n: number | undefined) => void,
+    onChangeCarte: (chemin: string[] | undefined) => void,
+  ): HTMLElement {
     const wrap = document.createElement('div')
-    wrap.className = 'combat-dest-field'
+    wrap.className = 'combat-dest-block'
 
+    // Ligne numéro
+    const numRow = document.createElement('div')
+    numRow.className = 'combat-dest-row'
     const lbl = document.createElement('span')
-    lbl.className = 'combat-dest-emoji'; lbl.textContent = label
-
+    lbl.className = 'combat-dest-lbl'; lbl.textContent = label
     const input = document.createElement('input')
-    input.type = 'number'; input.className = 'cpm-input-number combat-dest-input'
+    input.type = 'number'; input.className = 'cpm-input-number'
     input.min = '0'; input.placeholder = '—'
     if (value > 0) input.value = String(value)
     input.addEventListener('input', () => {
       const n = parseInt(input.value, 10)
-      onChange(isNaN(n) || n <= 0 ? undefined : n)
+      onChangeNum(isNaN(n) || n <= 0 ? undefined : n)
     })
+    numRow.appendChild(lbl); numRow.appendChild(input)
+    wrap.appendChild(numRow)
 
-    wrap.appendChild(lbl); wrap.appendChild(input)
+    // Chemin carte (sans env)
+    const carteEl = document.createElement('div')
+    new CarteEditorBlock(carteEl, {
+      initial: { chemin: getCarte() ?? [] },
+      onChange: (data) => onChangeCarte(data?.chemin?.length ? data.chemin : undefined),
+      showEnv: false,
+    })
+    wrap.appendChild(carteEl)
     return wrap
+  }
+
+  // ── Destination field compact (ancien helper, utilisé en interne) ──────────
+
+  private _destField(label: string, value: number, onChange: (n: number | undefined) => void): HTMLElement {
+    return this._destBlock(
+      label, value,
+      () => undefined,
+      onChange,
+      () => { /* pas de carte sur cette destination simplifiée */ },
+    )
   }
 
   // ── JSON brut ─────────────────────────────────────────────────────────────

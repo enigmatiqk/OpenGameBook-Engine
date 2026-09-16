@@ -87,7 +87,9 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 
 .image-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; cursor: zoom-out; }
 .image-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: var(--radius); box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
-.section-text { font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; white-space: pre-wrap; }
+.section-text { font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; }
+.section-text p { margin-bottom: 0.75rem; }
+.section-text p:last-child { margin-bottom: 0; }
 .choices-list { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
 .choice-btn { width: 100%; text-align: left; padding: 0.75rem 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-size: 1rem; cursor: pointer; transition: background-color 0.15s, border-color 0.15s; }
 .choice-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); }

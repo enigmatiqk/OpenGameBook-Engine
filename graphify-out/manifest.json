@@ -110,9 +110,9 @@
     "semantic_hash": "7525b9896e5828a22680d4a0ee8d7521"
   },
   "src/engine/GameEngine.ts": {
-    "mtime": 1788808529.3645492,
-    "ast_hash": "9994c879375f13a92ea6f1b8bceaa1ab",
-    "semantic_hash": "9994c879375f13a92ea6f1b8bceaa1ab"
+    "mtime": 1788938490.0444047,
+    "ast_hash": "35240bf9e6d863772f4afb7b4476eff0",
+    "semantic_hash": "35240bf9e6d863772f4afb7b4476eff0"
   },
   "src/engine/GameEngineActions.ts": {
     "mtime": 1788808435.2669535,
@@ -150,9 +150,9 @@
     "semantic_hash": "089f08dd8a00c82f5180fb15352aa128"
   },
   "src/engine/GameEngineSave.ts": {
-    "mtime": 1787263917.7859974,
-    "ast_hash": "9a05332e0427a9a7a53fdb2f6e93441c",
-    "semantic_hash": "9a05332e0427a9a7a53fdb2f6e93441c"
+    "mtime": 1788933954.1878037,
+    "ast_hash": "afb7f0495255c114a7982acc40379e7a",
+    "semantic_hash": "afb7f0495255c114a7982acc40379e7a"
   },
   "src/engine/ImageGenerator.ts": {
     "mtime": 1776978804.2908366,
@@ -190,14 +190,14 @@
     "semantic_hash": "b0680f26b8ae0e7868967111d740df75"
   },
   "src/main.ts": {
-    "mtime": 1788341249.6510632,
-    "ast_hash": "3da876588b323bce1f6073bfabd47331",
-    "semantic_hash": "3da876588b323bce1f6073bfabd47331"
+    "mtime": 1788958013.1593354,
+    "ast_hash": "a9aa5cef43b4bb3adbd04c6d0501bde1",
+    "semantic_hash": "a9aa5cef43b4bb3adbd04c6d0501bde1"
   },
   "src/types.ts": {
-    "mtime": 1788812903.0540793,
-    "ast_hash": "03bb6f2678d9c71f9813b9f744e5a875",
-    "semantic_hash": "03bb6f2678d9c71f9813b9f744e5a875"
+    "mtime": 1789327658.798897,
+    "ast_hash": "63359988ae3be52601225e3f85bef985",
+    "semantic_hash": "63359988ae3be52601225e3f85bef985"
   },
   "src/ui/accessibility.ts": {
     "mtime": 1777066320.1349342,
@@ -205,14 +205,14 @@
     "semantic_hash": "fa37a7839e8d3faf21c654b5fb3a614a"
   },
   "src/ui/combat.ts": {
-    "mtime": 1788808414.10644,
-    "ast_hash": "6f2a83516c611f13abf75ec470f0ccb4",
-    "semantic_hash": "6f2a83516c611f13abf75ec470f0ccb4"
+    "mtime": 1788956934.02537,
+    "ast_hash": "480376683b9e8db7392e4a0d154af896",
+    "semantic_hash": "480376683b9e8db7392e4a0d154af896"
   },
   "src/ui/debugPanel.ts": {
-    "mtime": 1788892473.9154425,
-    "ast_hash": "615e70a094adf3a08e5fcfe398fe8ab2",
-    "semantic_hash": "615e70a094adf3a08e5fcfe398fe8ab2"
+    "mtime": 1788958000.9062216,
+    "ast_hash": "be442426e218bc051a952113c8e71f12",
+    "semantic_hash": "be442426e218bc051a952113c8e71f12"
   },
   "src/ui/diceRoll.ts": {
     "mtime": 1787241099.5415823,
@@ -225,9 +225,9 @@
     "semantic_hash": "9917599d14ed3d5d536755920f20d153"
   },
   "src/ui/game.ts": {
-    "mtime": 1788723459.0403948,
-    "ast_hash": "6ff8c17cf591baf4248f125c8177555d",
-    "semantic_hash": "6ff8c17cf591baf4248f125c8177555d"
+    "mtime": 1789542205.3970022,
+    "ast_hash": "7b1373b9aec3500a8df589d959ac9c85",
+    "semantic_hash": "7b1373b9aec3500a8df589d959ac9c85"
   },
   "src/ui/imagePreferences.ts": {
     "mtime": 1778166929.823751,
@@ -245,9 +245,9 @@
     "semantic_hash": "87b7e091806b78d86b8fbe1617100391"
   },
   "src/ui/library.ts": {
-    "mtime": 1777319849.8428464,
-    "ast_hash": "29796c83df10bf8a66c677fed394b410",
-    "semantic_hash": "29796c83df10bf8a66c677fed394b410"
+    "mtime": 1788934779.6729991,
+    "ast_hash": "b8fbda84267830745e0fabc31bae6fd9",
+    "semantic_hash": "b8fbda84267830745e0fabc31bae6fd9"
   },
   "src/ui/schema-choices.ts": {
     "mtime": 1777557033.168512,
@@ -1060,9 +1060,9 @@
     "semantic_hash": "4c4cc321cf39197ea7aceb25843dcad2"
   },
   "vite.config.ts": {
-    "mtime": 1777318734.977239,
-    "ast_hash": "5541213e40c7dd52cfbff280b6c5f268",
-    "semantic_hash": "5541213e40c7dd52cfbff280b6c5f268"
+    "mtime": 1789235584.7852468,
+    "ast_hash": "3f1226bf323c903455c198a28397bcbd",
+    "semantic_hash": "3f1226bf323c903455c198a28397bcbd"
   },
   "vitest.config.ts": {
     "mtime": 1776973287.779983,
@@ -2813,5 +2813,105 @@
     "mtime": 1788845807.1777062,
     "ast_hash": "8b72e825a6ceb4bef2b8b096e878c0e6",
     "semantic_hash": "8b72e825a6ceb4bef2b8b096e878c0e6"
+  },
+  "src/carte/CarteEngine.ts": {
+    "mtime": 1789588099.855423,
+    "ast_hash": "19b4eeb88a1acf84b8a6741f4e96650e",
+    "semantic_hash": "19b4eeb88a1acf84b8a6741f4e96650e"
+  },
+  "src/carte/CheminParser.ts": {
+    "mtime": 1789583917.045633,
+    "ast_hash": "9b92609aa06bc179ce6f822b2925af91",
+    "semantic_hash": "9b92609aa06bc179ce6f822b2925af91"
+  },
+  "src/editor/AdventureTreePanel.ts": {
+    "mtime": 1789240258.7170215,
+    "ast_hash": "966dcc0df802e7aa817de8028638581b",
+    "semantic_hash": "966dcc0df802e7aa817de8028638581b"
+  },
+  "src/editor/CarteEditorBlock.ts": {
+    "mtime": 1789584564.8384068,
+    "ast_hash": "473cef60ea94e3842ed835a4755a38e1",
+    "semantic_hash": "473cef60ea94e3842ed835a4755a38e1"
+  },
+  "src/editor/ChoicePropertyModal.ts": {
+    "mtime": 1789363227.5350184,
+    "ast_hash": "7652c27343fbf2a2e4e3e99084926188",
+    "semantic_hash": "7652c27343fbf2a2e4e3e99084926188"
+  },
+  "src/editor/ChoicesEditor.ts": {
+    "mtime": 1789312875.832542,
+    "ast_hash": "f6a05489f4251d2d4f73ffa41bdd9947",
+    "semantic_hash": "f6a05489f4251d2d4f73ffa41bdd9947"
+  },
+  "src/editor/CombatEditor.ts": {
+    "mtime": 1789417105.5996294,
+    "ast_hash": "81750cc4d893ba714eb526f353e84ee6",
+    "semantic_hash": "81750cc4d893ba714eb526f353e84ee6"
+  },
+  "src/editor/ConditionEditor.ts": {
+    "mtime": 1789309074.112843,
+    "ast_hash": "892fbf10265e63522a23cc45afdccf85",
+    "semantic_hash": "892fbf10265e63522a23cc45afdccf85"
+  },
+  "src/editor/CouvertureEditor.ts": {
+    "mtime": 1789293564.5184114,
+    "ast_hash": "48e70feb2ab6ce0e922d25f9dcfdd09f",
+    "semantic_hash": "48e70feb2ab6ce0e922d25f9dcfdd09f"
+  },
+  "src/editor/EditorApp.ts": {
+    "mtime": 1789592062.7798345,
+    "ast_hash": "5d2d8441782bbf7211b0cfcbedad7d36",
+    "semantic_hash": "5d2d8441782bbf7211b0cfcbedad7d36"
+  },
+  "src/editor/EffetsEditor.ts": {
+    "mtime": 1789299422.6433048,
+    "ast_hash": "e294ed6a5ff373ad59993b91ba7efc70",
+    "semantic_hash": "e294ed6a5ff373ad59993b91ba7efc70"
+  },
+  "src/editor/LivreEditor.ts": {
+    "mtime": 1789293891.991513,
+    "ast_hash": "302780982c067bd0f066af984a648a75",
+    "semantic_hash": "302780982c067bd0f066af984a648a75"
+  },
+  "src/editor/PersonnageEditor.ts": {
+    "mtime": 1789297309.5584583,
+    "ast_hash": "f14122ebca41509ef282e8f305fde11f",
+    "semantic_hash": "f14122ebca41509ef282e8f305fde11f"
+  },
+  "src/editor/ReglesEditor.ts": {
+    "mtime": 1789322413.5866208,
+    "ast_hash": "c82d955632aac335138a17ebf1eb8b43",
+    "semantic_hash": "c82d955632aac335138a17ebf1eb8b43"
+  },
+  "src/editor/SectionEditor.ts": {
+    "mtime": 1789330057.3694477,
+    "ast_hash": "00417c16f63d6b7578a5a9e8090d09ab",
+    "semantic_hash": "00417c16f63d6b7578a5a9e8090d09ab"
+  },
+  "src/editor/SectionTargetExtractor.ts": {
+    "mtime": 1789235839.604503,
+    "ast_hash": "9cb0a6d3612a370d1747443f0528743d",
+    "semantic_hash": "9cb0a6d3612a370d1747443f0528743d"
+  },
+  "src/editor/WysiwygEditor.ts": {
+    "mtime": 1789294813.8390229,
+    "ast_hash": "a11cfa6f284ba8a43e6cd510c3b89bce",
+    "semantic_hash": "a11cfa6f284ba8a43e6cd510c3b89bce"
+  },
+  "src/editor/main.ts": {
+    "mtime": 1789235739.5999174,
+    "ast_hash": "77f483ac8f6f8b41415f8b07700fbf08",
+    "semantic_hash": "77f483ac8f6f8b41415f8b07700fbf08"
+  },
+  "src/ui/CarteView.ts": {
+    "mtime": 1789579247.5889244,
+    "ast_hash": "a1fa2f4a1b2d51fb68f4e9b19799a7c0",
+    "semantic_hash": "a1fa2f4a1b2d51fb68f4e9b19799a7c0"
+  },
+  "src/ui/adventureTree.ts": {
+    "mtime": 1788981643.6329355,
+    "ast_hash": "21d76bd5db75bee5327219ad3921795a",
+    "semantic_hash": "21d76bd5db75bee5327219ad3921795a"
   }
 }

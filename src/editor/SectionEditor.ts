@@ -1,9 +1,10 @@
 import type { Section } from '../types'
 import { ChoicesEditor } from './ChoicesEditor'
-import type { Choice, Effet, CombatData } from '../types'
+import type { Choice, Effet, CombatData, CarteSectionData, Adventure } from '../types'
 import { WysiwygEditor } from './WysiwygEditor'
 import { EffetsEditor } from './EffetsEditor'
 import { CombatEditor } from './CombatEditor'
+import { CarteEditorBlock } from './CarteEditorBlock'
 
 export interface SectionEditorOptions {
   onNavigateTo:    (numero: number) => void | Promise<void>
@@ -12,6 +13,7 @@ export interface SectionEditorOptions {
   onChoicesChange: (choix: Choice[]) => void
   onEffetsChange:  (effets: Effet[]) => void
   onCombatChange:  (combat: CombatData | null) => void
+  onCarteChange:   (carte: CarteSectionData | undefined) => void
   onPropsChange:   (patch: Partial<Section>) => void
 }
 
@@ -31,7 +33,7 @@ export class SectionEditor {
 
   // ── API publique ─────────────────────────────────────────────────────────────
 
-  render(section: Section, imageBaseUrl: string): void {
+  render(section: Section, imageBaseUrl: string, adventure?: Adventure): void {
     this.imageDataUrls = {}
     this.container.innerHTML = ''
     this.container.className = 'section-editor'
@@ -87,6 +89,16 @@ export class SectionEditor {
     })
 
     leftCol.appendChild(effetsWrap)
+
+    // ── Données carte ─────────────────────────────────────────────────────────
+    const carteEl = document.createElement('div')
+    new CarteEditorBlock(carteEl, {
+      initial:    section.carte,
+      onChange:   (carte) => this.options.onCarteChange(carte),
+      adventure:  adventure,
+      sectionNum: section.numero,
+    })
+    leftCol.appendChild(carteEl)
 
     this.container.appendChild(leftCol)
   }

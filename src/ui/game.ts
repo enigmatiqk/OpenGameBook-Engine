@@ -7,6 +7,8 @@ import { parseDiceFormula, rollDice, rollDiceAdversaire } from '../engine/Combat
 import { resolveImage, resolveImages } from '../utils/imageUtils'
 import { updateSectionNotes } from './sectionNotes'
 import { GameEngineActions } from '../engine/GameEngineActions'
+import { CarteView } from './CarteView'
+import { buildCarte } from '../carte/CarteEngine'
 
 export interface GameViewCallbacks {
   onVictory: () => void
@@ -19,6 +21,8 @@ export class GameView {
   private callbacks: GameViewCallbacks
   private container: HTMLElement | null = null
   private _onImagePrefsChanged: (() => void) | null = null
+  private _carteOverlay: HTMLElement | null = null
+  private _carteView: CarteView | null = null
 
   constructor(engine: GameEngine, callbacks: GameViewCallbacks) {
     this.engine = engine
@@ -183,8 +187,74 @@ export class GameView {
 
     if (resolveImages(adventure.images_annexes, adventure.images_annexes_ia).length === 0) imagesBtn.disabled = true
 
-    toolbar.append(manualBtn, heroBtn, imagesBtn, backBtn)
+    const carteBtn = this._btn('🗺 Carte', 'btn btn-secondary btn-carte', () => this._toggleCarte(adventure))
+
+    toolbar.append(manualBtn, heroBtn, imagesBtn, carteBtn, backBtn)
     return toolbar
+  }
+
+  private _toggleCarte(adventure: Adventure): void {
+    if (this._carteOverlay) {
+      this._carteOverlay.remove()
+      this._carteOverlay = null
+      this._carteView = null
+      return
+    }
+
+    const overlay = document.createElement('div')
+    overlay.style.cssText = [
+      'position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;',
+      'background:#0a0a14;',
+    ].join('')
+
+    // Barre titre
+    const bar = document.createElement('div')
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;background:#1a1a2e;border-bottom:2px solid #e94560;flex-shrink:0;'
+    bar.innerHTML = `<span style="font-weight:700;color:#e94560;font-size:0.9rem">🗺 Carte — ${adventure.titre}</span>`
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = '✕ Fermer'
+    closeBtn.style.cssText = 'background:transparent;color:#a0a0b0;border:1px solid #2a2a4a;border-radius:6px;padding:0.25rem 0.75rem;cursor:pointer;font-size:0.8rem;'
+    closeBtn.addEventListener('click', () => { this._toggleCarte(adventure) })
+    bar.appendChild(closeBtn)
+    overlay.appendChild(bar)
+
+    // Conteneur SVG
+    const mapContainer = document.createElement('div')
+    mapContainer.style.cssText = 'flex:1;overflow:hidden;'
+    overlay.appendChild(mapContainer)
+
+    document.body.appendChild(overlay)
+    this._carteOverlay = overlay
+
+    // Construit la carte avec le fog of war (sections visitées via le journal)
+    const state = this.engine.getGameState()
+    const visitedNums = this._getVisitedSections()
+    const carteState = buildCarte(adventure.sections, visitedNums)
+    const currentSection = this.engine.getCurrentSection()
+
+    this._carteView = new CarteView(mapContainer, {
+      showAll:          false,
+      currentSection,
+      onSelectSection:  (num) => { console.log(`Carte: section §${num} sélectionnée`) },
+    })
+    this._carteView.render(carteState)
+
+    void state
+  }
+
+  private _getVisitedSections(): Set<number> {
+    const visited = new Set<number>()
+    const state = this.engine.getGameState()
+    if (!state.hero) return visited
+    for (const entry of state.hero.journal) {
+      if (entry.tags.includes('section') && typeof entry.value_number === 'number') {
+        visited.add(entry.value_number)
+      }
+    }
+    // La section courante est toujours visible
+    const cur = this.engine.getCurrentSection()
+    if (cur) visited.add(cur)
+    return visited
   }
 
   private _buildHeroPanel(adventure: Adventure, hero: Hero): HTMLElement {
@@ -231,7 +301,7 @@ export class GameView {
 
     const text = document.createElement('div')
     text.className = 'section-text'
-    text.textContent = section.texte
+    text.innerHTML = section.texte
     wrap.appendChild(text)
 
     if (section.choix.length > 0) {

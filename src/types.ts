@@ -541,6 +541,41 @@ export interface Choice {
   action?: Action | string  // Action object ou string pour backward compatibility
   regle_surcharge?: Record<string, unknown>  // surcharge partielle des propriétés de la règle référencée par action
   stat_monstre?: string  // ex: "-3 endurance"
+  carte?: CarteChoixData   // données de déplacement sur la carte
+}
+
+// ─── Carte ───────────────────────────────────────────────────────────────────
+
+/**
+ * Environnements de terrain affichés sur la carte.
+ * Chaque valeur correspond à une couleur/texture fixe.
+ */
+export type CarteEnv =
+  | 'plaine' | 'foret' | 'montagne' | 'donjon' | 'grotte'
+  | 'riviere' | 'lac' | 'marais' | 'village' | 'route' | 'mer' | 'porte'
+
+/**
+ * Données carte attachées à une Section.
+ * env     = terrain de la case elle-même
+ * chemin  = déplacement décrit dans le texte de la section (le héros marche)
+ *
+ * Format d'une étape de chemin :
+ *   "N" | "S" | "E" | "O"        — 1 case dans cette direction
+ *   "2N" | "3O" ...              — N cases dans cette direction
+ *   "@riviere" | "@porte" ...    — élément traversé (terrain entre deux cases)
+ *   "!retour"                    — action mot-clé
+ */
+export interface CarteSectionData {
+  env?:    CarteEnv      // terrain de cette case
+  chemin?: string[]      // déplacement dans le texte de la section
+}
+
+/**
+ * Données carte attachées à un Choice.
+ * chemin = déplacement si ce choix est pris (mène à une autre case).
+ */
+export interface CarteChoixData {
+  chemin: string[]
 }
 
 export interface Section {
@@ -558,6 +593,7 @@ export interface Section {
   questions?: string[]
   /** Notes diverses sur cette section */
   notes?: string[]
+  carte?: CarteSectionData         // données de positionnement sur la carte
 }
 
 export interface Intro {
