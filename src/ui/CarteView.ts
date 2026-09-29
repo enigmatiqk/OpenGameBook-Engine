@@ -114,7 +114,7 @@ export class CarteView {
     const mapH = (maxY - minY + 1) * STEP + PAD * 2
     this.scale = Math.min(2, Math.min(rect.width / mapW, rect.height / mapH) * 1.5)
     const caseCx = PAD + c.x * STEP + CELL / 2
-    const caseCy = PAD + c.y * STEP + CELL / 2
+    const caseCy = PAD - c.y * STEP + CELL / 2
     this.panX = rect.width  / 2 - caseCx * this.scale
     this.panY = rect.height / 2 - caseCy * this.scale
     this._applyTransform()
@@ -181,7 +181,7 @@ export class CarteView {
   }
 
   private _cx(c: CarteCase): number { return PAD + c.x * STEP }
-  private _cy(c: CarteCase): number { return PAD + c.y * STEP }
+  private _cy(c: CarteCase): number { return PAD - c.y * STEP }
 
   private _drawCell(c: CarteCase, playerCase: CarteCase | null = null): void {
     const x  = this._cx(c)

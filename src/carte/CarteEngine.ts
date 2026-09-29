@@ -50,17 +50,9 @@ export interface CarteState {
 }
 
 /**
- * Retrouve la case où se trouve le joueur pour une section donnée.
- * Si la section a un chemin, le joueur est sur la dernière case de chemin (isPath=true, sectionNum=num).
- * Sinon, il est sur la case de section elle-même.
+ * Retrouve la case de section où se trouve le joueur.
  */
 export function getPlayerCase(state: CarteState, sectionNum: number): CarteCase | null {
-  // 1. Case de chemin (isPath) avec sectionNum = sectionNum → bout du chemin
-  const pathCases = [...state.cases.values()]
-    .filter(c => c.isPath && c.sectionNum === sectionNum)
-  if (pathCases.length > 0) return pathCases[pathCases.length - 1]
-
-  // 2. Case directe (section principale ou alias enregistré)
   return state.cases.get(sectionNum) ?? null
 }
 
@@ -115,6 +107,19 @@ export function buildCarte(
   const grid   = new Map<string, number>()
   const placed = new Set<number>()
 
+  const hasVisitedMappedDestination = (value: unknown): boolean => {
+    if (Array.isArray(value)) return value.some(hasVisitedMappedDestination)
+    if (value === null || typeof value !== 'object') return false
+
+    const node = value as Record<string, unknown>
+    const carte = node.carte as { chemin?: unknown } | undefined
+    if (typeof node.section === 'number' && visitedNums?.has(node.section)
+      && Array.isArray(carte?.chemin) && carte.chemin.length > 0) {
+      return true
+    }
+    return Object.values(node).some(hasVisitedMappedDestination)
+  }
+
   let pathIdCounter = -1  // ids négatifs pour les cases de chemin
 
   // BFS queue : position de case (cx,cy) + position courante après chemin (px,py)
@@ -155,6 +160,9 @@ export function buildCarte(
   ): { px: number; py: number } | null => {
     if (placed.has(num)) return null
     const key = gridKey(cx, cy)
+    const pathVisible = visitedNums === undefined
+      || hasVisitedMappedDestination(section.choix)
+      || hasVisitedMappedDestination(section.combat)
 
     // ── Promotion d'une case de chemin en case de section ─────────────────────
     // Si la position est déjà occupée par une case de chemin (id < 0),
@@ -169,7 +177,7 @@ export function buildCarte(
         existingCase.sectionNum = num
         existingCase.isPath     = false
         existingCase.env        = section.carte?.env ?? existingCase.env
-        existingCase.visible    = visitedNums === undefined || visitedNums.has(num)
+        existingCase.visible    = existingCase.visible || visitedNums === undefined || visitedNums.has(num)
         cases.set(num, existingCase)
         grid.set(key, num)
         placed.add(num)
@@ -226,7 +234,7 @@ export function buildCarte(
               } else {
                 const id = pathIdCounter--
                 pathWCase = getOrCreateCase(wx, wy, id, null, true, num)
-                pathWCase.visible = existingCase.visible
+                pathWCase.visible = pathWCase.visible || pathVisible
               }
               openMur(pathWCase, OPPOSITE[etape.dir], murType)
               prevWCase = pathWCase
@@ -280,7 +288,7 @@ export function buildCarte(
             } else {
               const id = pathIdCounter--
               pathCase = getOrCreateCase(x, y, id, null, true, num)
-              pathCase.visible = c.visible
+              pathCase.visible = pathCase.visible || pathVisible
             }
 
             // Ouvre le mur d'entrée (direction opposée)
@@ -353,11 +361,13 @@ export function buildCarte(
       let x = px, y = py
       let prevCase2 = curCase
       let pendingEnvs: CarteEnv[] = []
+      let lastDir: Direction | null = null
 
       for (const etape of etapes) {
         if (etape.kind === 'env') {
           pendingEnvs.push(etape.env)
         } else if (etape.kind === 'move') {
+          lastDir = etape.dir
           const { dx, dy } = DELTA[etape.dir]
           for (let i = 0; i < etape.cases; i++) {
             if (prevCase2) openMur(prevCase2, etape.dir, murType)
@@ -391,11 +401,13 @@ export function buildCarte(
       const targetSection = sectionMap.get(targetNum)
       if (targetSection) {
         placeSection(targetNum, x, y, targetSection)
-        const destCase = cases.get(targetNum) ?? grid.get(gridKey(x, y)) !== undefined
+        const destCase = cases.get(targetNum) ?? (grid.get(gridKey(x, y)) !== undefined
           ? cases.get(grid.get(gridKey(x, y))!)
-          : undefined
-        if (destCase && firstDir) {
-          openMur(destCase, OPPOSITE[firstDir], murType)
+          : undefined)
+        // Le mur de retour s'ouvre dans la direction opposée à la DERNIÈRE étape du chemin
+        // (pas la première — ex: ["O","N"] → mur S de la destination, pas mur E)
+        if (destCase && lastDir) {
+          openMur(destCase, OPPOSITE[lastDir], murType)
         }
       }
     }

@@ -39,8 +39,8 @@ export type Etape = EtapeMove | EtapeEnv | EtapeAction
 export const DIRECTIONS: Direction[] = ['N', 'S', 'E', 'O']
 
 export const DELTA: Record<Direction, { dx: number; dy: number }> = {
-  N: { dx:  0, dy: -1 },
-  S: { dx:  0, dy:  1 },
+  N: { dx:  0, dy:  1 },
+  S: { dx:  0, dy: -1 },
   E: { dx:  1, dy:  0 },
   O: { dx: -1, dy:  0 },
 }
