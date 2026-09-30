@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { Section } from '../src/types'
 import { buildCarte, getPlayerCase } from '../src/carte/CarteEngine'
+import { CarteView } from '../src/ui/CarteView'
+import type { CarteCase, CarteState } from '../src/carte/CarteEngine'
 
 const adventureSections = (JSON.parse(readFileSync(
   'adventures/Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu/sections.json',
@@ -82,5 +84,56 @@ describe('buildCarte', () => {
     expect([destination.x, destination.y]).toEqual([0, 2])
     expect(destination.num).toBe(189)
     expect(destination.murs.S).toBe('porte')
+  })
+
+  it('renders one passage icon when both adjacent cells describe the same edge', () => {
+    const murs = { N: 'ferme', S: 'ferme', E: 'ferme', O: 'ferme' } as const
+    const west: CarteCase = {
+      num: 1, sectionNum: 1, aliasNums: [], x: 0, y: 0, env: null,
+      murs: { ...murs, E: 'porte' }, passages: { E: ['porte'] }, visible: true, isPath: false,
+    }
+    const east: CarteCase = {
+      num: 2, sectionNum: 2, aliasNums: [], x: 1, y: 0, env: null,
+      murs: { ...murs, O: 'porte' }, passages: { O: ['porte'] }, visible: true, isPath: false,
+    }
+    const state: CarteState = {
+      cases: new Map([[1, west], [2, east]]),
+      grid: new Map([['0,0', 1], ['1,0', 2]]),
+      minX: 0, maxX: 1, minY: 0, maxY: 0,
+    }
+    const container = document.createElement('div')
+    const view = new CarteView(container, { showAll: true })
+
+    view.render(state)
+
+    expect([...container.querySelectorAll('text')].filter(node => node.textContent === '🚪')).toHaveLength(0)
+    expect(container.querySelectorAll('line[stroke="#c8a040"]')).not.toHaveLength(0)
+    expect(container.querySelectorAll('rect[fill="#c8a040"]')).not.toHaveLength(0)
+  })
+
+  it('dims path cells only when no section occupies the same position', () => {
+    const murs = { N: 'ferme', S: 'ferme', E: 'ferme', O: 'ferme' } as const
+    const makeCase = (num: number, x: number, isPath: boolean): CarteCase => ({
+      num, sectionNum: num, aliasNums: [], x, y: 0, env: null,
+      murs: { ...murs }, passages: {}, visible: true, isPath,
+    })
+    const state: CarteState = {
+      cases: new Map([
+        [-1, makeCase(-1, 0, true)],
+        [-2, makeCase(-2, 1, true)],
+        [2, makeCase(2, 1, false)],
+      ]),
+      grid: new Map([['0,0', -1], ['1,0', 2]]),
+      minX: 0, maxX: 1, minY: 0, maxY: 0,
+    }
+    const container = document.createElement('div')
+    const view = new CarteView(container, { showAll: true })
+
+    view.render(state)
+
+    const cells = [...container.querySelectorAll('rect[width="52"][height="52"]')]
+    expect(cells.find(cell => cell.getAttribute('x') === '168')?.getAttribute('opacity')).toBe('0.7')
+    expect(cells.filter(cell => cell.getAttribute('x') === '224').map(cell => cell.getAttribute('opacity')))
+      .toEqual([null, null])
   })
 })

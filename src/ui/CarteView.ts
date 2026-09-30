@@ -167,15 +167,21 @@ export class CarteView {
     const playerCase = this.options.currentSection !== undefined
       ? getPlayerCase(this.state, this.options.currentSection)
       : null
+    const sectionPositions = new Set(
+      [...this.state.cases.values()]
+        .filter(c => !c.isPath)
+        .map(c => `${c.x},${c.y}`),
+    )
+    const drawnPassages = new Set<string>()
 
     for (const c of this.state.cases.values()) {
       if (!this.options.showAll && !c.visible) {
         this._drawFogCell(c)
         continue
       }
-      this._drawCell(c, playerCase)
+      this._drawCell(c, playerCase, sectionPositions.has(`${c.x},${c.y}`))
       this._drawWalls(c)
-      this._drawPassages(c)
+      this._drawPassages(c, drawnPassages)
     }
     this._applyTransform()
   }
@@ -183,7 +189,11 @@ export class CarteView {
   private _cx(c: CarteCase): number { return PAD + c.x * STEP }
   private _cy(c: CarteCase): number { return PAD - c.y * STEP }
 
-  private _drawCell(c: CarteCase, playerCase: CarteCase | null = null): void {
+  private _drawCell(
+    c: CarteCase,
+    playerCase: CarteCase | null = null,
+    hasSectionAtPosition = false,
+  ): void {
     const x  = this._cx(c)
     const y  = this._cy(c)
     const colors = c.env ? (ENV_COLOR[c.env] ?? ENV_DEFAULT) : ENV_DEFAULT
@@ -204,7 +214,7 @@ export class CarteView {
       rect.addEventListener('click', () => this.options.onSelectSection!(c.num))
     }
     // Cases de chemin : légèrement transparentes pour les distinguer
-    if (c.isPath) rect.setAttribute('opacity', '0.7')
+    if (c.isPath && !hasSectionAtPosition) rect.setAttribute('opacity', '0.7')
     this.vpGroup.appendChild(rect)
 
     // Numéro affiché : si joueur sur cette case → numéro de la section courante
@@ -244,7 +254,7 @@ export class CarteView {
     }
 
     // Icône env (si présent)
-    if (c.env) {
+    if (c.env && c.env !== 'porte') {
       const icon = ENV_ICON[c.env]
       if (icon) {
         const itxt = this._svgEl('text')
@@ -354,7 +364,7 @@ export class CarteView {
     this.vpGroup.appendChild(sq)
   }
 
-  private _drawPassages(c: CarteCase): void {
+  private _drawPassages(c: CarteCase, drawnPassages: Set<string>): void {
     if (!c.passages) return
     const x = this._cx(c)
     const y = this._cy(c)
@@ -362,6 +372,7 @@ export class CarteView {
     for (const [dir, envs] of Object.entries(c.passages) as [Direction, CarteEnv[]][]) {
       if (!envs?.length) continue
       const env = envs[0]
+      if (env === 'porte') continue
       const icon = ENV_ICON[env]
       if (!icon) continue
 
@@ -372,6 +383,10 @@ export class CarteView {
         case 'E': px = x + CELL + STEP / 2; py = y + CELL / 2; break
         case 'O': px = x - STEP / 2; py = y + CELL / 2; break
       }
+
+      const passageKey = `${px},${py},${icon}`
+      if (drawnPassages.has(passageKey)) continue
+      drawnPassages.add(passageKey)
 
       const itxt = this._svgEl('text')
       itxt.setAttribute('x', String(px))
