@@ -287,15 +287,18 @@ export interface CombatPhaseOverrides {
   modifier?: CombatModifier[]
   victoire?: {
     section: SectionRef
+    carte?: CarteChoixData
     effets?: Effet[]
   }
   mort?: {
     section?: SectionRef
+    carte?: CarteChoixData
     end?: "defaite" | "victoire"
     effets?: Effet[]
   }
   fuite?: {
     section: SectionRef
+    carte?: CarteChoixData
     avant?: boolean
   }
   defense?: {
@@ -324,17 +327,20 @@ export interface CombatData {
   degats_heros?: string       // ex: "+1", "-1" — bonus/malus de dégâts du héros
   events?: CombatEvent[]      // événements déclenchés pendant tout le combat
   modifier?: CombatModifier[] // modifications à appliquer avant le combat
-  victoire?: { 
+  victoire?: {
     section: SectionRef
+    carte?: CarteChoixData
     effets?: Effet[]           // effets appliqués après la victoire
   }
   mort?: {
     section?: SectionRef       // section vers laquelle naviguer si le héros meurt au combat
+    carte?: CarteChoixData
     end?: "defaite" | "victoire"  // si absent et pas de section, défaut: "defaite"
     effets?: Effet[]           // effets appliqués à la mort (avant navigation)
   }
-  fuite?: { 
+  fuite?: {
     section: SectionRef
+    carte?: CarteChoixData
     avant?: boolean            // true = fuite possible avant le combat, false/absent = pendant
     fuite_directe?: boolean    // si false, masque le bouton "Fuir directement" (défaut: true)
     fuite_chance?: boolean     // si false, masque le bouton "Tenter sa chance pour fuir" (défaut: true)

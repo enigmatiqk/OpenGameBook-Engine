@@ -322,11 +322,16 @@ export function buildCarte(
     const curKey  = gridKey(px, py)
     const curNum  = grid.get(curKey)
     const curCase = curNum !== undefined ? cases.get(curNum) : undefined
+    const processedPaths = new Set<string>()
 
     const processChoice = (
       targetNum: number,
       chemin: string[],
     ): void => {
+      const pathKey = JSON.stringify([targetNum, chemin])
+      if (processedPaths.has(pathKey)) return
+      processedPaths.add(pathKey)
+
       // `!ici` = la section destination occupe la même case que la position courante
       // Les @env précédant !ici marquent le mur dans la direction du chemin de la destination
       if (estIci(chemin)) {
@@ -432,6 +437,24 @@ export function buildCarte(
         if (!targetNum || targetNum <= 0) continue
         processChoice(targetNum, outcome.choix.carte.chemin)
       }
+    }
+
+    // ── 3. Outcomes de combat ──────────────────────────────────────────────
+    const combatOutcomes = [
+      section.combat?.victoire,
+      section.combat?.fuite,
+      section.combat?.mort,
+      ...(section.combat?.phases ?? []).flatMap(phase => [
+        phase.victoire,
+        phase.fuite,
+        phase.mort,
+      ]),
+    ]
+    for (const outcome of combatOutcomes) {
+      const chemin = outcome?.carte?.chemin
+      const targetNum = typeof outcome?.section === 'number' ? outcome.section : null
+      if (!chemin?.length || !targetNum || targetNum <= 0) continue
+      processChoice(targetNum, chemin)
     }
   }
 
