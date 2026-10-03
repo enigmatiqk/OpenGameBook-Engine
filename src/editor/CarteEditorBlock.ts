@@ -36,9 +36,10 @@ const ENV_LABELS: Record<CarteEnv, string> = {
 }
 
 // Boutons rapides pour les étapes de chemin
-const QUICK_DIRS   = ['N', 'S', 'E', 'O', '2N', '2S', '2E', '2O', '3N', '3S', '3E', '3O']
-const QUICK_ENVS   = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte']
-const QUICK_ACTS   = ['!ici', '!retour']
+const QUICK_DIRS      = ['N', 'S', 'E', 'O', '2N', '2S', '2E', '2O', '3N', '3S', '3E', '3O']
+const QUICK_ENVS      = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte']
+const QUICK_ENV_CASES = ['#riviere', '#lac', '#foret', '#montagne', '#grotte', '#marais', '#plaine', '#village', '#route', '#mer']
+const QUICK_ACTS      = ['!ici', '!retour']
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -153,7 +154,7 @@ export class CarteEditorBlock {
     const freeInput = document.createElement('input')
     freeInput.type = 'text'
     freeInput.className = 'part-field-input'
-    freeInput.placeholder = 'ex: 2N, @porte, !retour'
+    freeInput.placeholder = 'ex: 2N, @porte, #riviere, !retour'
     freeInput.style.flex = '1'
 
     const addFreeBtn = document.createElement('button')
@@ -264,6 +265,7 @@ export class CarteEditorBlock {
   private _stepClass(step: string): string {
     if (/^[NSEO]$|^\d+[NSEO]$/.test(step)) return 'step-dir'
     if (step.startsWith('@')) return 'step-env'
+    if (step.startsWith('#')) return 'step-env-case'
     if (step.startsWith('!')) return 'step-action'
     return 'step-unknown'
   }
@@ -274,27 +276,32 @@ export class CarteEditorBlock {
     const wrap = document.createElement('div')
     wrap.className = 'carte-quick-wrap'
 
-    const addGroup = (items: string[], className: string): void => {
-      const group = document.createElement('div')
-      group.className = 'carte-quick-group'
-      for (const s of items) {
-        const btn = document.createElement('button')
-        btn.type = 'button'; btn.className = `btn btn-ghost btn-sm carte-quick-btn ${className}`
-        btn.textContent = s
-        btn.title = s
-        btn.addEventListener('click', () => {
-          ;(this.data.chemin ??= []).push(s)
-          this._rebuildCheminList()
-          this._notify()
-          this._refreshPreview()
-        })
-        group.appendChild(btn)
+    const addGroup = (items: string[], className: string, maxPerRow = 999): void => {
+      // Découpe en sous-groupes de maxPerRow éléments max
+      for (let i = 0; i < items.length; i += maxPerRow) {
+        const chunk = items.slice(i, i + maxPerRow)
+        const group = document.createElement('div')
+        group.className = 'carte-quick-group'
+        for (const s of chunk) {
+          const btn = document.createElement('button')
+          btn.type = 'button'; btn.className = `btn btn-ghost btn-sm carte-quick-btn ${className}`
+          btn.textContent = s
+          btn.title = s
+          btn.addEventListener('click', () => {
+            ;(this.data.chemin ??= []).push(s)
+            this._rebuildCheminList()
+            this._notify()
+            this._refreshPreview()
+          })
+          group.appendChild(btn)
+        }
+        wrap.appendChild(group)
       }
-      wrap.appendChild(group)
     }
 
     addGroup(QUICK_DIRS, 'quick-dir')
-    addGroup(QUICK_ENVS, 'quick-env')
+    addGroup(QUICK_ENVS, 'quick-env', 7)
+    addGroup(QUICK_ENV_CASES, 'quick-env-case', 7)
     addGroup(QUICK_ACTS, 'quick-act')
 
     return wrap

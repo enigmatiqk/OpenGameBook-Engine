@@ -360,15 +360,31 @@ export class CombatEditor {
 
     card.appendChild(hdr)
 
-    // ── Destinations phase — sur une ligne ────────────────────────────────────
+    // ── Destinations phase — sur une ligne avec carte collapsible ────────────
     const dests = document.createElement('div')
     dests.className = 'combat-dests-inline'
-    dests.appendChild(this._destField('🏆 §', resolveRef(phase.victoire?.section),
-      n => { phase.victoire = n ? { section: n } : undefined; this._notify() }))
-    dests.appendChild(this._destField('🏃 §', resolveRef(phase.fuite?.section),
-      n => { phase.fuite = n ? { section: n } : undefined; this._notify() }))
-    dests.appendChild(this._destField('💀 §', resolveRef(phase.mort?.section),
-      n => { phase.mort = n ? { section: n } : undefined; this._notify() }))
+
+    type PhaseOutcome = { section?: number; carte?: { chemin?: string[] } }
+    const pv = phase as unknown as Record<string, PhaseOutcome | undefined>
+
+    dests.appendChild(this._destBlock(
+      '🏆 §', resolveRef(phase.victoire?.section),
+      () => pv['victoire']?.carte?.chemin,
+      n => { phase.victoire = n ? { ...phase.victoire, section: n } : undefined; this._notify() },
+      ch => { if (phase.victoire) (pv['victoire'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
+    dests.appendChild(this._destBlock(
+      '🏃 §', resolveRef(phase.fuite?.section),
+      () => pv['fuite']?.carte?.chemin,
+      n => { phase.fuite = n ? { ...phase.fuite, section: n } : undefined; this._notify() },
+      ch => { if (phase.fuite) (pv['fuite'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
+    dests.appendChild(this._destBlock(
+      '💀 §', resolveRef(phase.mort?.section),
+      () => pv['mort']?.carte?.chemin,
+      n => { phase.mort = n ? { ...phase.mort, section: n } : undefined; this._notify() },
+      ch => { if (phase.mort) (pv['mort'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
+    ))
     card.appendChild(dests)
 
     // ── Monstres ──────────────────────────────────────────────────────────────
@@ -517,11 +533,13 @@ export class CombatEditor {
     const wrap = document.createElement('div')
     wrap.className = 'combat-dest-block'
 
-    // Ligne numéro
-    const numRow = document.createElement('div')
-    numRow.className = 'combat-dest-row'
+    // ── Ligne principale : label + numéro + toggle carte ─────────────────────
+    const mainRow = document.createElement('div')
+    mainRow.className = 'combat-dest-main-row'
+
     const lbl = document.createElement('span')
     lbl.className = 'combat-dest-lbl'; lbl.textContent = label
+
     const input = document.createElement('input')
     input.type = 'number'; input.className = 'cpm-input-number'
     input.min = '0'; input.placeholder = '—'
@@ -530,29 +548,51 @@ export class CombatEditor {
       const n = parseInt(input.value, 10)
       onChangeNum(isNaN(n) || n <= 0 ? undefined : n)
     })
-    numRow.appendChild(lbl); numRow.appendChild(input)
-    wrap.appendChild(numRow)
 
-    // Chemin carte (sans env)
+    // Bouton toggle carte
+    const carteToggle = document.createElement('button')
+    carteToggle.type = 'button'
+    carteToggle.className = 'combat-carte-toggle btn btn-ghost btn-sm'
+
+    const chemin = getCarte()
+    const hasData = (chemin?.length ?? 0) > 0
+    let expanded = hasData
+
+    const updateToggle = (): void => {
+      carteToggle.textContent = expanded ? '▼ carte' : '▶ carte'
+      if (hasData || expanded) carteToggle.classList.toggle('combat-carte-toggle--active', hasData || expanded)
+    }
+    updateToggle()
+
+    mainRow.append(lbl, input, carteToggle)
+    wrap.appendChild(mainRow)
+
+    // ── Bloc carte collapsible ────────────────────────────────────────────────
+    const carteWrap = document.createElement('div')
+    carteWrap.className = 'combat-carte-collapse'
+    carteWrap.hidden = !expanded
+
     const carteEl = document.createElement('div')
     new CarteEditorBlock(carteEl, {
-      initial: { chemin: getCarte() ?? [] },
-      onChange: (data) => onChangeCarte(data?.chemin?.length ? data.chemin : undefined),
+      initial: { chemin: chemin ?? [] },
+      onChange: (data) => {
+        onChangeCarte(data?.chemin?.length ? data.chemin : undefined)
+        // Met à jour la classe active si données présentes
+        const hasCh = (data?.chemin?.length ?? 0) > 0
+        carteToggle.classList.toggle('combat-carte-toggle--active', hasCh)
+      },
       showEnv: false,
     })
-    wrap.appendChild(carteEl)
+    carteWrap.appendChild(carteEl)
+    wrap.appendChild(carteWrap)
+
+    carteToggle.addEventListener('click', () => {
+      expanded = !expanded
+      carteWrap.hidden = !expanded
+      updateToggle()
+    })
+
     return wrap
-  }
-
-  // ── Destination field compact (ancien helper, utilisé en interne) ──────────
-
-  private _destField(label: string, value: number, onChange: (n: number | undefined) => void): HTMLElement {
-    return this._destBlock(
-      label, value,
-      () => undefined,
-      onChange,
-      () => { /* pas de carte sur cette destination simplifiée */ },
-    )
   }
 
   // ── JSON brut ─────────────────────────────────────────────────────────────

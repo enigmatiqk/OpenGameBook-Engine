@@ -734,9 +734,10 @@ html, body {
   z-index: 9500;
   background: rgba(0,0,0,0.72);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1rem;
+  padding: 2rem 1rem;
+  overflow-y: auto;
   animation: lb-in 0.15s ease;
 }
 
@@ -746,9 +747,10 @@ html, body {
   border-radius: var(--radius);
   width: 560px;
   max-width: 96vw;
-  max-height: 88vh;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 8px 40px rgba(0,0,0,0.7);
 }
 
@@ -782,7 +784,6 @@ html, body {
 
 /* Corps scrollable */
 .cpm-body {
-  flex: 1;
   overflow-y: auto;
   padding: 0.75rem 1rem;
   display: flex;
@@ -1718,11 +1719,11 @@ html, body {
   white-space: nowrap;
 }
 
-/* Destinations inline (phase + globales) */
+/* Destinations inline (phases) */
 .combat-dests-inline {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 0.5rem 0.75rem;
   flex-wrap: wrap;
   padding: 0.25rem 0;
 }
@@ -1741,6 +1742,39 @@ html, body {
 
 .combat-dest-input { width: 60px; }
 
+/* Destinations (phases + globales) */
+.combat-dest-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.combat-dest-main-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Bouton toggle carte (▶/▼ carte) */
+.combat-carte-toggle {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.35rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+.combat-carte-toggle:hover { opacity: 1; color: var(--text-secondary); }
+.combat-carte-toggle--active { color: var(--accent); opacity: 1; }
+
+/* Bloc carte collapsible dans un dest-block */
+.combat-carte-collapse {
+  margin-top: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-primary);
+  border-left: 2px solid var(--border);
+  border-radius: 0 4px 4px 0;
+}
+.combat-carte-collapse[hidden] { display: none; }
+
 /* Destinations globales (alias) */
 .combat-dest-row {
   display: flex;
@@ -1751,7 +1785,7 @@ html, body {
 .combat-dest-lbl {
   font-size: 0.82rem;
   color: var(--text-secondary);
-  min-width: 120px;
+  min-width: 5rem;
   white-space: nowrap;
 }
 
@@ -1961,10 +1995,11 @@ html, body {
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
 }
-.step-dir    { background: #1a3a6a; color: #90bfff; }
-.step-env    { background: #1a3a1a; color: #90df90; }
-.step-action { background: #3a1a3a; color: #df90df; }
-.step-unknown{ background: #3a3a1a; color: #dfdf90; }
+.step-dir       { background: #1a3a6a; color: #90bfff; }
+.step-env       { background: #1a3a1a; color: #90df90; }
+.step-env-case  { background: #1a2a3a; color: #70c8f0; }
+.step-action    { background: #3a1a3a; color: #df90df; }
+.step-unknown   { background: #3a3a1a; color: #dfdf90; }
 
 /* Boutons rapides */
 .carte-quick-wrap {
@@ -1982,9 +2017,10 @@ html, body {
   font-size: 0.72rem;
   font-family: var(--font-mono);
 }
-.quick-dir { color: #90bfff; }
-.quick-env { color: #90df90; }
-.quick-act { color: #df90df; }
+.quick-dir      { color: #90bfff; }
+.quick-env      { color: #90df90; }
+.quick-env-case { color: #70c8f0; }
+.quick-act      { color: #df90df; }
 
 /* Saisie libre */
 .carte-free-row {

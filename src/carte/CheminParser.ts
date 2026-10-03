@@ -6,7 +6,10 @@
  * Formats supportés :
  *   "N" | "S" | "E" | "O"        → move 1 case
  *   "2N" | "3O" etc.             → move N cases
- *   "@riviere" | "@porte" etc.   → terrain traversé entre deux cases
+ *   "@riviere" | "@porte" etc.   → passage entre deux cases (mur / arête)
+ *   "#riviere" | "#marais" etc.  → modificateur du move précédent : les cases
+ *                                   créées par ce move reçoivent le terrain indiqué
+ *                                   ex: ["3O", "#riviere"] = 3 cases O de type rivière
  *   "!retour"                    → action mot-clé
  */
 
@@ -22,8 +25,15 @@ export type EtapeMove = {
   cases: number     // défaut 1
 }
 
+/** Passage sur un mur entre deux cases (ex : "@riviere", "@porte") */
 export type EtapeEnv = {
   kind: 'env'
+  env:  CarteEnv
+}
+
+/** Terrain affecté à une case intermédiaire (ex : "#riviere", "#marais") */
+export type EtapeEnvCase = {
+  kind: 'envCase'
   env:  CarteEnv
 }
 
@@ -32,7 +42,7 @@ export type EtapeAction = {
   action: 'retour' | 'ici' | string
 }
 
-export type Etape = EtapeMove | EtapeEnv | EtapeAction
+export type Etape = EtapeMove | EtapeEnv | EtapeEnvCase | EtapeAction
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -54,6 +64,7 @@ export const OPPOSITE: Record<Direction, Direction> = {
 
 const DIR_RE  = /^(\d*)([NSEO])$/
 const ENV_RE  = /^@(.+)$/
+const CASE_RE = /^#(.+)$/
 const ACT_RE  = /^!(.+)$/
 
 /**
@@ -71,10 +82,16 @@ export function parseEtape(raw: string): Etape | null {
     return { kind: 'move', dir, cases }
   }
 
-  // Terrain traversé : "@riviere", "@porte" etc.
+  // Passage sur mur (arête) : "@riviere", "@porte" etc.
   const mEnv = ENV_RE.exec(s)
   if (mEnv) {
     return { kind: 'env', env: mEnv[1] as CarteEnv }
+  }
+
+  // Terrain de case : "#riviere", "#marais" etc.
+  const mCase = CASE_RE.exec(s)
+  if (mCase) {
+    return { kind: 'envCase', env: mCase[1] as CarteEnv }
   }
 
   // Action : "!retour" etc.

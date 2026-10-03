@@ -79,6 +79,8 @@ function applyPathSimple(
   for (const etape of etapes) {
     if (etape.kind === 'env') {
       pendingEnvs.push(etape.env)
+    } else if (etape.kind === 'envCase') {
+      // modificateur rétroactif : ne déplace pas
     } else if (etape.kind === 'move') {
       const { dx, dy } = DELTA[etape.dir]
       for (let i = 0; i < etape.cases; i++) {
@@ -209,16 +211,25 @@ export function buildCarte(
         let wx = existingCase.x, wy = existingCase.y
         let prevWCase: CarteCase = existingCase
         let pendingEnvs2: CarteEnv[] = []
+        let lastDir2: Direction | null = null
+        let lastMoveCases2: CarteCase[] = []
         let firstMove2 = true
         for (const etape of etapes) {
           if (etape.kind === 'env') {
             pendingEnvs2.push(etape.env)
+          } else if (etape.kind === 'envCase') {
+            // Modificateur rétroactif sur les cases du dernier move
+            for (const mc of lastMoveCases2) {
+              if (mc.isPath && !mc.env) mc.env = etape.env
+            }
           } else if (etape.kind === 'move') {
+            lastDir2 = etape.dir
             const { dx, dy } = DELTA[etape.dir]
             // Porte uniquement si @porte précède ce move (dans pendingEnvs2)
             const hasPorte = pendingEnvs2.includes('porte' as CarteEnv)
             const murType: MurType = (firstMove2 && hasPorte) ? 'porte' : 'ouvert'
             firstMove2 = false
+            lastMoveCases2 = []
             for (let i = 0; i < etape.cases; i++) {
               openMur(prevWCase, etape.dir, murType)
               if (pendingEnvs2.length > 0 && i === 0) {
@@ -237,10 +248,12 @@ export function buildCarte(
                 pathWCase.visible = pathWCase.visible || pathVisible
               }
               openMur(pathWCase, OPPOSITE[etape.dir], murType)
+              lastMoveCases2.push(pathWCase)
               prevWCase = pathWCase
             }
           } else if (etape.kind === 'action' && etape.action === 'retour') break
         }
+        void lastDir2
       }
       queue.push({ num, cx: existingCase.x, cy: existingCase.y, px: apx, py: apy })
       return { px: apx, py: apy }
@@ -259,13 +272,23 @@ export function buildCarte(
       let prevCase = c
       let prevDir: Direction | null = null
       let pendingEnvs: CarteEnv[] = []
+      let lastMoveCases: CarteCase[] = []   // cases créées par le dernier move
+      // Env courant : hérité de la section, propagé sur toutes les cases intermédiaires
+      let currentEnv: CarteEnv | null = section.carte?.env ?? null
 
       for (const etape of etapes) {
         if (etape.kind === 'env') {
           pendingEnvs.push(etape.env)
+        } else if (etape.kind === 'envCase') {
+          // Modificateur rétroactif : colore les cases du dernier move
+          for (const mc of lastMoveCases) {
+            if (mc.isPath && !mc.env) mc.env = etape.env
+          }
+          currentEnv = etape.env
         } else if (etape.kind === 'move') {
           const { dx, dy } = DELTA[etape.dir]
           const murType: MurType = 'ouvert'
+          lastMoveCases = []
 
           for (let i = 0; i < etape.cases; i++) {
             // Ouvre le mur de sortie de la case précédente
@@ -285,15 +308,17 @@ export function buildCarte(
             let pathCase: CarteCase
             if (existing !== undefined) {
               pathCase = cases.get(existing)!
+              if (pathCase.isPath && !pathCase.env && currentEnv) pathCase.env = currentEnv
             } else {
               const id = pathIdCounter--
-              pathCase = getOrCreateCase(x, y, id, null, true, num)
+              pathCase = getOrCreateCase(x, y, id, currentEnv, true, num)
               pathCase.visible = pathCase.visible || pathVisible
             }
 
             // Ouvre le mur d'entrée (direction opposée)
             openMur(pathCase, OPPOSITE[etape.dir], murType)
 
+            lastMoveCases.push(pathCase)
             prevCase = pathCase
             prevDir  = etape.dir
           }
@@ -365,35 +390,71 @@ export function buildCarte(
       // et en créant les cases intermédiaires du choix
       let x = px, y = py
       let prevCase2 = curCase
-      let pendingEnvs: CarteEnv[] = []
       let lastDir: Direction | null = null
+      let lastMoveCasesC: CarteCase[] = []   // cases créées par le dernier move dans ce choix
+      // Env courant : hérité de la case de départ, propagé jusqu'à changement explicite
+      let currentEnv: CarteEnv | null = curCase?.env ?? null
 
-      for (const etape of etapes) {
+      for (let etapeIndex = 0; etapeIndex < etapes.length; etapeIndex++) {
+        const etape = etapes[etapeIndex]
         if (etape.kind === 'env') {
-          pendingEnvs.push(etape.env)
+          if (etape.env === 'porte') continue
+          // @env dans un chemin de choix : passage sur mur (arête) → crée une case et marque passages
+          const nextMove = etapes.slice(etapeIndex + 1).find(step => step.kind === 'move')
+          const dir: Direction | null = lastDir ?? (nextMove?.kind === 'move' ? nextMove.dir : null)
+          if (!dir) continue
+          const { dx, dy } = DELTA[dir]
+          if (prevCase2) openMur(prevCase2, dir, 'ouvert')
+          x += dx; y += dy
+          const existingNum = grid.get(gridKey(x, y))
+          let terrainCase: CarteCase
+          if (existingNum !== undefined) {
+            terrainCase = cases.get(existingNum)!
+            if (!terrainCase.passages[OPPOSITE[dir]]) terrainCase.passages[OPPOSITE[dir]] = []
+            terrainCase.passages[OPPOSITE[dir]]!.push(etape.env)
+          } else {
+            const id = pathIdCounter--
+            terrainCase = getOrCreateCase(x, y, id, currentEnv, true, num)
+            terrainCase.visible = terrainCase.visible || visitedNums === undefined || visitedNums.has(targetNum)
+          }
+          // Marque le passage sur l'arête (côté sortant de prevCase2)
+          if (prevCase2) {
+            if (!prevCase2.passages[dir]) prevCase2.passages[dir] = []
+            prevCase2.passages[dir]!.push(etape.env)
+          }
+          openMur(terrainCase, OPPOSITE[dir], 'ouvert')
+          lastMoveCasesC = [terrainCase]
+          prevCase2 = terrainCase
+          lastDir = dir
+        } else if (etape.kind === 'envCase') {
+          // Modificateur rétroactif : colore les cases du dernier move
+          for (const mc of lastMoveCasesC) {
+            if (mc.isPath && !mc.env) mc.env = etape.env
+          }
+          currentEnv = etape.env
         } else if (etape.kind === 'move') {
           lastDir = etape.dir
           const { dx, dy } = DELTA[etape.dir]
+          const needsFollowingCell = etapes.slice(etapeIndex + 1).some(step =>
+            step.kind === 'move' || step.kind === 'env' || step.kind === 'envCase',
+          )
+          lastMoveCasesC = []
           for (let i = 0; i < etape.cases; i++) {
             if (prevCase2) openMur(prevCase2, etape.dir, murType)
-            if (pendingEnvs.length > 0 && i === 0 && prevCase2) {
-              if (!prevCase2.passages[etape.dir]) prevCase2.passages[etape.dir] = []
-              prevCase2.passages[etape.dir]!.push(...pendingEnvs)
-              pendingEnvs = []
-            }
             x += dx; y += dy
             const existingNum = grid.get(gridKey(x, y))
             let stepCase: CarteCase | undefined
             if (existingNum !== undefined) {
-              stepCase = cases.get(existingNum)
-            } else if (i < etape.cases - 1) {
-              // Case intermédiaire du chemin du choix (pas la destination)
+              stepCase = cases.get(existingNum)!
+              if (stepCase.isPath && !stepCase.env && currentEnv) stepCase.env = currentEnv
+            } else if (i < etape.cases - 1 || needsFollowingCell) {
               const id = pathIdCounter--
-              stepCase = getOrCreateCase(x, y, id, null, true, num)
-              stepCase.visible = visitedNums === undefined || visitedNums.has(num)
+              stepCase = getOrCreateCase(x, y, id, currentEnv, true, num)
+              stepCase.visible = stepCase.visible || visitedNums === undefined || visitedNums.has(targetNum)
             }
             if (stepCase) {
               openMur(stepCase, OPPOSITE[etape.dir], murType)
+              lastMoveCasesC.push(stepCase)
               prevCase2 = stepCase
             }
           }
@@ -409,8 +470,6 @@ export function buildCarte(
         const destCase = cases.get(targetNum) ?? (grid.get(gridKey(x, y)) !== undefined
           ? cases.get(grid.get(gridKey(x, y))!)
           : undefined)
-        // Le mur de retour s'ouvre dans la direction opposée à la DERNIÈRE étape du chemin
-        // (pas la première — ex: ["O","N"] → mur S de la destination, pas mur E)
         if (destCase && lastDir) {
           openMur(destCase, OPPOSITE[lastDir], murType)
         }

@@ -80,10 +80,39 @@ describe('buildCarte', () => {
 
     expect([barbarianRoom.x, barbarianRoom.y]).toEqual([0, 1])
     expect(barbarianRoom.murs.N).toBe('porte')
-    expect(barbarianRoom.passages.N).toEqual(['porte'])
+    expect(barbarianRoom.passages.N).toBeUndefined()
     expect([destination.x, destination.y]).toEqual([0, 2])
     expect(destination.num).toBe(189)
     expect(destination.murs.S).toBe('porte')
+  })
+
+  it('creates each turn and terrain cell in the section 73 route', () => {
+    const sections: Section[] = [
+      {
+        numero: 1,
+        texte: '',
+        choix: [{ texte: 'Aller à 73', section: 73, carte: { chemin: ['5E', '22N'] } }],
+      },
+      {
+        numero: 73,
+        texte: '',
+        choix: [{ texte: 'Continuer', section: 218, carte: { chemin: ['3O', 'N', '@riviere', 'N'] } }],
+      },
+      { numero: 218, texte: '', choix: [] },
+    ]
+
+    const state = buildCarte(sections)
+    const section73 = state.cases.get(73)!
+    const westRunEnd = state.cases.get(state.grid.get('2,22')!)!
+    const northTurn = state.cases.get(state.grid.get('2,23')!)!
+    const riverCell = state.cases.get(state.grid.get('2,24')!)!
+    const destination = state.cases.get(218)!
+
+    expect([section73.x, section73.y]).toEqual([5, 22])
+    expect([westRunEnd.x, westRunEnd.y]).toEqual([2, 22])
+    expect([northTurn.x, northTurn.y]).toEqual([2, 23])
+    expect([riverCell.x, riverCell.y, riverCell.env]).toEqual([2, 24, 'riviere'])
+    expect([destination.x, destination.y]).toEqual([2, 25])
   })
 
   it('renders one passage icon when both adjacent cells describe the same edge', () => {
