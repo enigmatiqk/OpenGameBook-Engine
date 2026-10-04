@@ -1492,6 +1492,26 @@ html, body {
 .editor-tab.active { background: var(--bg-card); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 .editor-tab:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.tab-label { pointer-events: none; }
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  margin-left: 0.3rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  vertical-align: middle;
+}
+
 /* ── Formulaires des parties ─────────────────────────────────────────────── */
 
 .part-editor { padding: 1.5rem 2rem; display: flex; flex-direction: column; }
@@ -2070,3 +2090,45 @@ html, body {
   transition: background 0.12s;
 }
 .sidebar-carte-btn:hover { background: var(--accent); color: #fff; }
+
+/* ── Mène vers (sidebar sections) ──────────────────────────────────────────── */
+
+.sidebar-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sidebar-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sidebar-target-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.35rem;
+  border-radius: 99px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.sidebar-target-badge--choix     { background: #2a6fa8; }
+.sidebar-target-badge--action    { background: #7a4fa0; }
+.sidebar-target-badge--combat    { background: #a04040; }
+.sidebar-target-badge--fuite     { background: #6a7a2a; }
+.sidebar-target-badge--mort      { background: #3a3a3a; }
+.sidebar-target-badge--condition { background: #8a6a20; }
+.sidebar-target-badge--lancer    { background: #2a7a6a; }
+
+.sidebar-target-dynamic {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}

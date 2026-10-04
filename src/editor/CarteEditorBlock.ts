@@ -17,7 +17,7 @@ import { buildCarte } from '../carte/CarteEngine'
 
 export const CARTE_ENV_LIST: CarteEnv[] = [
   'plaine', 'foret', 'montagne', 'donjon', 'grotte',
-  'riviere', 'lac', 'marais', 'village', 'route', 'mer', 'porte',
+  'riviere', 'lac', 'marais', 'village', 'route', 'mer', 'porte', 'trou',
 ]
 
 const ENV_LABELS: Record<CarteEnv, string> = {
@@ -33,12 +33,13 @@ const ENV_LABELS: Record<CarteEnv, string> = {
   route:    '🛤️ Route',
   mer:      '⚓ Mer',
   porte:    '🚪 Porte',
+  trou:     '🕳 Trou',
 }
 
 // Boutons rapides pour les étapes de chemin
 const QUICK_DIRS      = ['N', 'S', 'E', 'O', '2N', '2S', '2E', '2O', '3N', '3S', '3E', '3O']
 const QUICK_ENVS      = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte']
-const QUICK_ENV_CASES = ['#riviere', '#lac', '#foret', '#montagne', '#grotte', '#marais', '#plaine', '#village', '#route', '#mer']
+const QUICK_ENV_CASES = ['#riviere', '#lac', '#foret', '#montagne', '#grotte', '#marais', '#plaine', '#village', '#route', '#mer', '#trou']
 const QUICK_ACTS      = ['!ici', '!retour']
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,6 +73,10 @@ export class CarteEditorBlock {
     this.options   = options
     this.data      = options.initial ? { ...options.initial, chemin: [...(options.initial.chemin ?? [])] } : {}
     this._build()
+  }
+
+  refreshPreview(): void {
+    this._refreshPreview()
   }
 
   getData(): CarteSectionData | undefined {

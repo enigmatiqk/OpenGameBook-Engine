@@ -42,6 +42,7 @@ const ENV_COLOR: Record<CarteEnv, { fill: string; stroke: string; text: string }
   route:    { fill: '#9a8a6a', stroke: '#7a6a52', text: '#f0e8d0' },
   mer:      { fill: '#0a3a6a', stroke: '#062644', text: '#80b8e8' },
   porte:    { fill: '#5a3a1a', stroke: '#3a2410', text: '#e8c890' },
+  trou:     { fill: '#0a0a0a', stroke: '#1a1a1a', text: '#666666' },
 }
 
 const ENV_DEFAULT = { fill: '#1a1a2e', stroke: '#2a2a4a', text: '#a0a0b0' }
@@ -483,4 +484,5 @@ export const ENV_ICON: Partial<Record<CarteEnv, string>> = {
   grotte:   '🕳️',
   route:    '🛤️',
   plaine:   '',
+  trou:     '🕳',
 }

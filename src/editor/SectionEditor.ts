@@ -25,6 +25,7 @@ export class SectionEditor {
   private imageDataUrls: { image?: string; image_ia?: string } = {}
   private choicesEditor: ChoicesEditor | null = null
   private wysiwyg: WysiwygEditor | null = null
+  private carteBlock: CarteEditorBlock | null = null
 
   constructor(container: HTMLElement, options: SectionEditorOptions) {
     this.container = container
@@ -92,7 +93,7 @@ export class SectionEditor {
 
     // ── Données carte ─────────────────────────────────────────────────────────
     const carteEl = document.createElement('div')
-    new CarteEditorBlock(carteEl, {
+    this.carteBlock = new CarteEditorBlock(carteEl, {
       initial:    section.carte,
       onChange:   (carte) => this.options.onCarteChange(carte),
       adventure:  adventure,
@@ -105,6 +106,10 @@ export class SectionEditor {
 
   getCurrentText(): string {
     return this.wysiwyg?.getValue() ?? ''
+  }
+
+  refreshCarte(): void {
+    this.carteBlock?.refreshPreview()
   }
 
   // ── Header ───────────────────────────────────────────────────────────────────

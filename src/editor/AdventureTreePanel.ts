@@ -4,9 +4,72 @@
  * Affiche l'arbre de l'aventure dans un panneau overlay intégré à l'éditeur.
  * L'arbre tourne dans un <iframe srcdoc> isolé ; les clics de navigation
  * remontent via postMessage({ type: 'navigate', section: N }).
+ *
+ * ── Filtres ───────────────────────────────────────────────────────────────
+ * Des filtres peuvent être appliqués pour mettre en évidence / lister les
+ * sections répondant à un critère. Chaque filtre est un objet FilterDef :
+ *   - id      : identifiant unique (stable, utilisé en data-attribute)
+ *   - label   : texte affiché sur le bouton
+ *   - emoji   : icône du bouton
+ *   - color   : couleur d'accentuation du bouton/badge actif
+ *   - match   : fonction (section, adventure) → boolean, évaluée côté TS
+ *               puis sérialisée en Set<number> pour le JS de l'iframe
+ *
+ * Pour ajouter un filtre, il suffit d'ajouter une entrée à FILTERS.
  */
 
 import type { Adventure, Section, Choice, Effet, EffetItem } from '../types'
+
+// ─── Définition des filtres ────────────────────────────────────────────────
+
+interface FilterDef {
+  id:    string
+  label: string
+  emoji: string
+  color: string
+  match: (section: Section, adventure: Adventure) => boolean
+}
+
+/** Retourne true si la section ou au moins un de ses choix a un chemin carte défini */
+function hasCarte(section: Section): boolean {
+  if (section.carte?.chemin && section.carte.chemin.length > 0) return true
+  if (section.carte?.env) return true
+  for (const c of section.choix ?? []) {
+    if (c.carte?.chemin && c.carte.chemin.length > 0) return true
+  }
+  return false
+}
+
+/** Retourne true si la section est la section 1 ou est référencée par au moins une autre section
+ *  (choix, combat, effets, actions, lancer_de… — via collectSectionRefs qui parcourt tout l'objet) */
+function isReachable(section: Section, allSections: Section[]): boolean {
+  if (section.numero === 1) return true
+  for (const s of allSections) {
+    if (s.numero === section.numero) continue
+    const refs = new Set<number>()
+    collectSectionRefs(s, refs)
+    refs.delete(s.numero) // ne pas compter la section elle-même
+    if (refs.has(section.numero)) return true
+  }
+  return false
+}
+
+export const FILTERS: FilterDef[] = [
+  {
+    id:    'sans-carte',
+    label: 'Sans carte/chemin',
+    emoji: '🗺',
+    color: '#ff9800',
+    match: (section) => !hasCarte(section),
+  },
+  {
+    id:    'orphelins',
+    label: 'Orphelins',
+    emoji: '🔗',
+    color: '#e91e8c',
+    match: (section, adventure) => !isReachable(section, adventure.sections),
+  },
+]
 
 // ─── Re-export du type pour usage externe ─────────────────────────────────────
 
@@ -164,6 +227,22 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   const totalW = maxX + PAD
   const totalH = maxY + yOff + PAD
 
+  // ── Calcul des sets de filtres (côté TS, sérialisés en JSON) ─────────────
+  // filterData = { [filterId]: number[] }  — liste des numéros de sections matchées
+  const filterData: Record<string, number[]> = {}
+  for (const f of FILTERS) {
+    filterData[f.id] = sections.filter(s => f.match(s, adventure)).map(s => s.numero)
+  }
+  // Sérialisation JSON pour injection dans le script de l'iframe
+  const filterDataJson = JSON.stringify(filterData)
+
+  // ── Boutons filtres pour #hdr ─────────────────────────────────────────────
+  const filterButtonsHtml = FILTERS.map(f => {
+    const count = filterData[f.id].length
+    return `<button id="fbtn-${esc(f.id)}" class="fbtn" data-filter-id="${esc(f.id)}" data-filter-color="${esc(f.color)}" title="Filtrer : ${esc(f.label)} (${count} sections)"` +
+      ` style="--fc:${esc(f.color)}">${esc(f.emoji)} ${esc(f.label)} <span class="fbadge" id="fbadge-${esc(f.id)}">${count}</span></button>`
+  }).join('')
+
   // ── Nœuds ────────────────────────────────────────────────────────────────
   const nodesHtml: string[] = []
   for (const s of sections) {
@@ -294,7 +373,7 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
 <html lang="fr"><head><meta charset="UTF-8"><title>Arbre</title><style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0d0d1a;color:#eee;font-family:Arial,sans-serif;overflow:hidden;user-select:none}
-#hdr{position:fixed;top:0;left:0;right:0;z-index:100;background:#1e1e2e;border-bottom:2px solid #e94560;padding:5px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:40px}
+#hdr{position:fixed;top:0;left:0;right:0;z-index:100;background:#1e1e2e;border-bottom:2px solid #e94560;padding:5px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px}
 #hdr h1{font-size:12px;color:#e94560;white-space:nowrap}
 #stats{font-size:10px;color:#888;display:flex;gap:6px;flex-wrap:wrap}
 #leg{font-size:9px;color:#aaa;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
@@ -310,17 +389,40 @@ body{background:#0d0d1a;color:#eee;font-family:Arial,sans-serif;overflow:hidden;
 #svg{position:absolute;top:0;left:0;width:${totalW}px;height:${totalH}px;overflow:visible;pointer-events:none}
 #side{position:fixed;top:40px;right:0;width:320px;bottom:0;background:#1e1e2e;border-left:2px solid #2a2a3e;overflow-y:auto;padding:14px;font-size:11px}
 #side h2{color:#e94560;font-size:12px;margin-bottom:8px}
-.nd{position:absolute;width:${NODE_W}px;height:${NODE_H}px;border:2px solid;border-radius:6px;padding:6px;cursor:pointer;transition:filter .1s}
+.nd{position:absolute;width:${NODE_W}px;height:${NODE_H}px;border:2px solid;border-radius:6px;padding:6px;cursor:pointer;transition:filter .1s,opacity .15s}
 .nd:hover,.nd.hl{filter:brightness(1.4)}.nd.hl{outline:2px solid #fff;outline-offset:2px}.nd.hl-rel{filter:brightness(1.25);outline:1px solid rgba(255,255,255,0.4);outline-offset:2px}
+.nd.nd-filtered{outline:2px solid var(--fc,#ff9800);outline-offset:2px;filter:brightness(1.3)}
+.nd.nd-dimmed{opacity:0.12;pointer-events:none}
 .ds{margin-bottom:10px}.dl{color:#888;font-size:9px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
 .dt{color:#ccc;line-height:1.55;font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:60vh;overflow-y:auto}
 .di{color:#a5d6a7;font-size:9px;margin-top:2px}
 .nb{background:#0f3460;border:1px solid;border-radius:3px;color:#eee;padding:2px 7px;margin:2px 2px 0 0;font-size:10px;cursor:pointer}
 .nb:hover{background:#1a4a80}.nb-in{background:#1a1a2e;opacity:0.8}
+/* ── Filtres ── */
+#filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.fbtn{background:#1a1a2e;border:1px solid #333;border-radius:4px;color:#aaa;padding:2px 8px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .15s,border-color .15s}
+.fbtn:hover{background:#252540;border-color:#555}
+.fbtn.active{background:color-mix(in srgb,var(--fc) 15%,#1a1a2e);border-color:var(--fc);color:var(--fc)}
+.fbadge{background:#333;border-radius:8px;padding:0 5px;font-size:9px;color:#aaa;min-width:18px;text-align:center;display:inline-block}
+.fbtn.active .fbadge{background:var(--fc);color:#000}
+/* ── Panneau filtre ── */
+#filter-panel{display:none}
+#filter-panel h2{margin-bottom:4px}
+#filter-subtitle{color:#888;font-size:9px;margin-bottom:10px}
+#filter-list{display:flex;flex-direction:column;gap:3px}
+.fl-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;cursor:pointer;border:1px solid #2a2a3e;transition:background .1s}
+.fl-item:hover{background:#252540}
+.fl-num{font-weight:bold;color:var(--fc,#ff9800);font-size:11px;min-width:36px}
+.fl-preview{color:#aaa;font-size:9px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl-goto{background:transparent;border:1px solid var(--fc,#ff9800);color:var(--fc,#ff9800);border-radius:3px;padding:1px 6px;font-size:9px;cursor:pointer;flex-shrink:0}
+.fl-goto:hover{background:var(--fc,#ff9800);color:#000}
+#clear-filter{background:transparent;border:1px solid #555;color:#aaa;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;margin-top:8px;width:100%}
+#clear-filter:hover{background:#333}
 </style></head><body>
 <div id="hdr">
   <h1>🗺 ${esc(adventure.titre)}</h1>
   <div id="stats"><span>📊 ${sections.length} sections</span><span>📖 ${counts.normal}</span><span>🔒 ${counts.conditional}</span><span>⚔️ ${counts.combat}</span><span>🏆 ${counts.victory}</span><span>💀 ${counts.death}</span></div>
+  <div id="filters">${filterButtonsHtml}</div>
   <input id="srch" type="search" placeholder="§ n°…">
   <div id="zbtns">
     <button class="zbtn" onclick="zoomBy(-0.1)">−</button>
@@ -338,12 +440,32 @@ body{background:#0d0d1a;color:#eee;font-family:Arial,sans-serif;overflow:hidden;
   <marker id="mc" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5z" fill="#e91e8c"/></marker>
 </defs>
 ${svgPaths.join('\n')}</svg></div></div>
-<div id="side"><h2>Détail de la section</h2><p style="color:#555;font-size:10px">Cliquez sur un nœud pour voir son détail.</p>${panels.join('')}</div>
+<div id="side">
+  <!-- Panneau détail section -->
+  <div id="detail-panel">
+    <h2>Détail de la section</h2>
+    <p style="color:#555;font-size:10px">Cliquez sur un nœud pour voir son détail.</p>
+    ${panels.join('')}
+  </div>
+  <!-- Panneau filtre actif -->
+  <div id="filter-panel">
+    <h2 id="filter-title"></h2>
+    <div id="filter-subtitle"></div>
+    <div id="filter-list"></div>
+    <button id="clear-filter">✕ Désactiver le filtre</button>
+  </div>
+</div>
 <script>
 (function(){
-  var sc=0.65,cur=null,vp=document.getElementById('vp'),outer=document.getElementById('outer'),zlvl=document.getElementById('zlvl');
+  var sc=0.65,cur=null,activeFilter=null;
+  var vp=document.getElementById('vp'),outer=document.getElementById('outer'),zlvl=document.getElementById('zlvl');
   var NW=${NODE_W},NH=${NODE_H},TW=${totalW},TH=${totalH};
 
+  // ── Données filtres injectées depuis TS ────────────────────────────────
+  var FILTER_DATA=${filterDataJson};
+  var FILTER_META=${JSON.stringify(FILTERS.map(f => ({ id: f.id, label: f.label, emoji: f.emoji, color: f.color })))};
+
+  // ── Zoom / pan ─────────────────────────────────────────────────────────
   function setScale(s,px,py){
     var prev=sc; sc=Math.max(0.08,Math.min(4,s));
     if(px!==undefined){outer.scrollLeft+=px*(sc-prev);outer.scrollTop+=py*(sc-prev);}
@@ -359,10 +481,106 @@ ${svgPaths.join('\n')}</svg></div></div>
   },{passive:false});
   setScale(0.65);
 
+  // ── Gestion du panneau detail/filtre ──────────────────────────────────
+  function showDetailPanel(){
+    document.getElementById('detail-panel').style.display='';
+    document.getElementById('filter-panel').style.display='none';
+  }
+  function showFilterPanel(filterId){
+    document.getElementById('detail-panel').style.display='none';
+    var fp=document.getElementById('filter-panel'); fp.style.display='';
+    var meta=FILTER_META.find(function(f){return f.id===filterId;});
+    if(!meta)return;
+    document.getElementById('filter-title').textContent=meta.emoji+' '+meta.label;
+    var nums=FILTER_DATA[filterId]||[];
+    document.getElementById('filter-subtitle').textContent=nums.length+' section'+(nums.length>1?'s':'');
+    var list=document.getElementById('filter-list'); list.innerHTML='';
+    var sorted=[].concat(nums).sort(function(a,b){return a-b;});
+    sorted.forEach(function(num){
+      var nd=document.getElementById('n'+num);
+      var preview=nd?nd.querySelector('div:nth-child(2)')?.textContent||'':'';
+      var item=document.createElement('div');
+      item.className='fl-item';
+      item.style.setProperty('--fc',meta.color);
+      item.innerHTML='<span class="fl-num">§'+num+'</span><span class="fl-preview">'+preview+'</span>'+
+        '<button class="fl-goto" data-goto="'+num+'">→ arbre</button>'+
+        '<button class="fl-goto fl-editor" data-goto="'+num+'" style="margin-left:4px">📍 éditeur</button>';
+      list.appendChild(item);
+    });
+    // Clic sur "→ arbre" : centrer le nœud dans l'arbre
+    list.addEventListener('click',function(e){
+      var t=e.target;
+      if(t.classList.contains('fl-editor')){
+        window.parent.postMessage({type:'navigate',section:+t.dataset.goto},'*'); return;
+      }
+      if(t.classList.contains('fl-goto')){
+        show(+t.dataset.goto); return;
+      }
+      // Clic sur la ligne elle-même → centrer
+      var row=t.closest('.fl-item');
+      if(row){var num=+row.querySelector('.fl-num').textContent.replace('§','');show(num);}
+    });
+  }
+
+  // ── Filtres ─────────────────────────────────────────────────────────────
+  function applyFilter(filterId){
+    var nums=new Set(FILTER_DATA[filterId]||[]);
+    var meta=FILTER_META.find(function(f){return f.id===filterId;});
+    var color=meta?meta.color:'#ff9800';
+    document.querySelectorAll('.nd').forEach(function(nd){
+      var n=+nd.dataset.num;
+      nd.classList.remove('nd-filtered','nd-dimmed');
+      nd.style.removeProperty('--fc');
+      if(nums.has(n)){nd.classList.add('nd-filtered');nd.style.setProperty('--fc',color);}
+      else{nd.classList.add('nd-dimmed');}
+    });
+    document.querySelectorAll('.edge').forEach(function(e){
+      var dimFrom=!nums.has(+e.dataset.from),dimTo=!nums.has(+e.dataset.to);
+      e.style.opacity=(dimFrom&&dimTo)?'0.04':'0.55';
+      e.style.strokeWidth=(dimFrom&&dimTo)?'1':'1.8';
+    });
+    // Bouton actif
+    document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('active');});
+    var btn=document.getElementById('fbtn-'+filterId);
+    if(btn)btn.classList.add('active');
+    activeFilter=filterId;
+    showFilterPanel(filterId);
+    // Déselectionner le nœud courant si hors filtre
+    if(cur!==null&&!nums.has(cur))clearHL();
+  }
+
+  function clearFilter(){
+    document.querySelectorAll('.nd').forEach(function(nd){
+      nd.classList.remove('nd-filtered','nd-dimmed');
+      nd.style.removeProperty('--fc');
+    });
+    document.querySelectorAll('.edge').forEach(function(e){
+      e.style.opacity='0.45'; e.style.strokeWidth='1.2';
+    });
+    document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('active');});
+    activeFilter=null;
+    showDetailPanel();
+  }
+
+  document.getElementById('filters').addEventListener('click',function(e){
+    var btn=e.target.closest('.fbtn');
+    if(!btn)return;
+    var id=btn.dataset.filterId;
+    if(activeFilter===id){clearFilter();}else{applyFilter(id);}
+  });
+  document.getElementById('clear-filter').addEventListener('click',clearFilter);
+
+  // ── Highlight / detail ─────────────────────────────────────────────────
   function clearHL(){
     if(cur!==null){var pn=document.getElementById('n'+cur);if(pn)pn.classList.remove('hl');var pd=document.getElementById('dp'+cur);if(pd)pd.style.display='none';}
     document.querySelectorAll('.nd.hl-rel').forEach(function(n){n.classList.remove('hl-rel');});
-    document.querySelectorAll('.edge').forEach(function(e){e.style.opacity='0.45';e.style.strokeWidth='1.2';e.style.strokeDasharray='none';});
+    document.querySelectorAll('.edge').forEach(function(e){
+      if(activeFilter){
+        var nums=new Set(FILTER_DATA[activeFilter]||[]);
+        var dimFrom=!nums.has(+e.dataset.from),dimTo=!nums.has(+e.dataset.to);
+        e.style.opacity=(dimFrom&&dimTo)?'0.04':'0.55'; e.style.strokeWidth=(dimFrom&&dimTo)?'1':'1.8';
+      } else {e.style.opacity='0.45';e.style.strokeWidth='1.2';e.style.strokeDasharray='none';}
+    });
     document.querySelectorAll('.edge-hit.active').forEach(function(e){e.classList.remove('active');e.style.pointerEvents='none';e.style.cursor='default';});
     cur=null;
   }
@@ -388,7 +606,9 @@ ${svgPaths.join('\n')}</svg></div></div>
         if(hit2){hit2.classList.add('active');hit2.style.pointerEvents='stroke';hit2.style.cursor='pointer';}
       } else {path.style.opacity='0.07';path.style.strokeWidth='1';path.style.strokeDasharray='none';}
     });
-    var q=document.querySelector('#side > p');if(q)q.style.display='none';
+    // Affiche le panneau détail (pas le panneau filtre) quand on clique un nœud
+    showDetailPanel();
+    var q=document.querySelector('#detail-panel > p');if(q)q.style.display='none';
     var dp=document.getElementById('dp'+num);if(dp){dp.style.display='block';document.getElementById('side').scrollTop=0;}
   }
 
@@ -402,12 +622,11 @@ ${svgPaths.join('\n')}</svg></div></div>
       if(cur===from)show(to); else if(cur===to)show(from); else show(to);
     }
   });
-  document.getElementById('side').addEventListener('click',function(e){
+  document.getElementById('detail-panel').addEventListener('click',function(e){
     var t=e.target;
     while(t&&t!==this){
       if(t.dataset&&t.dataset.goto){
         var num=+t.dataset.goto;
-        // Bouton "Aller dans l'éditeur" → postMessage au parent
         if(t.classList.contains('goto-btn')){
           window.parent.postMessage({type:'navigate',section:num},'*');
           return;
@@ -422,7 +641,7 @@ ${svgPaths.join('\n')}</svg></div></div>
     if(v&&document.getElementById('n'+v))show(v);
   });
 
-  // Drag to pan
+  // ── Drag to pan ────────────────────────────────────────────────────────
   var drag=false,sx=0,sy=0,sl=0,st2=0;
   outer.addEventListener('mousedown',function(e){
     if(e.target.closest&&e.target.closest('.nd'))return;
@@ -432,7 +651,7 @@ ${svgPaths.join('\n')}</svg></div></div>
   document.addEventListener('mousemove',function(e){if(!drag)return;outer.scrollLeft=sl-(e.clientX-sx);outer.scrollTop=st2-(e.clientY-sy);});
   document.addEventListener('mouseup',function(){drag=false;outer.classList.remove('drag');});
 
-  // Afficher la section initiale
+  // ── Afficher la section initiale ───────────────────────────────────────
   var init=${initialSection};
   if(init>0&&document.getElementById('n'+init))show(init);
 })();
@@ -500,6 +719,8 @@ export class AdventureTreePanel {
         if (!isNaN(num) && num > 0) {
           const result = this.options.onNavigate(num)
           if (result instanceof Promise) result.catch(console.error)
+          // Fermer l'arbre pour que l'utilisateur voie la section dans l'éditeur
+          this.close()
         }
       }
     }

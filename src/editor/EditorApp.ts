@@ -11,6 +11,8 @@ import { ReglesEditor } from './ReglesEditor'
 import type { Regles } from '../types'
 import { buildCarte } from '../carte/CarteEngine'
 import type { CarteState } from '../carte/CarteEngine'
+import { extractTargets } from './SectionTargetExtractor'
+import type { SectionTarget } from './SectionTargetExtractor'
 
 // ─── Onglets disponibles ──────────────────────────────────────────────────────
 
@@ -42,24 +44,30 @@ export class EditorApp {
   private currentIndex = 0
   private activeTab: TabId = 'sections'
 
-  // ── Modifications en cours ─────────────────────────────────────────────────
-  private savedSections:   Map<number, Partial<Section>> = new Map()
-  private dirtyState:      Partial<Section> | null = null
-  private initialHtml      = ''
+  // ── Dirty state ────────────────────────────────────────────────────────────
+  // dirtyState : modifications en cours non encore enregistrées (sections)
+  private dirtyState: Partial<Section> | null = null
+  private initialHtml = ''
 
-  // Données modifiées pour les autres parties (null = pas de modif)
-  private savedCouverture: Partial<CouvertureData> | null = null
-  private savedLivre:      Partial<LivreData> | null = null
-  private savedPersonnage: PersonnageTemplate | null = null
-  private savedRegles:     Regles | null = null
-  private carteState:      CarteState | null = null
+  // Flags indiquant qu'une partie a été modifiée (enregistrée dans this.adventure)
+  // Utilisés pour l'export sélectif et le comptage
+  private dirtySections:  boolean = false
+  private dirtyCouverture: boolean = false
+  private dirtyLivre:      boolean = false
+  private dirtyPersonnage: boolean = false
+  private dirtyRegles:     boolean = false
+
+  // Nombre de sections individuellement modifiées (pour le badge)
+  private modifiedSectionNums: Set<number> = new Set()
+
+  private carteState: CarteState | null = null
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   private sectionEditorEl!: HTMLElement
   private sidebarEl!:       HTMLElement
   private tabContentEl!:    HTMLElement
 
-  private sectionEditor!:   SectionEditor
+  private sectionEditor!:    SectionEditor
   private couvertureEditor!: CouvertureEditor
   private livreEditor!:      LivreEditor
   private personnageEditor!: PersonnageEditor
@@ -133,8 +141,9 @@ export class EditorApp {
       btn.type = 'button'
       btn.className = 'editor-tab'
       btn.dataset.tab = tab.id
-      btn.innerHTML = `${tab.icon} ${tab.label}`
       btn.disabled = true
+      // Structure interne : label + badge
+      btn.innerHTML = `<span class="tab-label">${tab.icon} ${tab.label}</span><span class="tab-badge" style="display:none"></span>`
       btn.addEventListener('click', () => { void this._switchTab(tab.id) })
       tabsEl.appendChild(btn)
     })
@@ -149,8 +158,7 @@ export class EditorApp {
     this.btnSectionCancel  = this.root.querySelector<HTMLButtonElement>('#btn-section-cancel')!
     this.btnExport         = this.root.querySelector<HTMLButtonElement>('#btn-export')!
     this.sectionNavEl      = this.root.querySelector<HTMLElement>('#section-nav')!
-    const sepSectionActions = this.root.querySelector<HTMLElement>('#sep-section-actions')!
-    this.sepSectionActions = sepSectionActions
+    this.sepSectionActions = this.root.querySelector<HTMLElement>('#sep-section-actions')!
     this.tabContentEl      = this.root.querySelector<HTMLElement>('#tab-content')!
     this.sidebarEl         = this.root.querySelector<HTMLElement>('#editor-sidebar')!
     const btnTree          = this.root.querySelector<HTMLButtonElement>('#btn-tree')!
@@ -160,38 +168,38 @@ export class EditorApp {
     this.sectionEditorEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
 
     this.sectionEditor = new SectionEditor(this.sectionEditorEl, {
-      onNavigateTo:  (num)              => this._navigateToNum(num),
-      onTextChange:  (html)             => this._onDirtyChange({ texte: html }),
-      onImageChange: (field, filename)  => this._onDirtyChange({ [field]: filename }),
-      onChoicesChange: (choix)          => this._onDirtyChange({ choix }),
-      onEffetsChange:  (effets)         => this._onDirtyChange({ effets }),
-      onCombatChange:  (combat)         => this._onDirtyChange({ combat: combat ?? undefined }),
-      onCarteChange:   (carte)          => this._onDirtyChange({ carte: carte ?? undefined }),
-      onPropsChange:   (patch)          => this._onDirtyChange(patch),
+      onNavigateTo:    (num)           => this._navigateToNum(num),
+      onTextChange:    (html)          => this._onDirtyChange({ texte: html }),
+      onImageChange:   (field, filename) => this._onDirtyChange({ [field]: filename }),
+      onChoicesChange: (choix)         => this._onDirtyChange({ choix }),
+      onEffetsChange:  (effets)        => this._onDirtyChange({ effets }),
+      onCombatChange:  (combat)        => this._onDirtyChange({ combat: combat ?? undefined }),
+      onCarteChange:   (carte)         => this._onDirtyChange({ carte: carte ?? undefined }),
+      onPropsChange:   (patch)         => this._onDirtyChange(patch),
     })
 
     const couvertureEl = document.createElement('div')
     couvertureEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
     this.couvertureEditor = new CouvertureEditor(couvertureEl, {
-      onChange: (data) => { this.savedCouverture = data; this._updateDirtyButtons() },
+      onChange: () => { this._editorDirtyFlags.couverture = true; this._updateDirtyButtons() },
     })
 
     const livreEl = document.createElement('div')
     livreEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
     this.livreEditor = new LivreEditor(livreEl, {
-      onChange: (data) => { this.savedLivre = data; this._updateDirtyButtons() },
+      onChange: () => { this._editorDirtyFlags.livre = true; this._updateDirtyButtons() },
     })
 
     const personnageEl = document.createElement('div')
     personnageEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
     this.personnageEditor = new PersonnageEditor(personnageEl, {
-      onChange: (data) => { this.savedPersonnage = data; this._updateDirtyButtons() },
+      onChange: () => { this._editorDirtyFlags.personnage = true; this._updateDirtyButtons() },
     })
 
     const reglesEl = document.createElement('div')
     reglesEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
     this.reglesEditor = new ReglesEditor(reglesEl, {
-      onChange: (data) => { this.savedRegles = data; this._updateDirtyButtons() },
+      onChange: () => { this._editorDirtyFlags.regles = true; this._updateDirtyButtons() },
     })
 
     // Tous les panneaux dans tabContent — ordre identique à TABS
@@ -203,12 +211,12 @@ export class EditorApp {
 
     // Écouteurs toolbar
     sel.addEventListener('change', () => { void this._onAdventureSelected(sel.value) })
-    this.btnPrev.addEventListener('click',         () => { void this._stepBy(-1) })
-    this.btnNext.addEventListener('click',         () => { void this._stepBy(1) })
-    this.btnSectionSave.addEventListener('click',  () => this._saveCurrentPart())
-    this.btnSectionCancel.addEventListener('click',() => this._cancelCurrentPart())
-    this.btnExport.addEventListener('click',       () => this._exportAll())
-    btnTree.addEventListener('click',              () => this._toggleTree())
+    this.btnPrev.addEventListener('click',          () => { void this._stepBy(-1) })
+    this.btnNext.addEventListener('click',          () => { void this._stepBy(1) })
+    this.btnSectionSave.addEventListener('click',   () => this._saveCurrentPart())
+    this.btnSectionCancel.addEventListener('click', () => this._cancelCurrentPart())
+    this.btnExport.addEventListener('click',        () => this._exportAll())
+    btnTree.addEventListener('click',               () => this._toggleTree())
 
     this.sectionInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -255,14 +263,15 @@ export class EditorApp {
       this.adventure = await this.libraryManager.loadAdventure(path)
       this.sortedSections = [...this.adventure.sections].sort((a, b) => a.numero - b.numero)
 
-      // Reset tous les dirty states
-      this.savedSections.clear()
-      this.savedCouverture = null
-      this.savedLivre      = null
-      this.savedPersonnage = null
-      this.savedRegles     = null
-      this.dirtyState      = null
-      this.currentIndex    = 0
+      // Reset tous les états
+      this.dirtyState          = null
+      this.dirtySections       = false
+      this.dirtyCouverture     = false
+      this.dirtyLivre          = false
+      this.dirtyPersonnage     = false
+      this.dirtyRegles         = false
+      this.modifiedSectionNums = new Set()
+      this.currentIndex        = 0
 
       this.treePanel?.close()
       this.treePanel = null
@@ -271,7 +280,6 @@ export class EditorApp {
       this.sectionInput.max = String(this.sortedSections[this.sortedSections.length - 1]?.numero ?? 1)
       this.sectionInput.disabled = false
       this.sectionTotal.textContent = `/ ${this.sortedSections.length}`
-      this.btnExport.disabled = false
       this.root.querySelector<HTMLButtonElement>('#btn-tree')!.disabled = false
 
       // Active tous les onglets
@@ -294,6 +302,8 @@ export class EditorApp {
       this.activeTab = 'livre'
       this._applyTab()
       this._renderSection()
+      this._updateExportButton()
+      this._updateTabBadges()
     } catch (err) {
       splash.innerHTML = `<div class="splash-icon">⚠️</div><p>Erreur : ${(err as Error).message}</p>`
       this._showToast('Échec du chargement', 'error')
@@ -308,11 +318,6 @@ export class EditorApp {
     // Guard dirty sur la section courante avant de quitter l'onglet Sections
     if (this.activeTab === 'sections' && this._isDirty()) {
       if (!await this._guardDirty()) return
-    }
-
-    // Capture les données des éditeurs en cours avant de switcher
-    if (this.activeTab === 'livre' && this.savedLivre !== null) {
-      this.savedLivre = this.livreEditor.getData()
     }
 
     this.activeTab = tab
@@ -336,7 +341,6 @@ export class EditorApp {
     panelIds.forEach((id, i) => {
       (panels[i] as HTMLElement).style.display = id === this.activeTab ? 'block' : 'none'
     })
-    void 0 // ancienne référence panelMap supprimée
 
     // Sidebar : seulement sur Sections
     this.sidebarEl.style.display = this.activeTab === 'sections' ? 'flex' : 'none'
@@ -365,6 +369,10 @@ export class EditorApp {
       this._showToast(`Section ${num} introuvable`, 'error')
       this.sectionInput.value = String(this.sortedSections[this.currentIndex]?.numero ?? 1)
       return
+    }
+    // Si on n'est pas sur l'onglet sections, y basculer d'abord (pas de guard dirty car on n'en part pas)
+    if (this.activeTab !== 'sections') {
+      await this._switchTab('sections')
     }
     if (idx === this.currentIndex) return
     if (!await this._guardDirty()) {
@@ -398,13 +406,13 @@ export class EditorApp {
 
     this.dirtyState = null
 
-    const base    = this.sortedSections[this.currentIndex]
-    const saved   = this.savedSections.get(base.numero)
-    const section: Section = saved ? { ...base, ...saved } : base
+    // La section dans sortedSections est une référence à this.adventure.sections
+    // (reconstruit à chaque save), donc elle reflète toujours l'état courant
+    const section = this.sortedSections[this.currentIndex]
 
-    this.sectionInput.value    = String(section.numero)
-    this.btnPrev.disabled      = this.currentIndex === 0
-    this.btnNext.disabled      = this.currentIndex === this.sortedSections.length - 1
+    this.sectionInput.value = String(section.numero)
+    this.btnPrev.disabled   = this.currentIndex === 0
+    this.btnNext.disabled   = this.currentIndex === this.sortedSections.length - 1
 
     const imageBaseUrl = this.adventure.repertoire_images ?? ''
     this.sectionEditor.render(section, imageBaseUrl, this.adventure)
@@ -420,11 +428,33 @@ export class EditorApp {
   private _isDirty(): boolean {
     switch (this.activeTab) {
       case 'sections':   return this.dirtyState !== null
-      case 'couverture': return this.savedCouverture !== null
-      case 'livre':      return this.savedLivre !== null
-      case 'personnage': return this.savedPersonnage !== null
-      case 'regles':     return this.savedRegles !== null
+      // Pour les autres onglets, le onChange de l'éditeur a déjà mis à jour
+      // this.adventure en temps réel via les éditeurs internes, mais on
+      // considère "dirty" dès qu'il y a eu un onChange depuis le dernier save
+      case 'couverture': return this._couvertureHasChanges()
+      case 'livre':      return this._livreHasChanges()
+      case 'personnage': return this._personnageHasChanges()
+      case 'regles':     return this._reglesHasChanges()
     }
+  }
+
+  // Ces helpers comparent les données courantes des éditeurs avec this.adventure
+  // pour détecter des changements non encore "enregistrés" (committed)
+  private _couvertureHasChanges(): boolean {
+    // On se base sur le flag interne : onChange de CouvertureEditor met à jour un flag
+    // On utilise simplement la présence d'un changement signalé par onChange
+    return this._editorDirtyFlags.couverture
+  }
+  private _livreHasChanges(): boolean      { return this._editorDirtyFlags.livre }
+  private _personnageHasChanges(): boolean  { return this._editorDirtyFlags.personnage }
+  private _reglesHasChanges(): boolean      { return this._editorDirtyFlags.regles }
+
+  // Flags levés par onChange des sous-éditeurs (réinitialisés au save/cancel/render)
+  private _editorDirtyFlags = {
+    couverture: false,
+    livre:      false,
+    personnage: false,
+    regles:     false,
   }
 
   private _onDirtyChange(patch: Partial<Section>): void {
@@ -451,11 +481,26 @@ export class EditorApp {
 
   private _discardDirty(): void {
     switch (this.activeTab) {
-      case 'sections':   this.dirtyState = null; this._renderSection(); break
-      case 'couverture': this.savedCouverture = null; if (this.adventure) this.couvertureEditor.render(this.adventure); break
-      case 'livre':      this.savedLivre = null;      if (this.adventure) this.livreEditor.render(this.adventure);      break
-      case 'personnage': this.savedPersonnage = null; if (this.adventure) this.personnageEditor.render(this.adventure); break
-      case 'regles':     this.savedRegles = null;     if (this.adventure) this.reglesEditor.render(this.adventure);     break
+      case 'sections':
+        this.dirtyState = null
+        this._renderSection()
+        break
+      case 'couverture':
+        this._editorDirtyFlags.couverture = false
+        if (this.adventure) this.couvertureEditor.render(this.adventure)
+        break
+      case 'livre':
+        this._editorDirtyFlags.livre = false
+        if (this.adventure) this.livreEditor.render(this.adventure)
+        break
+      case 'personnage':
+        this._editorDirtyFlags.personnage = false
+        if (this.adventure) this.personnageEditor.render(this.adventure)
+        break
+      case 'regles':
+        this._editorDirtyFlags.regles = false
+        if (this.adventure) this.reglesEditor.render(this.adventure)
+        break
     }
     this._updateDirtyButtons()
   }
@@ -471,25 +516,20 @@ export class EditorApp {
 
   private _saveCurrentPart(): void {
     switch (this.activeTab) {
-      case 'sections':   this._saveCurrentSection(); break
+      case 'sections':
+        this._saveCurrentSection()
+        break
       case 'couverture':
-        this._showToast('Couverture enregistrée (à exporter)', 'success')
-        this._updateExportButton()
+        this._commitCouverture()
         break
       case 'livre':
-        this.savedLivre = this.livreEditor.getData()
-        this._showToast('Livre enregistré (à exporter)', 'success')
-        this._updateExportButton()
+        this._commitLivre()
         break
       case 'personnage':
-        this.savedPersonnage = this.personnageEditor.getData()
-        this._showToast('Personnage enregistré (à exporter)', 'success')
-        this._updateExportButton()
+        this._commitPersonnage()
         break
       case 'regles':
-        this.savedRegles = this.reglesEditor.getData()
-        this._showToast('Règles enregistrées (à exporter)', 'success')
-        this._updateExportButton()
+        this._commitRegles()
         break
     }
     this._updateDirtyButtons()
@@ -502,30 +542,146 @@ export class EditorApp {
   }
 
   private _saveCurrentSection(): void {
+    if (!this.adventure || !this.dirtyState) return
     const section = this.sortedSections[this.currentIndex]
-    if (!section || !this.dirtyState) return
+    if (!section) return
 
-    const existing = this.savedSections.get(section.numero) ?? {}
-    this.savedSections.set(section.numero, { ...existing, ...this.dirtyState })
+    // Merger dirtyState directement dans this.adventure.sections
+    const idx = this.adventure.sections.findIndex(s => s.numero === section.numero)
+    if (idx !== -1) {
+      this.adventure.sections[idx] = { ...this.adventure.sections[idx], ...this.dirtyState }
+    }
+
+    // Marquer comme modifiée
+    this.modifiedSectionNums.add(section.numero)
+    this.dirtySections = true
+
+    // Reconstruire sortedSections depuis this.adventure (maintenant à jour)
+    this.sortedSections = [...this.adventure.sections].sort((a, b) => a.numero - b.numero)
 
     this.dirtyState  = null
     this.initialHtml = this.sectionEditor.getCurrentText()
 
+    // Reconstruire la carte
+    this.carteState = buildCarte(this.adventure.sections)
+
+    // Mettre à jour l'aperçu carte dans l'éditeur de section
+    this.sectionEditor.refreshCarte()
+
     this._updateDirtyButtons()
     this._updateExportButton()
-    this._renderSidebar({ ...section, ...this.savedSections.get(section.numero) })
-    // Remet à jour la carte (les chemins peuvent avoir changé)
-    if (this.adventure) this.carteState = buildCarte(this.adventure.sections)
+    this._updateTabBadges()
+    this._renderSidebar(this.sortedSections[this.currentIndex])
     this._showToast(`Section §${section.numero} enregistrée`, 'success')
   }
 
+  private _commitCouverture(): void {
+    if (!this.adventure) return
+    const data: CouvertureData = this.couvertureEditor.getData()
+    // Merger dans this.adventure
+    const adv = this.adventure as unknown as Record<string, unknown>
+    adv['id']               = data.id
+    this.adventure.collection       = data.collection
+    this.adventure.titre            = data.titre
+    adv['auteur']           = data.auteur
+    this.adventure.tags             = data.tags
+    adv['description']      = data.description
+    adv['version']          = data.version
+    this.adventure.image_de_garde   = data.image_de_garde
+    this.adventure.image_de_garde_ia = data.image_de_garde_ia
+    this.adventure.repertoire_images = data.repertoire_images
+
+    this._editorDirtyFlags.couverture = false
+    this.dirtyCouverture = true
+    this._updateExportButton()
+    this._updateTabBadges()
+    this._showToast('Couverture enregistrée', 'success')
+  }
+
+  private _commitLivre(): void {
+    if (!this.adventure) return
+    const data: LivreData = this.livreEditor.getData()
+    this.adventure.mode_emploi        = data.mode_emploi
+    this.adventure.intro              = data.intro
+    this.adventure.images_victoire    = data.images_victoire
+    this.adventure.images_defaite     = data.images_defaite
+    this.adventure.images_annexes     = data.images_annexes
+    ;(this.adventure as unknown as Record<string, unknown>)['images_victoire_ia'] = data.images_victoire_ia
+    ;(this.adventure as unknown as Record<string, unknown>)['images_defaite_ia']  = data.images_defaite_ia
+    ;(this.adventure as unknown as Record<string, unknown>)['images_annexes_ia']  = data.images_annexes_ia
+
+    this._editorDirtyFlags.livre = false
+    this.dirtyLivre = true
+    this._updateExportButton()
+    this._updateTabBadges()
+    this._showToast('Livre enregistré', 'success')
+  }
+
+  private _commitPersonnage(): void {
+    if (!this.adventure) return
+    const data: PersonnageTemplate = this.personnageEditor.getData()
+    this.adventure.personnage = data
+
+    this._editorDirtyFlags.personnage = false
+    this.dirtyPersonnage = true
+    this._updateExportButton()
+    this._updateTabBadges()
+    this._showToast('Personnage enregistré', 'success')
+  }
+
+  private _commitRegles(): void {
+    if (!this.adventure) return
+    const data: Regles = this.reglesEditor.getData()
+    this.adventure.regles = data
+
+    this._editorDirtyFlags.regles = false
+    this.dirtyRegles = true
+    this._updateExportButton()
+    this._updateTabBadges()
+    this._showToast('Règles enregistrées', 'success')
+  }
+
   private _updateExportButton(): void {
-    const count = this.savedSections.size
-      + (this.savedCouverture !== null ? 1 : 0)
-      + (this.savedLivre      !== null ? 1 : 0)
-      + (this.savedPersonnage !== null ? 1 : 0)
-      + (this.savedRegles     !== null ? 1 : 0)
-    this.btnExport.textContent = count > 0 ? `💾 Exporter (${count})` : '💾 Exporter'
+    const hasChanges = this.dirtySections || this.dirtyCouverture || this.dirtyLivre
+      || this.dirtyPersonnage || this.dirtyRegles
+
+    this.btnExport.disabled = !hasChanges
+
+    const parts: string[] = []
+    if (this.dirtySections)   parts.push(`§×${this.modifiedSectionNums.size}`)
+    if (this.dirtyCouverture) parts.push('couv')
+    if (this.dirtyLivre)      parts.push('livre')
+    if (this.dirtyPersonnage) parts.push('perso')
+    if (this.dirtyRegles)     parts.push('règles')
+
+    this.btnExport.textContent = hasChanges
+      ? `💾 Exporter (${parts.join(', ')})`
+      : '💾 Exporter'
+  }
+
+  // ── Badges sur les onglets ─────────────────────────────────────────────────
+
+  private _updateTabBadges(): void {
+    const badges: Partial<Record<TabId, number>> = {
+      sections:   this.modifiedSectionNums.size,
+      couverture: this.dirtyCouverture ? 1 : 0,
+      livre:      this.dirtyLivre      ? 1 : 0,
+      personnage: this.dirtyPersonnage ? 1 : 0,
+      regles:     this.dirtyRegles     ? 1 : 0,
+    }
+
+    this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {
+      const tab = btn.dataset.tab as TabId
+      const badge = btn.querySelector<HTMLElement>('.tab-badge')
+      if (!badge) return
+      const count = badges[tab] ?? 0
+      if (count > 0) {
+        badge.textContent = String(count)
+        badge.style.display = ''
+      } else {
+        badge.style.display = 'none'
+      }
+    })
   }
 
   // ── Sidebar (sections uniquement) ─────────────────────────────────────────
@@ -534,7 +690,7 @@ export class EditorApp {
     const hasCombat   = !!section.combat
     const numMonstres = section.combat?.phases?.reduce((n, p) => n + p.monstres.length, 0) ?? 0
     const hasEffets   = (section.effets?.length ?? 0) > 0
-    const isSaved     = this.savedSections.has(section.numero)
+    const isModified  = this.modifiedSectionNums.has(section.numero)
 
     // ── Infos carte ─────────────────────────────────────────────────────────
     const carteInfos = this._buildCarteInfos(section.numero)
@@ -545,7 +701,7 @@ export class EditorApp {
         <div class="sidebar-stat"><span class="label">Numéro</span><span class="value">${section.numero}</span></div>
         <div class="sidebar-stat"><span class="label">Choix</span><span class="value">${section.choix?.length ?? 0}</span></div>
         <div class="sidebar-stat"><span class="label">Longueur texte</span><span class="value">${(section.texte ?? '').length} car.</span></div>
-        <div class="sidebar-stat"><span class="label">État</span><span class="value" style="color:${isSaved ? 'var(--success)' : 'var(--text-muted)'}">${isSaved ? '✔ Modifiée' : '—'}</span></div>
+        <div class="sidebar-stat"><span class="label">État</span><span class="value" style="color:${isModified ? 'var(--success)' : 'var(--text-muted)'}">${isModified ? '✔ Modifiée' : '—'}</span></div>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-title">Flags</div>
@@ -558,8 +714,8 @@ export class EditorApp {
         <div class="sidebar-flag ${section.end ? 'active' : ''}">
           ${section.end ? '🏁' : '○'} Fin ${section.end ?? ''}
         </div>
-        <div class="sidebar-flag ${(section.questions?.length ?? 0) > 0 ? 'active' : ''}">
-          ${(section.questions?.length ?? 0) > 0 ? '❓' : '○'} Questions (${section.questions?.length ?? 0})
+        <div class="sidebar-flag ${(section.questions?.length ?? 0) > 0 || (section.notes?.length ?? 0) > 0 ? 'active' : ''}">
+          ${(section.questions?.length ?? 0) > 0 || (section.notes?.length ?? 0) > 0 ? '❓' : '○'} Questions (${section.questions?.length ?? 0}) / Notes (${section.notes?.length ?? 0})
         </div>
       </div>
       ${(section.questions?.length ?? 0) > 0 ? `
@@ -570,20 +726,55 @@ export class EditorApp {
         </div>
       </div>` : ''}
       ${carteInfos}
+      ${this._buildMeneVers(section)}
       <div class="sidebar-section">
         <div class="sidebar-section-title">Export</div>
         <div class="sidebar-stat"><span class="label">Index</span><span class="value">${this.currentIndex + 1} / ${this.sortedSections.length}</span></div>
-        <div class="sidebar-stat"><span class="label">Sections modif.</span><span class="value">${this.savedSections.size}</span></div>
+        <div class="sidebar-stat"><span class="label">Sections modif.</span><span class="value">${this.modifiedSectionNums.size}</span></div>
       </div>
     `
-
-    // Branche les boutons de navigation depuis la sidebar carte
     this.sidebarEl.querySelectorAll<HTMLButtonElement>('.sidebar-carte-nav').forEach(btn => {
       const target = parseInt(btn.dataset.section ?? '', 10)
       if (!isNaN(target)) {
         btn.addEventListener('click', () => { void this._navigateToNum(target) })
       }
     })
+  }
+
+  private _buildMeneVers(section: Section): string {
+    const targets = extractTargets(section)
+    if (targets.length === 0) return ''
+
+    const BADGE_LABEL: Record<SectionTarget['badge'], string> = {
+      choix:     'choix',
+      action:    'action',
+      combat:    'combat',
+      fuite:     'fuite',
+      mort:      'mort',
+      condition: 'condition',
+      lancer:    'lancer',
+    }
+
+    const rows = targets.map(t => {
+      const badge = `<span class="sidebar-target-badge sidebar-target-badge--${t.badge}">${BADGE_LABEL[t.badge]}</span>`
+      if (t.numero !== null) {
+        return `<div class="sidebar-target-row">
+          ${badge}
+          <button class="sidebar-carte-nav sidebar-carte-btn" data-section="${t.numero}" title="${_esc(t.texte)}">§${t.numero}</button>
+        </div>`
+      }
+      // Destination dynamique
+      return `<div class="sidebar-target-row">
+        ${badge}
+        <span class="sidebar-target-dynamic">${t.dynamicLabel ?? '?'}</span>
+      </div>`
+    }).join('')
+
+    return `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">↗ Mène vers</div>
+        <div class="sidebar-targets">${rows}</div>
+      </div>`
   }
 
   private _buildCarteInfos(sectionNum: number): string {
@@ -595,12 +786,7 @@ export class EditorApp {
         <div class="sidebar-flag">○ Non positionnée</div>
       </div>`
 
-    // Sections partageant la même case (aliases)
     const aliasNums = c.aliasNums ?? []
-
-    // Sections qui arrivent sur cette case ou ses aliases
-    // = sections dont un choix/outcome a un chemin qui atterrit sur (c.x, c.y)
-    // On retrouve via la grid : toutes les cases qui ont un mur ouvert vers (c.x,c.y)
     const incomingNums = this._findIncomingSections(sectionNum, c.x, c.y)
 
     const numsToBtn = (nums: number[]): string =>
@@ -624,24 +810,17 @@ export class EditorApp {
       </div>`
   }
 
-  /**
-   * Retrouve les sections qui ont un chemin menant à la case (x,y).
-   * On cherche dans toutes les cases les murs ouverts pointant vers (x,y).
-   */
   private _findIncomingSections(targetNum: number, x: number, y: number): number[] {
     if (!this.carteState) return []
     const result = new Set<number>()
     const { DELTA } = { DELTA: { N:{dx:0,dy:-1}, S:{dx:0,dy:1}, E:{dx:1,dy:0}, O:{dx:-1,dy:0} } }
 
     for (const c of this.carteState.cases.values()) {
-      // Pour chaque direction ouverte de cette case, vérifie si elle pointe vers (x,y)
       for (const [dir, murType] of Object.entries(c.murs) as [keyof typeof DELTA, string][]) {
         if (murType === 'ferme') continue
         const { dx, dy } = DELTA[dir]
-        // La case voisine dans cette direction
         const nx = c.x + dx, ny = c.y + dy
         if (nx === x && ny === y) {
-          // Cette case pointe vers la case cible
           const num = c.isPath ? c.sectionNum : c.num
           if (num !== targetNum && num > 0 && !c.aliasNums?.includes(targetNum)) {
             result.add(num)
@@ -678,62 +857,62 @@ export class EditorApp {
 
     const exported: string[] = []
 
-    // sections.json
-    if (this.savedSections.size > 0) {
+    // sections.json — exporté si au moins une section a été modifiée
+    if (this.dirtySections) {
       const sections = this.adventure.sections.map(s => {
-        const saved = this.savedSections.get(s.numero)
-        if (!saved) return s
-        const merged: Record<string, unknown> = { ...s as unknown as Record<string, unknown>, ...saved as Record<string, unknown> }
+        const out = { ...s as unknown as Record<string, unknown> }
         // Ne pas exporter choix:[] — le moteur tolère l'absence du champ
-        if (Array.isArray(merged['choix']) && (merged['choix'] as unknown[]).length === 0) {
-          delete merged['choix']
+        if (Array.isArray(out['choix']) && (out['choix'] as unknown[]).length === 0) {
+          delete out['choix']
         }
-        return merged
+        return out
       })
       this._download('sections.json', { sections })
       exported.push('sections.json')
     }
 
     // couverture.json
-    if (this.savedCouverture !== null) {
-      const base = {
-        id: (this.adventure as unknown as Record<string, unknown>)['id'] ?? '',
-        collection: this.adventure.collection,
-        titre: this.adventure.titre,
-        auteur: (this.adventure as unknown as Record<string, unknown>)['auteur'],
-        tags: this.adventure.tags,
-        description: (this.adventure as unknown as Record<string, unknown>)['description'],
-        version: (this.adventure as unknown as Record<string, unknown>)['version'],
-        image_de_garde: this.adventure.image_de_garde,
+    if (this.dirtyCouverture) {
+      const adv = this.adventure as unknown as Record<string, unknown>
+      this._download('couverture.json', {
+        id:                adv['id'] ?? '',
+        collection:        this.adventure.collection,
+        titre:             this.adventure.titre,
+        auteur:            adv['auteur'],
+        tags:              this.adventure.tags,
+        description:       adv['description'],
+        version:           adv['version'],
+        image_de_garde:    this.adventure.image_de_garde,
         image_de_garde_ia: this.adventure.image_de_garde_ia,
         repertoire_images: this.adventure.repertoire_images,
-      }
-      this._download('couverture.json', { ...base, ...this.savedCouverture })
+      })
       exported.push('couverture.json')
     }
 
     // livre.json
-    if (this.savedLivre !== null) {
-      const base = {
-        mode_emploi: this.adventure.mode_emploi,
-        intro: this.adventure.intro,
-        images_victoire: this.adventure.images_victoire,
-        images_defaite: this.adventure.images_defaite,
-        images_annexes: this.adventure.images_annexes,
-      }
-      this._download('livre.json', { ...base, ...this.savedLivre })
+    if (this.dirtyLivre) {
+      this._download('livre.json', {
+        mode_emploi:        this.adventure.mode_emploi,
+        intro:              this.adventure.intro,
+        images_victoire:    this.adventure.images_victoire,
+        images_victoire_ia: (this.adventure as unknown as Record<string, unknown>)['images_victoire_ia'],
+        images_defaite:     this.adventure.images_defaite,
+        images_defaite_ia:  (this.adventure as unknown as Record<string, unknown>)['images_defaite_ia'],
+        images_annexes:     this.adventure.images_annexes,
+        images_annexes_ia:  (this.adventure as unknown as Record<string, unknown>)['images_annexes_ia'],
+      })
       exported.push('livre.json')
     }
 
     // personnage.json
-    if (this.savedPersonnage !== null) {
-      this._download('personnage.json', this.savedPersonnage)
+    if (this.dirtyPersonnage) {
+      this._download('personnage.json', this.adventure.personnage)
       exported.push('personnage.json')
     }
 
     // regles.json
-    if (this.savedRegles !== null) {
-      this._download('regles.json', this.savedRegles)
+    if (this.dirtyRegles) {
+      this._download('regles.json', this.adventure.regles)
       exported.push('regles.json')
     }
 

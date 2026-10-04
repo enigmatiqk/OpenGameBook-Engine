@@ -558,7 +558,7 @@ export interface Choice {
  */
 export type CarteEnv =
   | 'plaine' | 'foret' | 'montagne' | 'donjon' | 'grotte'
-  | 'riviere' | 'lac' | 'marais' | 'village' | 'route' | 'mer' | 'porte'
+  | 'riviere' | 'lac' | 'marais' | 'village' | 'route' | 'mer' | 'porte' | 'trou'
 
 /**
  * Données carte attachées à une Section.
