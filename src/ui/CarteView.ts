@@ -57,6 +57,8 @@ export interface CarteViewOptions {
   showAll?:            boolean
   /** Numéro de section courante (mise en surbrillance + marqueur ●) */
   currentSection?:     number
+  /** Section précédente, pour localiser les instances !multi */
+  prevSection?:        number
   showSectionNumbers?: boolean
   onSelectSection?:    (num: number) => void
 }
@@ -94,10 +96,14 @@ export class CarteView {
   private _centerOnPlayer(): void {
     if (!this.state) return
     const playerCase = this.options.currentSection !== undefined
-      ? getPlayerCase(this.state, this.options.currentSection)
+      ? getPlayerCase(this.state, this.options.currentSection, this.options.prevSection)
       : null
     if (playerCase) {
-      this._centerOnCase(playerCase)
+      // Centre sur la dernière case du chemin (endX, endY)
+      const endCase = this.state.cases.get(
+        this.state.grid.get(`${playerCase.endX},${playerCase.endY}`) ?? playerCase.num,
+      ) ?? playerCase
+      this._centerOnCase(endCase)
     } else {
       this._centerView()
     }
@@ -121,8 +127,9 @@ export class CarteView {
     this._applyTransform()
   }
 
-  setCurrentSection(num: number): void {
+  setCurrentSection(num: number, prevSection?: number): void {
     this.options.currentSection = num
+    if (prevSection !== undefined) this.options.prevSection = prevSection
     if (this.state) this._draw()
   }
 
@@ -166,7 +173,7 @@ export class CarteView {
     while (this.vpGroup.firstChild) this.vpGroup.removeChild(this.vpGroup.firstChild)
 
     const playerCase = this.options.currentSection !== undefined
-      ? getPlayerCase(this.state, this.options.currentSection)
+      ? getPlayerCase(this.state, this.options.currentSection, this.options.prevSection)
       : null
     const sectionPositions = new Set(
       [...this.state.cases.values()]
@@ -184,6 +191,22 @@ export class CarteView {
       this._drawWalls(c)
       this._drawPassages(c, drawnPassages)
     }
+
+    // Marqueur joueur sur la dernière case du chemin (endX, endY)
+    if (playerCase) {
+      const px = PAD + playerCase.endX * STEP
+      const py = PAD - playerCase.endY * STEP
+      const dot = this._svgEl('circle')
+      dot.setAttribute('cx', String(px + CELL / 2))
+      dot.setAttribute('cy', String(py + CELL - 10))
+      dot.setAttribute('r',  '5')
+      dot.setAttribute('fill', '#ffe066')
+      dot.setAttribute('stroke', '#000')
+      dot.setAttribute('stroke-width', '1')
+      dot.setAttribute('pointer-events', 'none')
+      this.vpGroup.appendChild(dot)
+    }
+
     this._applyTransform()
   }
 
@@ -217,6 +240,8 @@ export class CarteView {
     // Cases de chemin : légèrement transparentes pour les distinguer
     if (c.isPath && !hasSectionAtPosition) rect.setAttribute('opacity', '0.7')
     this.vpGroup.appendChild(rect)
+
+
 
     // Numéro affiché : si joueur sur cette case → numéro de la section courante
     //                  sinon → dernier alias enregistré (= dernier num placé)
@@ -269,18 +294,8 @@ export class CarteView {
       }
     }
 
-    // Marqueur de position actuelle (joueur)
-    if (isPlayer) {
-      const dot = this._svgEl('circle')
-      dot.setAttribute('cx', String(x + CELL / 2))
-      dot.setAttribute('cy', String(y + CELL - 10))
-      dot.setAttribute('r',  '5')
-      dot.setAttribute('fill', '#ffe066')
-      dot.setAttribute('stroke', '#000')
-      dot.setAttribute('stroke-width', '1')
-      dot.setAttribute('pointer-events', 'none')
-      this.vpGroup.appendChild(dot)
-    }
+    // Marqueur de position actuelle (joueur) — dessiné séparément après la boucle
+    if (isPlayer) { /* voir _draw */ }
   }
 
   private _drawFogCell(c: CarteCase): void {

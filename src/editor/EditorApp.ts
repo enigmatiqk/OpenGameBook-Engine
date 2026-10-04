@@ -1,7 +1,7 @@
 import { LibraryManager } from '../engine/LibraryManager'
 import type { Adventure, AdventureMetadata, Section, PersonnageTemplate } from '../types'
 import { SectionEditor } from './SectionEditor'
-import { AdventureTreePanel } from './AdventureTreePanel'
+import { AdventureTreePanel, collectSectionRefs } from './AdventureTreePanel'
 import { CouvertureEditor } from './CouvertureEditor'
 import type { CouvertureData } from './CouvertureEditor'
 import { LivreEditor } from './LivreEditor'
@@ -65,6 +65,7 @@ export class EditorApp {
   // ── DOM refs ──────────────────────────────────────────────────────────────
   private sectionEditorEl!: HTMLElement
   private sidebarEl!:       HTMLElement
+  private sidebarWrapEl!:   HTMLElement
   private tabContentEl!:    HTMLElement
 
   private sectionEditor!:    SectionEditor
@@ -81,7 +82,6 @@ export class EditorApp {
   private btnSectionCancel!:  HTMLButtonElement
   private sepSectionActions!: HTMLElement
   private btnExport!:         HTMLButtonElement
-  private sectionNavEl!:      HTMLElement
   private treePanel:          AdventureTreePanel | null = null
 
   constructor(root: HTMLElement) {
@@ -109,13 +109,6 @@ export class EditorApp {
         <div class="toolbar-sep"></div>
         <nav class="editor-tabs" id="editor-tabs" aria-label="Parties de l'aventure"></nav>
         <div class="toolbar-sep"></div>
-        <div class="section-nav" id="section-nav" style="display:none">
-          <button id="btn-prev" class="btn btn-icon" title="Section précédente" disabled>◀</button>
-          <label for="section-input" style="font-size:0.8rem;color:var(--text-secondary)">§</label>
-          <input id="section-input" type="number" min="1" value="1" disabled />
-          <span id="section-total" class="section-total">/ —</span>
-          <button id="btn-next" class="btn btn-icon" title="Section suivante" disabled>▶</button>
-        </div>
         <div class="toolbar-sep" id="sep-section-actions" style="display:none"></div>
         <button id="btn-section-save"   class="btn btn-success" disabled title="Enregistrer les modifications" style="display:none">✔ Enregistrer</button>
         <button id="btn-section-cancel" class="btn btn-ghost"   disabled title="Annuler les modifications" style="display:none">✕ Annuler</button>
@@ -130,7 +123,16 @@ export class EditorApp {
           <p>Choisissez une aventure pour commencer l'édition.</p>
         </div>
         <div id="tab-content" style="display:none;flex:1;overflow-y:auto;"></div>
-        <aside id="editor-sidebar" class="editor-sidebar" style="display:none;"></aside>
+        <aside id="editor-sidebar" class="editor-sidebar" style="display:none;">
+          <div class="section-nav" id="section-nav">
+            <button id="btn-prev" class="btn btn-icon" title="Section précédente" disabled>◀</button>
+            <label for="section-input" style="font-size:0.8rem;color:var(--text-secondary)">§</label>
+            <input id="section-input" type="number" min="1" value="1" disabled />
+            <span id="section-total" class="section-total">/ —</span>
+            <button id="btn-next" class="btn btn-icon" title="Section suivante" disabled>▶</button>
+          </div>
+          <div id="sidebar-content" style="flex:1;overflow-y:auto;"></div>
+        </aside>
       </div>
     `
 
@@ -157,10 +159,10 @@ export class EditorApp {
     this.btnSectionSave    = this.root.querySelector<HTMLButtonElement>('#btn-section-save')!
     this.btnSectionCancel  = this.root.querySelector<HTMLButtonElement>('#btn-section-cancel')!
     this.btnExport         = this.root.querySelector<HTMLButtonElement>('#btn-export')!
-    this.sectionNavEl      = this.root.querySelector<HTMLElement>('#section-nav')!
     this.sepSectionActions = this.root.querySelector<HTMLElement>('#sep-section-actions')!
     this.tabContentEl      = this.root.querySelector<HTMLElement>('#tab-content')!
-    this.sidebarEl         = this.root.querySelector<HTMLElement>('#editor-sidebar')!
+    this.sidebarEl         = this.root.querySelector<HTMLElement>('#sidebar-content')!
+    this.sidebarWrapEl     = this.root.querySelector<HTMLElement>('#editor-sidebar')!
     const btnTree          = this.root.querySelector<HTMLButtonElement>('#btn-tree')!
 
     // Conteneurs des éditeurs
@@ -296,7 +298,7 @@ export class EditorApp {
 
       splash.style.display = 'none'
       this.tabContentEl.style.display = 'flex'
-      this.sidebarEl.style.display = 'flex'
+      this.sidebarWrapEl.style.display = 'flex'
 
       // Active l'onglet Livre par défaut
       this.activeTab = 'livre'
@@ -325,8 +327,6 @@ export class EditorApp {
   }
 
   private _applyTab(): void {
-    const showSectionNav = this.activeTab === 'sections' && this.adventure !== null
-    this.sectionNavEl.style.display = showSectionNav ? 'flex' : 'none'
     // sep + boutons save/cancel : visibles sur tous les onglets avec aventure
     const actionsVisible = this.adventure !== null
     ;[
@@ -343,7 +343,7 @@ export class EditorApp {
     })
 
     // Sidebar : seulement sur Sections
-    this.sidebarEl.style.display = this.activeTab === 'sections' ? 'flex' : 'none'
+    this.sidebarWrapEl.style.display = this.activeTab === 'sections' ? 'flex' : 'none'
 
     // Met à jour l'onglet actif
     this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {
@@ -758,9 +758,13 @@ export class EditorApp {
     const rows = targets.map(t => {
       const badge = `<span class="sidebar-target-badge sidebar-target-badge--${t.badge}">${BADGE_LABEL[t.badge]}</span>`
       if (t.numero !== null) {
+        const isConflict = this.carteState?.cases.get(t.numero)?.conflict ?? false
+        const conflictAttr = isConflict
+          ? ' style="border-color:#ffcc00;color:#ffcc00" title="⚠ Conflit de position sur la carte"'
+          : ''
         return `<div class="sidebar-target-row">
           ${badge}
-          <button class="sidebar-carte-nav sidebar-carte-btn" data-section="${t.numero}" title="${_esc(t.texte)}">§${t.numero}</button>
+          <button class="sidebar-carte-nav sidebar-carte-btn" data-section="${t.numero}"${conflictAttr}>§${t.numero}</button>
         </div>`
       }
       // Destination dynamique
@@ -787,48 +791,113 @@ export class EditorApp {
       </div>`
 
     const aliasNums = c.aliasNums ?? []
-    const incomingNums = this._findIncomingSections(sectionNum, c.x, c.y)
+    const adjacentNums = this._findAdjacentSections(sectionNum, c.x, c.y)
+    const callerNums   = this._findCallerSections(sectionNum)
 
-    const numsToBtn = (nums: number[]): string =>
-      nums.map(n => `<button class="sidebar-carte-nav sidebar-carte-btn" data-section="${n}" title="Aller à §${n}">§${n}</button>`).join('')
+    const numsToBtnColored = (nums: number[]): string =>
+      nums.map(n => {
+        const isConflict = this.carteState?.cases.get(n)?.conflict ?? false
+        const conflictAttr = isConflict
+          ? ' style="border-color:#ffcc00;color:#ffcc00" title="⚠ Conflit de position sur la carte"'
+          : ''
+        return `<button class="sidebar-carte-nav sidebar-carte-btn" data-section="${n}"${conflictAttr} title="Aller à §${n}">§${n}</button>`
+      }).join('')
+
+    // ── Toutes les positions de cette section ─────────────────────────────
+    // 1. Position principale (la case dont num === sectionNum, pas les alias)
+    const positions: string[] = [`(${c.x}, ${c.y})`]
+    // 2. Instances !multi uniquement (cases indépendantes avec instanceKey)
+    //    On évite les doublons dus aux alias (cases.set(aliasNum, sameCase))
+    const seenIds = new Set<number>([c.num])
+    for (const mc of this.carteState.cases.values()) {
+      if (seenIds.has(mc.num)) continue
+      seenIds.add(mc.num)
+      if (mc.instanceKey && mc.sectionNum === sectionNum) {
+        positions.push(`(${mc.x}, ${mc.y}) [${mc.instanceKey}]`)
+      }
+    }
+    const posHtml = positions.length === 1
+      ? `<div class="sidebar-stat"><span class="label">Position</span><span class="value" style="font-family:var(--font-mono)">${positions[0]}</span></div>`
+      : `<div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
+          <span class="label">Positions (${positions.length})</span>
+          ${positions.map(p => `<span class="value" style="font-family:var(--font-mono)">${_esc(p)}</span>`).join('')}
+        </div>`
+
+    const conflictHtml = c.conflict
+      ? `<div class="sidebar-flag" style="color:#ffcc00;border-color:#ffcc00">⚠ Conflit de position — utilisez !multi dans le chemin appelant</div>
+        ${(c.conflictPositions ?? []).map(p =>
+          `<div class="sidebar-stat"><span class="label">Position conflictuelle</span><span class="value" style="font-family:var(--font-mono);color:#ffcc00">(${p.x}, ${p.y})</span></div>`
+        ).join('')}`
+      : ''
 
     return `
       <div class="sidebar-section">
         <div class="sidebar-section-title">🗺 Carte</div>
-        <div class="sidebar-stat"><span class="label">Position</span><span class="value" style="font-family:var(--font-mono)">(${c.x}, ${c.y})</span></div>
+        ${posHtml}
+        ${conflictHtml}
         ${c.isPath ? `<div class="sidebar-flag active">📍 Case de chemin de §${c.sectionNum}</div>` : ''}
         ${aliasNums.length > 0 ? `
         <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
           <span class="label">Partagée avec</span>
-          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtn(aliasNums)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtnColored(aliasNums)}</div>
         </div>` : ''}
-        ${incomingNums.length > 0 ? `
+        ${callerNums.length > 0 ? `
         <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
           <span class="label">Accessible depuis</span>
-          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtn(incomingNums)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtnColored(callerNums)}</div>
+        </div>` : ''}
+        ${adjacentNums.length > 0 ? `
+        <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
+          <span class="label">Cases adjacentes</span>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtnColored(adjacentNums)}</div>
         </div>` : ''}
       </div>`
   }
 
-  private _findIncomingSections(targetNum: number, x: number, y: number): number[] {
+  private _findAdjacentSections(targetNum: number, x: number, y: number): number[] {
     if (!this.carteState) return []
     const result = new Set<number>()
+    const seenNums = new Set<number>()
     const { DELTA } = { DELTA: { N:{dx:0,dy:-1}, S:{dx:0,dy:1}, E:{dx:1,dy:0}, O:{dx:-1,dy:0} } }
 
+    // Numéros qui partagent la même case (section + tous ses alias) — à exclure
+    const targetCase = this.carteState.cases.get(targetNum)
+    const sameCase = new Set<number>([targetNum, ...(targetCase?.aliasNums ?? [])])
+
     for (const c of this.carteState.cases.values()) {
+      // Déduplique : une même case peut être stockée sous plusieurs clés (aliases)
+      if (seenNums.has(c.num)) continue
+      seenNums.add(c.num)
+
+      // Exclut les cases qui partagent la même position (ne sont pas "entrantes")
+      if (c.x === x && c.y === y) continue
+
       for (const [dir, murType] of Object.entries(c.murs) as [keyof typeof DELTA, string][]) {
         if (murType === 'ferme') continue
         const { dx, dy } = DELTA[dir]
         const nx = c.x + dx, ny = c.y + dy
         if (nx === x && ny === y) {
           const num = c.isPath ? c.sectionNum : c.num
-          if (num !== targetNum && num > 0 && !c.aliasNums?.includes(targetNum)) {
+          if (num > 0 && !sameCase.has(num)) {
             result.add(num)
           }
         }
       }
     }
 
+    return [...result].sort((a, b) => a - b)
+  }
+
+  /** Sections qui référencent sectionNum dans leurs données JSON (choix, combat, actions…) */
+  private _findCallerSections(targetNum: number): number[] {
+    if (!this.adventure) return []
+    const result = new Set<number>()
+    for (const s of this.adventure.sections) {
+      if (s.numero === targetNum) continue
+      const refs = new Set<number>()
+      collectSectionRefs(s, refs)
+      if (refs.has(targetNum)) result.add(s.numero)
+    }
     return [...result].sort((a, b) => a - b)
   }
 

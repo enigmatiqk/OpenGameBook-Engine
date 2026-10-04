@@ -322,6 +322,12 @@ export class CarteEditorBlock {
       })
     }
     const state = buildCarte(this.options.adventure.sections)
+    // Contour jaune si au moins une case a un conflit de position
+    const hasConflict = [...state.cases.values()].some(c => c.conflict)
+    this.carteViewEl.style.outline = hasConflict ? '3px solid #ffcc00' : ''
+    this.carteViewEl.title = hasConflict
+      ? '⚠ Des sections ont un conflit de position sur la carte (placées à plusieurs endroits sans !multi)'
+      : ''
     this.carteView.render(state)
   }
 

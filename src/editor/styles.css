@@ -2132,3 +2132,192 @@ html, body {
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ── Éditeur structuré lancer_de resultats ───────────────────────────────── */
+
+.cpm-ld-resultats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.cpm-ld-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cpm-ld-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cpm-ld-row {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cpm-ld-main-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cpm-ld-plage {
+  width: 5rem;
+  flex-shrink: 0;
+  font-family: monospace;
+  text-align: center;
+}
+
+.cpm-ld-arrow {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cpm-ld-sec-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.cpm-ld-sec-lbl {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cpm-ld-sec {
+  width: 5rem;
+  flex-shrink: 0;
+}
+
+.cpm-ld-toggle-row {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.cpm-ld-toggle-btn {
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.cpm-ld-toggle-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cpm-ld-toggle-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+}
+
+/* ── Éditeur événements de combat ────────────────────────────────────────── */
+
+.combat-events-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.combat-events-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.combat-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.combat-event-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.combat-event-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.1rem;
+}
+
+.combat-event-num {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.combat-event-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.combat-event-opts input[type="text"] {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.combat-event-flags {
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-top: 0.1rem;
+}
+
+.combat-event-choix-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.combat-event-choix-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.combat-event-choix-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.combat-event-choix-row input[type="text"] {
+  flex: 1;
+  min-width: 8rem;
+}

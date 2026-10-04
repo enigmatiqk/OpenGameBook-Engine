@@ -659,14 +659,8 @@ export class ChoicePropertyModal {
         formuleInput.addEventListener('input', () => { ldAction.lancer_de.formule = formuleInput.value })
         fieldsWrap.appendChild(this._labeledRow('Formule de dés', formuleInput))
 
-        const hint = document.createElement('div')
-        hint.className = 'cpm-json-hint'
-        hint.textContent = 'Résultats (JSON) :'
-        fieldsWrap.appendChild(hint)
-        fieldsWrap.appendChild(this._buildJsonRawValue(
-          ldAction.lancer_de.resultats,
-          v => { ldAction.lancer_de.resultats = v as ActionLancerDe['lancer_de']['resultats'] },
-        ))
+        // ── Éditeur structuré des résultats ─────────────────────────────────
+        fieldsWrap.appendChild(this._buildLancerDeResultats(ldAction))
       }
     }
 
@@ -677,11 +671,213 @@ export class ChoicePropertyModal {
     return wrap
   }
 
+  // ── Éditeur structuré des résultats d'un lancer_de ──────────────────────────
+  //
+  // Chaque entrée de resultats = { [plage]: { section?, effets? } }
+  // ex: { "1-3": { section: 184, effets: [...] }, "4-5": { section: 164 }, "6": { section: 140 } }
+  //
+  private _buildLancerDeResultats(ldAction: ActionLancerDe): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'cpm-ld-resultats'
+
+    const header = document.createElement('div')
+    header.className = 'cpm-ld-header'
+
+    const lbl = document.createElement('span')
+    lbl.className = 'cpm-prop-label'
+    lbl.textContent = 'Résultats'
+    header.appendChild(lbl)
+
+    const addBtn = document.createElement('button')
+    addBtn.type = 'button'
+    addBtn.className = 'btn btn-ghost btn-sm'
+    addBtn.textContent = '+ Ajouter un résultat'
+    addBtn.addEventListener('click', () => {
+      ldAction.lancer_de.resultats['?'] = { section: 0 }
+      rebuildList()
+    })
+    header.appendChild(addBtn)
+    wrap.appendChild(header)
+
+    const listEl = document.createElement('div')
+    listEl.className = 'cpm-ld-list'
+    wrap.appendChild(listEl)
+
+    const rebuildList = (): void => {
+      listEl.innerHTML = ''
+      const resultats = ldAction.lancer_de.resultats
+
+      Object.entries(resultats).forEach(([plage, outcome]) => {
+        const row = document.createElement('div')
+        row.className = 'cpm-ld-row'
+
+        // ── Plage ──────────────────────────────────────────────────────────
+        const plageInput = document.createElement('input')
+        plageInput.type = 'text'
+        plageInput.className = 'cpm-input-text cpm-ld-plage'
+        plageInput.placeholder = 'ex: 1-3 ou 6'
+        plageInput.value = plage
+        plageInput.title = 'Plage de valeurs (ex: 1-3, 4-5, 6)'
+        plageInput.addEventListener('change', () => {
+          const newKey = plageInput.value.trim()
+          if (!newKey || newKey === plage) return
+          // Renommer la clé
+          const val = resultats[plage]
+          delete resultats[plage]
+          resultats[newKey] = val
+          rebuildList()
+        })
+
+        // ── Section destination (optionnelle) ─────────────────────────────
+        const hasSection = typeof outcome.section === 'number'
+
+        const secCheckbox = document.createElement('input')
+        secCheckbox.type = 'checkbox'
+        secCheckbox.className = 'cpm-ld-sec-check'
+        secCheckbox.checked = hasSection
+        secCheckbox.title = 'Aller à une section'
+
+        const secLbl = document.createElement('label')
+        secLbl.className = 'cpm-ld-sec-lbl'
+        secLbl.textContent = '→ §'
+        secLbl.title = 'Optionnel : laisser vide pour rester sur la section courante'
+
+        const secInput = document.createElement('input')
+        secInput.type = 'number'
+        secInput.className = 'cpm-input-number cpm-ld-sec'
+        secInput.placeholder = '—'
+        secInput.min = '1'
+        secInput.disabled = !hasSection
+        secInput.style.opacity = hasSection ? '1' : '0.35'
+        if (hasSection) secInput.value = String(outcome.section)
+
+        secCheckbox.addEventListener('change', () => {
+          const on = secCheckbox.checked
+          secInput.disabled = !on
+          secInput.style.opacity = on ? '1' : '0.35'
+          if (!on) {
+            outcome.section = undefined
+            secInput.value = ''
+          } else {
+            secInput.focus()
+          }
+        })
+        secInput.addEventListener('input', () => {
+          const n = parseInt(secInput.value, 10)
+          outcome.section = isNaN(n) ? undefined : n
+        })
+
+        // ── Supprimer ──────────────────────────────────────────────────────
+        const delBtn = document.createElement('button')
+        delBtn.type = 'button'
+        delBtn.className = 'cpm-list-del'
+        delBtn.innerHTML = '🗑'
+        delBtn.title = 'Supprimer ce résultat'
+        delBtn.addEventListener('click', () => {
+          delete resultats[plage]
+          rebuildList()
+        })
+
+        const mainRow = document.createElement('div')
+        mainRow.className = 'cpm-ld-main-row'
+        mainRow.appendChild(plageInput)
+        mainRow.appendChild(secCheckbox)
+        mainRow.appendChild(secLbl)
+        mainRow.appendChild(secInput)
+        mainRow.appendChild(delBtn)
+        row.appendChild(mainRow)
+
+        // ── Carte (chemin) optionnel ───────────────────────────────────────
+        const hasCarteInitially = !!(outcome.carte?.chemin?.length)
+        const carteToggle = document.createElement('button')
+        carteToggle.type = 'button'
+        carteToggle.className = 'cpm-ld-toggle-btn' + (hasCarteInitially ? ' active' : '')
+        carteToggle.textContent = hasCarteInitially ? '🗺 Carte ▲' : '🗺 Carte ▼'
+
+        const carteEl = document.createElement('div')
+        carteEl.style.display = hasCarteInitially ? '' : 'none'
+
+        new CarteEditorBlock(carteEl, {
+          initial: outcome.carte ? { chemin: [...(outcome.carte.chemin ?? [])] } : { chemin: [] },
+          onChange: (data) => {
+            outcome.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+          },
+          showEnv: false,
+        })
+
+        carteToggle.addEventListener('click', () => {
+          const visible = carteEl.style.display !== 'none'
+          carteEl.style.display = visible ? 'none' : ''
+          carteToggle.textContent = visible ? '🗺 Carte ▼' : '🗺 Carte ▲'
+          carteToggle.classList.toggle('active', !visible)
+        })
+
+        const carteToggleRow = document.createElement('div')
+        carteToggleRow.className = 'cpm-ld-toggle-row'
+        carteToggleRow.appendChild(carteToggle)
+        row.appendChild(carteToggleRow)
+        row.appendChild(carteEl)
+
+        // ── Effets optionnels ──────────────────────────────────────────────
+        const effetsToggleRow = document.createElement('div')
+        effetsToggleRow.className = 'cpm-ld-toggle-row'
+
+        const hasEffetsInitially = !!(outcome.effets?.length)
+        const effetsToggle = document.createElement('button')
+        effetsToggle.type = 'button'
+        effetsToggle.className = 'cpm-ld-toggle-btn' + (hasEffetsInitially ? ' active' : '')
+        effetsToggle.textContent = hasEffetsInitially
+          ? `✨ Effets (${outcome.effets!.length}) ▲`
+          : '✨ Effets ▼'
+
+        const effetsEl = document.createElement('div')
+        effetsEl.style.display = hasEffetsInitially ? '' : 'none'
+
+        if (!outcome.effets) outcome.effets = []
+        new EffetsEditor(effetsEl, {
+          effets: outcome.effets,
+          onChange: (updated) => {
+            outcome.effets = updated.length ? updated : undefined
+            effetsToggle.textContent = updated.length
+              ? `✨ Effets (${updated.length}) ▲`
+              : '✨ Effets ▼'
+            effetsToggle.classList.toggle('active', updated.length > 0)
+          },
+        })
+
+        effetsToggle.addEventListener('click', () => {
+          const visible = effetsEl.style.display !== 'none'
+          effetsEl.style.display = visible ? 'none' : ''
+          effetsToggle.textContent = visible
+            ? (outcome.effets?.length ? `✨ Effets (${outcome.effets.length}) ▼` : '✨ Effets ▼')
+            : (outcome.effets?.length ? `✨ Effets (${outcome.effets.length}) ▲` : '✨ Effets ▲')
+          effetsToggle.classList.toggle('active', !visible && !!(outcome.effets?.length))
+        })
+
+        effetsToggleRow.appendChild(effetsToggle)
+        row.appendChild(effetsToggleRow)
+        row.appendChild(effetsEl)
+
+        listEl.appendChild(row)
+      })
+
+      if (Object.keys(resultats).length === 0) {
+        const empty = document.createElement('div')
+        empty.className = 'choices-empty'
+        empty.textContent = 'Aucun résultat défini. Cliquez sur + Ajouter.'
+        listEl.appendChild(empty)
+      }
+    }
+
+    rebuildList()
+    return wrap
+  }
+
   private _buildOutcomeRow(key: 'si_reussi' | 'si_echoue', regle: ActionRegle): HTMLElement {
     const wrap = document.createElement('div')
     wrap.className = 'cpm-outcome-wrap'
 
-    // Ligne section
+    // ── Ligne section ──────────────────────────────────────────────────────
     const secRow = document.createElement('div')
     secRow.className = 'cpm-outcome-row'
 
@@ -699,14 +895,14 @@ export class ChoicePropertyModal {
     if (typeof current === 'number') secInput.value = String(current)
 
     const ensureOutcome = (): void => {
-      if (!regle[key]) regle[key] = { choix: { texte: '', section: 0 } }
+      if (!regle[key]) regle[key] = {}
       if (!regle[key]!.choix) regle[key]!.choix = { texte: '', section: 0 }
     }
 
     secInput.addEventListener('input', () => {
       const n = parseInt(secInput.value, 10)
       if (isNaN(n)) {
-        regle[key] = undefined
+        if (regle[key]?.choix) regle[key]!.choix = undefined
       } else {
         ensureOutcome()
         regle[key]!.choix!.section = n
@@ -715,22 +911,36 @@ export class ChoicePropertyModal {
     secRow.appendChild(secInput)
     wrap.appendChild(secRow)
 
-    // Bloc carte (chemin du déplacement pour cet outcome)
-    const carteLabel = document.createElement('div')
-    carteLabel.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem;'
-    carteLabel.textContent = 'Déplacement carte :'
-    wrap.appendChild(carteLabel)
+    // ── Carte (déplacement) — portée directement sur l'outcome ────────────
+    const hasCarteInitially = !!(regle[key]?.carte?.chemin?.length)
+    const carteToggle = document.createElement('button')
+    carteToggle.type = 'button'
+    carteToggle.className = 'cpm-ld-toggle-btn' + (hasCarteInitially ? ' active' : '')
+    carteToggle.textContent = hasCarteInitially ? '🗺 Carte ▲' : '🗺 Carte ▼'
+    carteToggle.style.marginTop = '0.3rem'
 
     const carteEl = document.createElement('div')
-    const initialCarte = regle[key]?.choix?.carte
+    carteEl.style.display = hasCarteInitially ? '' : 'none'
+
+    // Rétrocompatibilité : lire aussi choix.carte si outcome.carte absent
+    const initialCarte = regle[key]?.carte ?? regle[key]?.choix?.carte
     new CarteEditorBlock(carteEl, {
       initial: initialCarte ? { chemin: [...(initialCarte.chemin ?? [])] } : { chemin: [] },
       onChange: (data) => {
         ensureOutcome()
-        regle[key]!.choix!.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+        regle[key]!.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
       },
       showEnv: false,
     })
+
+    carteToggle.addEventListener('click', () => {
+      const visible = carteEl.style.display !== 'none'
+      carteEl.style.display = visible ? 'none' : ''
+      carteToggle.textContent = visible ? '🗺 Carte ▼' : '🗺 Carte ▲'
+      carteToggle.classList.toggle('active', !visible)
+    })
+
+    wrap.appendChild(carteToggle)
     wrap.appendChild(carteEl)
 
     return wrap

@@ -209,12 +209,14 @@ export type MonstreModifier =
 export interface CombatEventChoix {
   texte: string              // libellé du bouton de choix
   section: SectionRef        // section vers laquelle naviguer
+  carte?: CarteChoixData     // déplacement carte associé
 }
 
 export interface CombatEvent {
   declencheur: "degats_heros" | "degats_monstre" | "degats" | "round" | "attaque_heros" | "attaque_monstre"
   round: number              // numéro d'occurrence (1ère fois, 2ème fois, etc.) ou numéro du round
   section?: SectionRef       // section vers laquelle aller (optionnel si choix[] est fourni)
+  carte?: CarteChoixData     // déplacement carte associé à la navigation section
   action?: string            // type d'action ('btn_fuite', 'fuite_chance', 'attaque', 'defense', etc.)
   choix?: string | CombatEventChoix[]  // string = libellé bouton simple, array = boutons de choix multiples
   texte?: string             // libellé personnalisé du bouton (alias de choix string)
@@ -349,11 +351,13 @@ export interface CombatData {
       echec_critique?: {
         resultats: number[]    // valeurs du dé (2d6) considérées comme échec critique (ex: [11, 12])
         section?: SectionRef   // section vers laquelle naviguer malgré l'échec
+        carte?: CarteChoixData // déplacement carte associé
         effets?: Effet[]       // effets appliqués en cas d'échec critique
       }
       reussite_critique?: {
         resultats: number[]    // valeurs du dé (2d6) considérées comme réussite critique
         section?: SectionRef   // section vers laquelle naviguer en cas de réussite critique
+        carte?: CarteChoixData // déplacement carte associé
         effets?: Effet[]       // effets appliqués en cas de réussite critique
       }
     }
@@ -501,6 +505,7 @@ export interface ActionOutcome {
   effets?: Effet[]
   items?: EffetItem[]
   choix?: Choice
+  carte?: CarteChoixData   // déplacement carte si cet outcome est atteint (indépendant de choix.carte)
   end?: "victoire" | "defaite"
   trigger?: string    // trigger à activer si cet outcome est atteint (ex: "corde_coupe")
   section_params?: Record<string, number>  // paramètres transmis à la section de destination
@@ -510,7 +515,7 @@ export interface ActionLancerDe {
   type: "lancer_de"
   lancer_de: {
     formule: string
-    resultats: Record<string, { section?: SectionRef; effets?: Effet[] }>
+    resultats: Record<string, { section?: SectionRef; carte?: CarteChoixData; effets?: Effet[] }>
   }
 }
 

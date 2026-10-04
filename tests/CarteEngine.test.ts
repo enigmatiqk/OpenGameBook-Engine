@@ -111,7 +111,12 @@ describe('buildCarte', () => {
     expect([section73.x, section73.y]).toEqual([5, 22])
     expect([westRunEnd.x, westRunEnd.y]).toEqual([2, 22])
     expect([northTurn.x, northTurn.y]).toEqual([2, 23])
-    expect([riverCell.x, riverCell.y, riverCell.env]).toEqual([2, 24, 'riviere'])
+    // @riviere crée un passage sur l'arête (mur coloré), pas un env de case
+    expect([riverCell.x, riverCell.y]).toEqual([2, 24])
+    expect(riverCell.env).toBeNull()
+    // Le passage 'riviere' est marqué sur l'arête nord de northTurn (côté sortant)
+    // et sur l'arête sud de riverCell (côté entrant)
+    expect(northTurn.passages.N).toContain('riviere')
     expect([destination.x, destination.y]).toEqual([2, 25])
   })
 

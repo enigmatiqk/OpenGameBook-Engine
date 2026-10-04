@@ -19,15 +19,22 @@
  */
 
 import type { Adventure, Section, Choice, Effet, EffetItem } from '../types'
+import { buildCarte } from '../carte/CarteEngine'
 
 // ─── Définition des filtres ────────────────────────────────────────────────
+
+/** Contexte optionnel passé à match() pour les filtres nécessitant la carte */
+export interface FilterContext {
+  /** Numéros de sections ayant un conflit de position sur la carte */
+  conflictNums?: Set<number>
+}
 
 interface FilterDef {
   id:    string
   label: string
   emoji: string
   color: string
-  match: (section: Section, adventure: Adventure) => boolean
+  match: (section: Section, adventure: Adventure, ctx?: FilterContext) => boolean
 }
 
 /** Retourne true si la section ou au moins un de ses choix a un chemin carte défini */
@@ -68,6 +75,13 @@ export const FILTERS: FilterDef[] = [
     emoji: '🔗',
     color: '#e91e8c',
     match: (section, adventure) => !isReachable(section, adventure.sections),
+  },
+  {
+    id:    'conflits-carte',
+    label: 'Conflits carte',
+    emoji: '⚠',
+    color: '#ffcc00',
+    match: (section, _adventure, ctx) => ctx?.conflictNums?.has(section.numero) ?? false,
   },
 ]
 
@@ -127,7 +141,7 @@ function itemsFromChoice(c: Choice): string[] {
   return [...out, ...itemsFromEffets(c.effets)]
 }
 
-function collectSectionRefs(obj: unknown, acc: Set<number>): void {
+export function collectSectionRefs(obj: unknown, acc: Set<number>): void {
   if (obj === null || typeof obj !== 'object') return
   if (Array.isArray(obj)) { for (const item of obj) collectSectionRefs(item, acc); return }
   const rec = obj as Record<string, unknown>
@@ -230,8 +244,16 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   // ── Calcul des sets de filtres (côté TS, sérialisés en JSON) ─────────────
   // filterData = { [filterId]: number[] }  — liste des numéros de sections matchées
   const filterData: Record<string, number[]> = {}
+  // Construit le contexte carte (conflits de position) une seule fois
+  const carteState = buildCarte(adventure.sections)
+  const conflictNums = new Set(
+    [...carteState.cases.values()]
+      .filter(c => c.conflict)
+      .map(c => c.sectionNum),
+  )
+  const filterCtx: FilterContext = { conflictNums }
   for (const f of FILTERS) {
-    filterData[f.id] = sections.filter(s => f.match(s, adventure)).map(s => s.numero)
+    filterData[f.id] = sections.filter(s => f.match(s, adventure, filterCtx)).map(s => s.numero)
   }
   // Sérialisation JSON pour injection dans le script de l'iframe
   const filterDataJson = JSON.stringify(filterData)

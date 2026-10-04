@@ -39,6 +39,29 @@ export interface CarteCase {
   passages:   Partial<Record<Direction, CarteEnv[]>>
   visible:    boolean
   isPath:     boolean
+  /**
+   * Position de fin du chemin de la section (px, py dans le BFS).
+   * = (x, y) si la section n'a pas de chemin propre.
+   * C'est là où le marqueur joueur est affiché.
+   */
+  endX: number
+  endY: number
+  /**
+   * Clé d'instance pour les sections placées avec `!multi`.
+   * Format : "from>target", ex : "10>42".
+   * Absent pour les sections normales (une seule instance).
+   */
+  instanceKey?: string
+  /**
+   * Vrai si la section a été demandée à une position différente de celle déjà
+   * enregistrée, sans `!multi`. Indique un conflit de placement dans le JSON.
+   */
+  conflict?: boolean
+  /**
+   * Positions alternatives demandées en conflit (sans `!multi`).
+   * Chaque entrée est une position {x,y} qui diffère de la position principale.
+   */
+  conflictPositions?: Array<{ x: number; y: number }>
 }
 
 export interface CarteState {
@@ -51,8 +74,21 @@ export interface CarteState {
 
 /**
  * Retrouve la case de section où se trouve le joueur.
+ * Si `fromSection` est fourni, cherche d'abord une instance `!multi` avec la
+ * clé "fromSection>sectionNum" avant de retomber sur la case normale.
  */
-export function getPlayerCase(state: CarteState, sectionNum: number): CarteCase | null {
+export function getPlayerCase(
+  state: CarteState,
+  sectionNum: number,
+  fromSection?: number,
+): CarteCase | null {
+  if (fromSection !== undefined) {
+    const key = `${fromSection}>${sectionNum}`
+    const instance = [...state.cases.values()].find(
+      c => c.instanceKey === key,
+    )
+    if (instance) return instance
+  }
   return state.cases.get(sectionNum) ?? null
 }
 
@@ -109,6 +145,13 @@ export function buildCarte(
   const grid   = new Map<string, number>()
   const placed = new Set<number>()
 
+  /**
+   * Instances créées par `!multi`.
+   * Clé : "from>target" (ex: "10>42")
+   * Valeur : id de la CarteCase correspondante (toujours < 0, comme les cases de chemin)
+   */
+  const placedMulti = new Map<string, number>()
+
   const hasVisitedMappedDestination = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.some(hasVisitedMappedDestination)
     if (value === null || typeof value !== 'object') return false
@@ -141,15 +184,21 @@ export function buildCarte(
     env: CarteEnv | null,
     isPath: boolean,
     sectionNum?: number,
+    instanceKey?: string,
   ): CarteCase => {
-    const existing = grid.get(gridKey(x, y))
-    if (existing !== undefined) return cases.get(existing)!
-    grid.set(gridKey(x, y), num)
+    // Pour les instances !multi : pas de lookup/écriture dans grid (position partageable)
+    if (!instanceKey) {
+      const existing = grid.get(gridKey(x, y))
+      if (existing !== undefined) return cases.get(existing)!
+      grid.set(gridKey(x, y), num)
+    }
     const c: CarteCase = {
       num, sectionNum: sectionNum ?? num, aliasNums: [], x, y, env, isPath,
+      endX: x, endY: y,
       murs: emptyMurs(),
       passages: {},
       visible: visitedNums === undefined || (!isPath && visitedNums.has(sectionNum ?? num)),
+      instanceKey,
     }
     cases.set(num, c)
     return c
@@ -159,8 +208,85 @@ export function buildCarte(
   const placeSection = (
     num: number, cx: number, cy: number,
     section: Section,
+    instanceKey?: string,
   ): { px: number; py: number } | null => {
-    if (placed.has(num)) return null
+    // ── Cas !multi : instance indépendante ────────────────────────────────────
+    if (instanceKey) {
+      if (placedMulti.has(instanceKey)) return null  // déjà créée (BFS peut repasser)
+      const id = pathIdCounter--
+      placedMulti.set(instanceKey, id)
+      const key = gridKey(cx, cy)
+      const pathVisible = visitedNums === undefined
+        || hasVisitedMappedDestination(section.choix)
+        || hasVisitedMappedDestination(section.combat)
+
+      // Si la position est déjà une case de chemin, on la promeut en instance multi
+      if (grid.has(key)) {
+        const existingId = grid.get(key)!
+        const existingCase = cases.get(existingId)!
+        if (existingCase.isPath) {
+          // Promotion : la case de chemin devient une instance multi sans toucher à grid
+          // (grid garde l'entrée originale, les instances multi sont retrouvées via instanceKey)
+          cases.delete(existingId)
+          existingCase.num        = id
+          existingCase.sectionNum = num
+          existingCase.isPath     = false
+          existingCase.env        = section.carte?.env ?? existingCase.env
+          existingCase.visible    = existingCase.visible || visitedNums === undefined || visitedNums.has(num)
+          existingCase.instanceKey = instanceKey
+          cases.set(id, existingCase)
+          // On remet l'id original dans grid (la case promue change d'id)
+          grid.set(key, id)
+          let px = cx, py = cy
+          if (section.carte?.chemin?.length) {
+            const etapes = parseChemin(section.carte.chemin)
+            const dest = applyPathSimple(cx, cy, etapes, existingCase.passages)
+            px = dest.x; py = dest.y
+          }
+          queue.push({ num: id, cx, cy, px, py })
+          existingCase.endX = px; existingCase.endY = py
+          return { px, py }
+        }
+      }
+
+      // Sinon crée une nouvelle case à cette position (NE PAS écrire dans grid — position partagée)
+      const c: CarteCase = {
+        num: id, sectionNum: num, aliasNums: [], x: cx, y: cy,
+        env: section.carte?.env ?? null, isPath: false,
+        endX: cx, endY: cy,
+        murs: emptyMurs(), passages: {},
+        visible: visitedNums === undefined || visitedNums.has(num),
+        instanceKey,
+      }
+      cases.set(id, c)
+
+      let px = cx, py = cy
+      if (section.carte?.chemin?.length) {
+        const etapes = parseChemin(section.carte.chemin)
+        const dest = applyPathSimple(cx, cy, etapes, c.passages)
+        px = dest.x; py = dest.y
+      }
+      void pathVisible
+      queue.push({ num: id, cx, cy, px, py })
+      c.endX = px; c.endY = py
+      return { px, py }
+    }
+
+    if (placed.has(num)) {
+      // ── Détection de conflit de position ──────────────────────────────────
+      const existingCase = cases.get(num)
+      if (existingCase && (existingCase.x !== cx || existingCase.y !== cy) && !existingCase.isPath) {
+        existingCase.conflict = true
+        ;(existingCase.conflictPositions ??= []).push({ x: cx, y: cy })
+        console.warn(
+          `[CarteEngine] Conflit de position pour §${num} : ` +
+          `déjà placée en (${existingCase.x},${existingCase.y}), ` +
+          `demandée en (${cx},${cy}). ` +
+          `Utilisez !multi dans le chemin appelant pour créer une instance indépendante.`,
+        )
+      }
+      return null
+    }
     const key = gridKey(cx, cy)
     const pathVisible = visitedNums === undefined
       || hasVisitedMappedDestination(section.choix)
@@ -191,6 +317,7 @@ export function buildCarte(
           px = dest.x; py = dest.y
         }
         queue.push({ num, cx, cy, px, py })
+        existingCase.endX = px; existingCase.endY = py
         return { px, py }
       }
       // Position occupée par une vraie section → case partagée (alias)
@@ -256,6 +383,7 @@ export function buildCarte(
         void lastDir2
       }
       queue.push({ num, cx: existingCase.x, cy: existingCase.y, px: apx, py: apy })
+      existingCase.endX = apx; existingCase.endY = apy
       return { px: apx, py: apy }
     }
 
@@ -331,6 +459,7 @@ export function buildCarte(
     }
 
     queue.push({ num, cx, cy, px, py })
+    c.endX = px; c.endY = py
     return { px, py }
   }
 
@@ -338,7 +467,9 @@ export function buildCarte(
 
   // ── BFS ─────────────────────────────────────────────────────────────────────
   while (queue.length > 0) {
-    const { num, px, py } = queue.shift()!
+    const { num: queueNum, px, py } = queue.shift()!
+    // Pour les instances !multi (id < 0), la section réelle est dans sectionNum de la case
+    const num = queueNum < 0 ? (cases.get(queueNum)?.sectionNum ?? queueNum) : queueNum
     const section  = sectionMap.get(num)
     if (!section) continue
 
@@ -357,28 +488,33 @@ export function buildCarte(
       if (processedPaths.has(pathKey)) return
       processedPaths.add(pathKey)
 
+      // Détecte !multi dans le chemin (côté appel)
+      const isMulti = chemin.some(s => s.trim() === '!multi')
+      // Retire !multi du chemin effectif pour le traitement des déplacements
+      const cheminEffectif = isMulti ? chemin.filter(s => s.trim() !== '!multi') : chemin
+      // Clé d'instance pour !multi : "section_courante>cible"
+      const instanceKey = isMulti ? `${num}>${targetNum}` : undefined
+
       // `!ici` = la section destination occupe la même case que la position courante
-      // Les @env précédant !ici marquent le mur dans la direction du chemin de la destination
-      if (estIci(chemin)) {
+      if (estIci(cheminEffectif) || (cheminEffectif.length === 0 && isMulti)) {
         const targetSection = sectionMap.get(targetNum)
         if (targetSection) {
-          placeSection(targetNum, px, py, targetSection)
-          // Si le chemin du choix contient @porte avant !ici,
-          // ouvrir le mur dans la direction du chemin de la section destination
-          const hasPorteInChoice = chemin.some(s => s === '@porte')
-          if (hasPorteInChoice && targetSection.carte?.chemin?.length) {
-            const destFirstDir = premiereMoveDir(targetSection.carte.chemin)
-            if (destFirstDir && curCase) {
-              openMur(curCase, destFirstDir, 'porte')
-              // Ouvre aussi le mur de retour sur la case destination (qui sera créée par son chemin)
+          placeSection(targetNum, px, py, targetSection, instanceKey)
+          if (!isMulti) {
+            const hasPorteInChoice = chemin.some(s => s === '@porte')
+            if (hasPorteInChoice && targetSection.carte?.chemin?.length) {
+              const destFirstDir = premiereMoveDir(targetSection.carte.chemin)
+              if (destFirstDir && curCase) {
+                openMur(curCase, destFirstDir, 'porte')
+              }
             }
           }
         }
         return
       }
-      const etapes   = parseChemin(chemin)
-      const firstDir = premiereMoveDir(chemin)
-      const isPorte  = commenceParPorte(chemin)
+      const etapes   = parseChemin(cheminEffectif)
+      const firstDir = premiereMoveDir(cheminEffectif)
+      const isPorte  = commenceParPorte(cheminEffectif)
       if (!firstDir) return
 
       const murType: MurType = isPorte ? 'porte' : 'ouvert'
@@ -466,10 +602,12 @@ export function buildCarte(
       // Place la section destination
       const targetSection = sectionMap.get(targetNum)
       if (targetSection) {
-        placeSection(targetNum, x, y, targetSection)
-        const destCase = cases.get(targetNum) ?? (grid.get(gridKey(x, y)) !== undefined
-          ? cases.get(grid.get(gridKey(x, y))!)
-          : undefined)
+        placeSection(targetNum, x, y, targetSection, instanceKey)
+        // Retrouve la case effectivement créée (normale ou instance multi)
+        const destId = instanceKey ? placedMulti.get(instanceKey) : targetNum
+        const destCase = destId !== undefined
+          ? cases.get(destId)
+          : (grid.get(gridKey(x, y)) !== undefined ? cases.get(grid.get(gridKey(x, y))!) : undefined)
         if (destCase && lastDir) {
           openMur(destCase, OPPOSITE[lastDir], murType)
         }
@@ -488,13 +626,31 @@ export function buildCarte(
     for (const choice of (section.choix ?? [])) {
       const action = choice.action
       if (!action || typeof action === 'string') continue
-      type OR = { choix?: { section?: unknown; carte?: { chemin?: string[] } } }
+
+      // 2a. ActionRegle : outcome.carte direct (priorité) ou outcome.choix.carte (rétrocompat)
+      type OR = {
+        carte?: { chemin?: string[] }
+        choix?: { section?: unknown; carte?: { chemin?: string[] } }
+      }
       const regle = action as { si_reussi?: OR; si_echoue?: OR }
       for (const outcome of [regle.si_reussi, regle.si_echoue]) {
-        if (!outcome?.choix?.carte?.chemin?.length) continue
-        const targetNum = typeof outcome.choix.section === 'number' ? outcome.choix.section : null
+        const chemin = outcome?.carte?.chemin ?? outcome?.choix?.carte?.chemin
+        if (!chemin?.length) continue
+        const targetNum = typeof outcome?.choix?.section === 'number' ? outcome.choix!.section as number : null
         if (!targetNum || targetNum <= 0) continue
-        processChoice(targetNum, outcome.choix.carte.chemin)
+        processChoice(targetNum, chemin)
+      }
+
+      // 2b. ActionLancerDe : resultats[].carte
+      type LD = { type?: string; lancer_de?: { resultats?: Record<string, { section?: unknown; carte?: { chemin?: string[] } }> } }
+      const ld = action as LD
+      if (ld.type === 'lancer_de' && ld.lancer_de?.resultats) {
+        for (const outcome of Object.values(ld.lancer_de.resultats)) {
+          if (!outcome.carte?.chemin?.length) continue
+          const targetNum = typeof outcome.section === 'number' ? outcome.section : null
+          if (!targetNum || targetNum <= 0) continue
+          processChoice(targetNum, outcome.carte.chemin)
+        }
       }
     }
 
@@ -514,6 +670,27 @@ export function buildCarte(
       const targetNum = typeof outcome?.section === 'number' ? outcome.section : null
       if (!chemin?.length || !targetNum || targetNum <= 0) continue
       processChoice(targetNum, chemin)
+    }
+
+    // ── 4. Événements de combat (CombatEvent + CombatEventChoix) ──────────
+    const allEvents = [
+      ...(section.combat?.events ?? []),
+      ...(section.combat?.phases ?? []).flatMap(phase => phase.events ?? []),
+    ]
+    for (const ev of allEvents) {
+      // Destination directe de l'event
+      if (ev.carte?.chemin?.length && typeof ev.section === 'number' && ev.section > 0) {
+        processChoice(ev.section, ev.carte.chemin)
+      }
+      // Choix multiples de l'event (CombatEventChoix[])
+      if (Array.isArray(ev.choix)) {
+        for (const ch of ev.choix as Array<{ section?: unknown; carte?: { chemin?: string[] } }>) {
+          if (!ch.carte?.chemin?.length) continue
+          const targetNum = typeof ch.section === 'number' ? ch.section : null
+          if (!targetNum || targetNum <= 0) continue
+          processChoice(targetNum, ch.carte.chemin)
+        }
+      }
     }
   }
 

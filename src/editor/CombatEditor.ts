@@ -8,7 +8,7 @@
  * - Champs avancés en JSON brut collapsibles
  */
 
-import type { CombatData, CombatPhaseData, MonstreData, SectionRef } from '../types'
+import type { CombatData, CombatPhaseData, MonstreData, SectionRef, CombatEvent, CombatEventChoix } from '../types'
 import { ConditionEditor } from './ConditionEditor'
 import { CarteEditorBlock } from './CarteEditorBlock'
 
@@ -17,7 +17,7 @@ export interface CombatEditorOptions {
 }
 
 const ADVANCED_KEYS: Array<keyof CombatData> = [
-  'events', 'modifier', 'attaque_heros', 'attaque_monstre', 'degats_heros',
+  'modifier', 'attaque_heros', 'attaque_monstre', 'degats_heros',
   'lancer_de', 'defense',
 ]
 
@@ -204,6 +204,9 @@ export class CombatEditor {
     ))
 
     this.bodyEl.appendChild(outSection)
+
+    // ── Événements de combat ──────────────────────────────────────────────────
+    this.bodyEl.appendChild(this._buildEventsEditor(c))
 
     // ── Condition ─────────────────────────────────────────────────────────────
     const condSection = this._sectionBlock('Condition d\'affichage')
@@ -522,6 +525,401 @@ export class CombatEditor {
   }
 
   // ── Destination block (numéro § + chemin carte) ───────────────────────────
+
+  // ── Éditeur IHM des événements de combat ─────────────────────────────────
+  //
+  // Chaque CombatEvent : declencheur × round × [section + carte] × [action]
+  //                    × [choix[]] × [texte] × [fin_combat] × [repeter]
+  //                    × [ignorerDegats] × [condition]
+  //
+  private _buildEventsEditor(c: CombatData): HTMLElement {
+    const section = this._sectionBlock('Événements de combat')
+
+    const header = document.createElement('div')
+    header.className = 'combat-events-header'
+
+    const count = document.createElement('span')
+    count.className = 'combat-events-count'
+
+    const addBtn = document.createElement('button')
+    addBtn.type = 'button'
+    addBtn.className = 'btn btn-ghost btn-sm'
+    addBtn.textContent = '+ Ajouter un événement'
+    addBtn.addEventListener('click', () => {
+      if (!c.events) c.events = []
+      c.events.push({ declencheur: 'round', round: 1 })
+      rebuild()
+      this._notify()
+    })
+    header.append(count, addBtn)
+    section.appendChild(header)
+
+    const listEl = document.createElement('div')
+    listEl.className = 'combat-events-list'
+    section.appendChild(listEl)
+
+    const rebuild = (): void => {
+      listEl.innerHTML = ''
+      count.textContent = `(${c.events?.length ?? 0})`
+
+      if (!c.events?.length) {
+        const empty = document.createElement('div')
+        empty.className = 'choices-empty'
+        empty.textContent = 'Aucun événement.'
+        listEl.appendChild(empty)
+        return
+      }
+
+      c.events.forEach((ev, idx) => {
+        listEl.appendChild(this._buildEventRow(ev, idx, c, rebuild))
+      })
+    }
+
+    rebuild()
+    return section
+  }
+
+  private _buildEventRow(ev: CombatEvent, idx: number, c: CombatData, rebuild: () => void): HTMLElement {
+    const card = document.createElement('div')
+    card.className = 'combat-event-card'
+
+    // ── Header de la carte : numéro + supprimer ───────────────────────────────
+    const cardHeader = document.createElement('div')
+    cardHeader.className = 'combat-event-card-header'
+
+    const numLbl = document.createElement('span')
+    numLbl.className = 'combat-event-num'
+    numLbl.textContent = `Événement ${idx + 1}`
+    cardHeader.appendChild(numLbl)
+
+    const delBtn = document.createElement('button')
+    delBtn.type = 'button'; delBtn.className = 'cpm-list-del'; delBtn.innerHTML = '🗑'
+    delBtn.title = 'Supprimer cet événement'
+    delBtn.addEventListener('click', () => {
+      c.events!.splice(idx, 1)
+      if (c.events!.length === 0) delete c.events
+      rebuild(); this._notify()
+    })
+    cardHeader.appendChild(delBtn)
+    card.appendChild(cardHeader)
+
+    // ── Ligne 1 : Déclencheur + Round ─────────────────────────────────────────
+    const row1 = document.createElement('div')
+    row1.className = 'combat-event-row'
+
+    const declSel = document.createElement('select')
+    declSel.className = 'cpm-select cpm-select-sm'
+    ;([
+      ['round',            '🔄 Round'],
+      ['attaque_heros',    '⚔️ Attaque héros'],
+      ['attaque_monstre',  '🐉 Attaque monstre'],
+      ['degats_heros',     '💥 Dégâts héros'],
+      ['degats_monstre',   '💥 Dégâts monstre'],
+      ['degats',           '💥 Dégâts (tous)'],
+    ] as [CombatEvent['declencheur'], string][]).forEach(([v, l]) => {
+      const opt = document.createElement('option')
+      opt.value = v; opt.textContent = l
+      if (ev.declencheur === v) opt.selected = true
+      declSel.appendChild(opt)
+    })
+    declSel.addEventListener('change', () => {
+      ev.declencheur = declSel.value as CombatEvent['declencheur']
+      this._notify()
+    })
+
+    const roundLbl = document.createElement('span')
+    roundLbl.className = 'combat-dest-lbl'
+    roundLbl.textContent = '× occurrence'
+    roundLbl.title = 'Numéro d\'occurrence (1 = première fois, 2 = deuxième fois…)'
+
+    const roundInput = document.createElement('input')
+    roundInput.type = 'number'; roundInput.className = 'cpm-input-number'
+    roundInput.min = '1'; roundInput.value = String(ev.round ?? 1)
+    roundInput.addEventListener('input', () => {
+      const n = parseInt(roundInput.value, 10)
+      if (!isNaN(n) && n > 0) { ev.round = n; this._notify() }
+    })
+
+    row1.append(declSel, roundLbl, roundInput)
+    card.appendChild(row1)
+
+    // ── Ligne 2 : Section + Carte ─────────────────────────────────────────────
+    const hasSecInitially = typeof ev.section === 'number'
+
+    const row2 = document.createElement('div')
+    row2.className = 'combat-event-row'
+
+    const secCheck = document.createElement('input')
+    secCheck.type = 'checkbox'; secCheck.className = 'cpm-ld-sec-check'
+    secCheck.checked = hasSecInitially; secCheck.title = 'Aller à une section'
+
+    const secLbl = document.createElement('label')
+    secLbl.className = 'cpm-ld-sec-lbl'; secLbl.textContent = '→ §'
+
+    const secInput = document.createElement('input')
+    secInput.type = 'number'; secInput.className = 'cpm-input-number'
+    secInput.min = '1'; secInput.placeholder = '—'
+    secInput.disabled = !hasSecInitially
+    secInput.style.opacity = hasSecInitially ? '1' : '0.35'
+    if (hasSecInitially) secInput.value = String(ev.section)
+
+    secCheck.addEventListener('change', () => {
+      const on = secCheck.checked
+      secInput.disabled = !on; secInput.style.opacity = on ? '1' : '0.35'
+      if (!on) { ev.section = undefined; secInput.value = ''; carteWrap.hidden = true }
+      else { secInput.focus() }
+      this._notify()
+    })
+    secInput.addEventListener('input', () => {
+      const n = parseInt(secInput.value, 10)
+      ev.section = isNaN(n) ? undefined : n
+      this._notify()
+    })
+
+    row2.append(secCheck, secLbl, secInput)
+    card.appendChild(row2)
+
+    // ── Carte collapsible ─────────────────────────────────────────────────────
+    const hasCarteInit = !!(ev.carte?.chemin?.length)
+    const carteToggle = document.createElement('button')
+    carteToggle.type = 'button'
+    carteToggle.className = 'combat-carte-toggle btn btn-ghost btn-sm'
+    carteToggle.textContent = hasCarteInit ? '▼ carte' : '▶ carte'
+    if (hasCarteInit) carteToggle.classList.add('combat-carte-toggle--active')
+    row2.appendChild(carteToggle)
+
+    const carteWrap = document.createElement('div')
+    carteWrap.className = 'combat-carte-collapse'
+    carteWrap.hidden = !hasCarteInit
+
+    const carteEl = document.createElement('div')
+    new CarteEditorBlock(carteEl, {
+      initial: { chemin: ev.carte?.chemin ?? [] },
+      onChange: (data) => {
+        ev.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+        const hasCh = !!(data?.chemin?.length)
+        carteToggle.classList.toggle('combat-carte-toggle--active', hasCh)
+        this._notify()
+      },
+      showEnv: false,
+    })
+    carteWrap.appendChild(carteEl)
+    card.appendChild(carteWrap)
+
+    carteToggle.addEventListener('click', () => {
+      carteWrap.hidden = !carteWrap.hidden
+      carteToggle.textContent = carteWrap.hidden ? '▶ carte' : '▼ carte'
+    })
+
+    // ── Ligne 3 : Options (action, texte, fin_combat, repeter, ignorerDegats) ──
+    const row3 = document.createElement('div')
+    row3.className = 'combat-event-row combat-event-opts'
+
+    // action
+    const actionSel = document.createElement('select')
+    actionSel.className = 'cpm-select cpm-select-sm'
+    actionSel.title = 'Action déclenchée'
+    ;([
+      ['',           '— action —'],
+      ['btn_fuite',  '🏃 btn_fuite'],
+      ['fuite_chance', '🎲 fuite_chance'],
+      ['attaque',    '⚔️ attaque'],
+      ['defense',    '🛡️ defense'],
+    ] as [string, string][]).forEach(([v, l]) => {
+      const opt = document.createElement('option')
+      opt.value = v; opt.textContent = l
+      if ((ev.action ?? '') === v) opt.selected = true
+      actionSel.appendChild(opt)
+    })
+    actionSel.addEventListener('change', () => {
+      ev.action = actionSel.value || undefined; this._notify()
+    })
+    row3.appendChild(actionSel)
+
+    // texte
+    const texteInput = document.createElement('input')
+    texteInput.type = 'text'; texteInput.className = 'cpm-input-text'
+    texteInput.placeholder = 'Texte bouton (optionnel)'
+    texteInput.value = ev.texte ?? ''
+    texteInput.addEventListener('input', () => {
+      ev.texte = texteInput.value || undefined; this._notify()
+    })
+    row3.appendChild(texteInput)
+
+    card.appendChild(row3)
+
+    // ── Ligne 4 : Flags (fin_combat, repeter, ignorerDegats) ─────────────────
+    const row4 = document.createElement('div')
+    row4.className = 'combat-event-row combat-event-flags'
+
+    const mkFlag = (label: string, key: 'fin_combat' | 'repeter' | 'ignorerDegats'): HTMLElement => {
+      const lbl2 = document.createElement('label')
+      lbl2.className = 'section-prop-toggle'
+      lbl2.title = key
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'; cb.className = 'cpm-toggle-input'; cb.checked = !!(ev[key])
+      cb.addEventListener('change', () => { ev[key] = cb.checked || undefined as never; this._notify() })
+      const track = document.createElement('span'); track.className = 'cpm-toggle-track'
+      const thumb = document.createElement('span'); thumb.className = 'cpm-toggle-thumb'
+      track.appendChild(thumb)
+      const txt = document.createElement('span'); txt.className = 'section-prop-toggle-lbl'; txt.textContent = label
+      lbl2.append(cb, track, txt)
+      return lbl2
+    }
+    row4.append(
+      mkFlag('fin combat', 'fin_combat'),
+      mkFlag('répéter', 'repeter'),
+      mkFlag('ignorer dégâts', 'ignorerDegats'),
+    )
+    card.appendChild(row4)
+
+    // ── Choix multiples (CombatEventChoix[]) ─────────────────────────────────
+    const choixArray = Array.isArray(ev.choix) ? ev.choix as CombatEventChoix[] : null
+
+    const choixSection = document.createElement('div')
+    choixSection.className = 'combat-event-choix-section'
+
+    const choixToggle = document.createElement('button')
+    choixToggle.type = 'button'; choixToggle.className = 'btn btn-ghost btn-sm'
+    const hasChoixInit = choixArray !== null && choixArray.length > 0
+    choixToggle.textContent = hasChoixInit ? `▼ Choix (${choixArray!.length})` : '▶ Choix multiples'
+    if (hasChoixInit) choixToggle.classList.add('combat-carte-toggle--active')
+
+    const choixBody = document.createElement('div')
+    choixBody.className = 'combat-event-choix-body'
+    choixBody.hidden = !hasChoixInit
+
+    // Initialise le tableau choix sur l'event si on bascule en mode choix
+    const getOrInitChoixArray = (): CombatEventChoix[] => {
+      if (!Array.isArray(ev.choix)) ev.choix = []
+      return ev.choix as CombatEventChoix[]
+    }
+
+    const rebuildChoix = (): void => {
+      choixBody.innerHTML = ''
+      const arr = Array.isArray(ev.choix) ? ev.choix as CombatEventChoix[] : []
+
+      arr.forEach((ch, ci) => {
+        const chRow = document.createElement('div')
+        chRow.className = 'combat-event-choix-row'
+
+        const chTexte = document.createElement('input')
+        chTexte.type = 'text'; chTexte.className = 'cpm-input-text'
+        chTexte.placeholder = 'Texte du bouton'; chTexte.value = ch.texte ?? ''
+        chTexte.addEventListener('input', () => { ch.texte = chTexte.value; this._notify() })
+
+        const chSecLbl = document.createElement('span')
+        chSecLbl.className = 'cpm-ld-arrow'; chSecLbl.textContent = '→ §'
+
+        const chSec = document.createElement('input')
+        chSec.type = 'number'; chSec.className = 'cpm-input-number'
+        chSec.min = '1'; chSec.placeholder = '—'
+        if (typeof ch.section === 'number') chSec.value = String(ch.section)
+        chSec.addEventListener('input', () => {
+          const n = parseInt(chSec.value, 10)
+          ch.section = isNaN(n) ? 0 : n; this._notify()
+        })
+
+        const chDel = document.createElement('button')
+        chDel.type = 'button'; chDel.className = 'cpm-list-del'; chDel.innerHTML = '🗑'
+        chDel.addEventListener('click', () => {
+          arr.splice(ci, 1)
+          if (arr.length === 0) delete ev.choix
+          rebuildChoix(); this._notify()
+        })
+
+        // Carte pour ce choix
+        const chCarteToggle = document.createElement('button')
+        chCarteToggle.type = 'button'
+        chCarteToggle.className = 'combat-carte-toggle btn btn-ghost btn-sm'
+        const hasChCarte = !!(ch.carte?.chemin?.length)
+        chCarteToggle.textContent = hasChCarte ? '▼ carte' : '▶ carte'
+        if (hasChCarte) chCarteToggle.classList.add('combat-carte-toggle--active')
+
+        const chCarteWrap = document.createElement('div')
+        chCarteWrap.className = 'combat-carte-collapse'; chCarteWrap.hidden = !hasChCarte
+        const chCarteEl = document.createElement('div')
+        new CarteEditorBlock(chCarteEl, {
+          initial: { chemin: ch.carte?.chemin ?? [] },
+          onChange: (data) => {
+            ch.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+            chCarteToggle.classList.toggle('combat-carte-toggle--active', !!(data?.chemin?.length))
+            this._notify()
+          },
+          showEnv: false,
+        })
+        chCarteWrap.appendChild(chCarteEl)
+        chCarteToggle.addEventListener('click', () => {
+          chCarteWrap.hidden = !chCarteWrap.hidden
+          chCarteToggle.textContent = chCarteWrap.hidden ? '▶ carte' : '▼ carte'
+        })
+
+        chRow.append(chTexte, chSecLbl, chSec, chCarteToggle, chDel)
+        choixBody.appendChild(chRow)
+        choixBody.appendChild(chCarteWrap)
+      })
+
+      const addChoixBtn = document.createElement('button')
+      addChoixBtn.type = 'button'; addChoixBtn.className = 'btn btn-ghost btn-sm'
+      addChoixBtn.textContent = '+ Choix'
+      addChoixBtn.addEventListener('click', () => {
+        getOrInitChoixArray().push({ texte: '', section: 0 })
+        choixToggle.textContent = `▼ Choix (${(ev.choix as CombatEventChoix[]).length})`
+        rebuildChoix(); this._notify()
+      })
+      choixBody.appendChild(addChoixBtn)
+    }
+
+    choixToggle.addEventListener('click', () => {
+      choixBody.hidden = !choixBody.hidden
+      if (!choixBody.hidden && !Array.isArray(ev.choix)) {
+        getOrInitChoixArray()
+        rebuildChoix()
+      }
+      const arr = Array.isArray(ev.choix) ? ev.choix as CombatEventChoix[] : []
+      choixToggle.textContent = choixBody.hidden ? `▶ Choix multiples` : `▼ Choix (${arr.length})`
+    })
+
+    if (hasChoixInit) rebuildChoix()
+
+    choixSection.append(choixToggle, choixBody)
+    card.appendChild(choixSection)
+
+    // ── Condition ──────────────────────────────────────────────────────────────
+    const condToggle = document.createElement('button')
+    condToggle.type = 'button'; condToggle.className = 'btn btn-ghost btn-sm'
+    const condBody = document.createElement('div'); condBody.hidden = !ev.condition
+
+    const updateCondToggle = (): void => {
+      condToggle.textContent = condBody.hidden ? '▶ Condition' : '▼ Condition'
+      condToggle.classList.toggle('combat-carte-toggle--active', !!ev.condition)
+    }
+    updateCondToggle()
+
+    condToggle.addEventListener('click', () => {
+      if (condBody.hidden) {
+        if (!ev.condition) ev.condition = { type: 'item_quantite' }
+        condBody.innerHTML = ''
+        new ConditionEditor(condBody, { condition: ev.condition,
+          onChange: (cond) => { ev.condition = cond; this._notify() } })
+        condBody.hidden = false
+      } else {
+        ev.condition = undefined; condBody.hidden = true; this._notify()
+      }
+      updateCondToggle()
+    })
+    if (ev.condition) {
+      new ConditionEditor(condBody, { condition: ev.condition,
+        onChange: (cond) => { ev.condition = cond; this._notify() } })
+    }
+
+    const condRow = document.createElement('div')
+    condRow.className = 'combat-event-row'
+    condRow.append(condToggle, condBody)
+    card.appendChild(condRow)
+
+    return card
+  }
 
   private _destBlock(
     label: string,

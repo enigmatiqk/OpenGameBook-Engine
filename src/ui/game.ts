@@ -231,10 +231,18 @@ export class GameView {
     const visitedNums = this._getVisitedSections()
     const carteState = buildCarte(adventure.sections, visitedNums)
     const currentSection = this.engine.getCurrentSection()
+    // Section précédente pour localiser les instances !multi :
+    // avant-dernière entrée de section dans le journal du héros
+    const journal = state.hero?.journal ?? []
+    const sectionEntries = journal.filter(e => e.tags.includes('section') && typeof e.value_number === 'number')
+    const prevSection = sectionEntries.length >= 2
+      ? sectionEntries[sectionEntries.length - 2].value_number as number
+      : undefined
 
     this._carteView = new CarteView(mapContainer, {
       showAll:          false,
       currentSection,
+      prevSection,
       onSelectSection:  (num) => { console.log(`Carte: section §${num} sélectionnée`) },
     })
     this._carteView.render(carteState)
