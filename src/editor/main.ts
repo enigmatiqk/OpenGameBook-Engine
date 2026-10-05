@@ -5,6 +5,7 @@ const root = document.getElementById('editor-root')
 if (!root) throw new Error('Élément #editor-root introuvable dans editor.html')
 
 const app = new EditorApp(root)
+;(window as any).__editorApp = app
 app.init().catch((err: unknown) => {
   console.error('[editor] Init failed:', err)
   root.innerHTML = `

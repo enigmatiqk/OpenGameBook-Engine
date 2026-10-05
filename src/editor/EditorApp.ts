@@ -84,13 +84,38 @@ export class EditorApp {
   private btnExport!:         HTMLButtonElement
   private treePanel:          AdventureTreePanel | null = null
 
+  // ── Mode sauvegarde directe (dev uniquement) ───────────────────────────────
+  // true si le plugin Vite dev-save répond sur /api/dev-save/ping
+  private devSaveAvailable = false
+  // Chemin du répertoire de l'aventure courante (ex. "adventures/Defis_Fantastiques_01_...")
+  private adventurePath = ''
+
   constructor(root: HTMLElement) {
     this.root = root
   }
 
   async init(): Promise<void> {
     this._buildShell()
+    await this._checkDevSave()
     await this._loadAdventureList()
+  }
+
+  // ── Détection du plugin dev-save ──────────────────────────────────────────
+
+  private async _checkDevSave(): Promise<void> {
+    // import.meta.env.DEV est false en prod (remplacé par Vite au build)
+    // le fetch confirme que le plugin répond réellement
+    if (!import.meta.env.DEV) return
+    try {
+      const res = await fetch('/api/dev-save/ping')
+      this.devSaveAvailable = res.ok
+    } catch {
+      this.devSaveAvailable = false
+    }
+    if (this.devSaveAvailable) {
+      this.btnExport.title = 'Sauvegarder directement les fichiers JSON modifiés'
+      this._updateExportButton()
+    }
   }
 
   // ── Shell HTML ──────────────────────────────────────────────────────────────
@@ -263,6 +288,7 @@ export class EditorApp {
 
     try {
       this.adventure = await this.libraryManager.loadAdventure(path)
+      this.adventurePath = path
       this.sortedSections = [...this.adventure.sections].sort((a, b) => a.numero - b.numero)
 
       // Reset tous les états
@@ -654,9 +680,10 @@ export class EditorApp {
     if (this.dirtyPersonnage) parts.push('perso')
     if (this.dirtyRegles)     parts.push('règles')
 
+    const verb = this.devSaveAvailable ? '💾 Sauvegarder' : '💾 Exporter'
     this.btnExport.textContent = hasChanges
-      ? `💾 Exporter (${parts.join(', ')})`
-      : '💾 Exporter'
+      ? `${verb} (${parts.join(', ')})`
+      : verb
   }
 
   // ── Badges sur les onglets ─────────────────────────────────────────────────
@@ -790,7 +817,10 @@ export class EditorApp {
         <div class="sidebar-flag">○ Non positionnée</div>
       </div>`
 
-    const aliasNums = c.aliasNums ?? []
+    // Toutes les sections partageant cette case = aliasNums + la section primaire (c.num),
+    // sauf la section courante elle-même.
+    const sharedNums = [...(c.aliasNums ?? []), c.num].filter(n => n !== sectionNum)
+    const aliasNums = sharedNums
     const adjacentNums = this._findAdjacentSections(sectionNum, c.x, c.y)
     const callerNums   = this._findCallerSections(sectionNum)
 
@@ -919,9 +949,120 @@ export class EditorApp {
     btnTree.classList.add('active')
   }
 
-  // ── Export JSON ────────────────────────────────────────────────────────────
+  // ── Export / Sauvegarde JSON ───────────────────────────────────────────────
 
   private _exportAll(): void {
+    if (!this.adventure) return
+    if (this.devSaveAvailable) {
+      void this._saveAll()
+    } else {
+      this._exportAllDownload()
+    }
+  }
+
+  /** Sauvegarde directe sur disque via le plugin Vite dev-save (mode dev uniquement) */
+  private async _saveAll(): Promise<void> {
+    if (!this.adventure) return
+
+    if (!this.adventurePath) {
+      this._showToast("Chemin de l\u2019aventure introuvable \u2014 export en t\u00e9l\u00e9chargement", 'error')
+      this._exportAllDownload()
+      return
+    }
+
+    const saved: string[] = []
+    const errors: string[] = []
+
+    const saveFile = async (filename: string, data: unknown): Promise<void> => {
+      const json = JSON.stringify(data, null, 2)
+      const url  = `/api/dev-save/${this.adventurePath.replace(/\/$/, '')}/${filename}`
+      const res  = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    json,
+      })
+      if (res.ok) {
+        saved.push(filename)
+      } else {
+        const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string }
+        errors.push(`${filename} (${body.error ?? res.statusText})`)
+      }
+    }
+
+    const tasks: Promise<void>[] = []
+
+    if (this.dirtySections) {
+      const sections = this.adventure.sections.map(s => {
+        const out = { ...s as unknown as Record<string, unknown> }
+        if (Array.isArray(out['choix']) && (out['choix'] as unknown[]).length === 0) {
+          delete out['choix']
+        }
+        return out
+      })
+      tasks.push(saveFile('sections.json', { sections }))
+    }
+
+    if (this.dirtyCouverture) {
+      const adv = this.adventure as unknown as Record<string, unknown>
+      tasks.push(saveFile('couverture.json', {
+        id:                adv['id'] ?? '',
+        collection:        this.adventure.collection,
+        titre:             this.adventure.titre,
+        auteur:            adv['auteur'],
+        tags:              this.adventure.tags,
+        description:       adv['description'],
+        version:           adv['version'],
+        image_de_garde:    this.adventure.image_de_garde,
+        image_de_garde_ia: this.adventure.image_de_garde_ia,
+        repertoire_images: this.adventure.repertoire_images,
+      }))
+    }
+
+    if (this.dirtyLivre) {
+      tasks.push(saveFile('livre.json', {
+        mode_emploi:        this.adventure.mode_emploi,
+        intro:              this.adventure.intro,
+        images_victoire:    this.adventure.images_victoire,
+        images_victoire_ia: (this.adventure as unknown as Record<string, unknown>)['images_victoire_ia'],
+        images_defaite:     this.adventure.images_defaite,
+        images_defaite_ia:  (this.adventure as unknown as Record<string, unknown>)['images_defaite_ia'],
+        images_annexes:     this.adventure.images_annexes,
+        images_annexes_ia:  (this.adventure as unknown as Record<string, unknown>)['images_annexes_ia'],
+      }))
+    }
+
+    if (this.dirtyPersonnage) {
+      tasks.push(saveFile('personnage.json', this.adventure.personnage))
+    }
+
+    if (this.dirtyRegles) {
+      tasks.push(saveFile('regles.json', this.adventure.regles))
+    }
+
+    if (tasks.length === 0) {
+      this._showToast('Aucune modification à sauvegarder', 'info')
+      return
+    }
+
+    await Promise.all(tasks)
+
+    if (errors.length > 0) {
+      this._showToast(`Erreur : ${errors.join(', ')}`, 'error')
+    } else {
+      this._showToast(`Sauvegardé : ${saved.join(', ')}`, 'success')
+      // Réinitialise les flags des fichiers sauvegardés avec succès
+      if (saved.includes('sections.json'))   { this.dirtySections = false; this.modifiedSectionNums = new Set() }
+      if (saved.includes('couverture.json')) this.dirtyCouverture = false
+      if (saved.includes('livre.json'))      this.dirtyLivre      = false
+      if (saved.includes('personnage.json')) this.dirtyPersonnage = false
+      if (saved.includes('regles.json'))     this.dirtyRegles     = false
+      this._updateExportButton()
+      this._updateTabBadges()
+    }
+  }
+
+  /** Export classique par téléchargement navigateur */
+  private _exportAllDownload(): void {
     if (!this.adventure) return
 
     const exported: string[] = []
