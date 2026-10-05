@@ -59,9 +59,10 @@ export interface CarteCase {
   conflict?: boolean
   /**
    * Positions alternatives demandées en conflit (sans `!multi`).
-   * Chaque entrée est une position {x,y} qui diffère de la position principale.
+   * Chaque entrée est une position {x,y} qui diffère de la position principale,
+   * avec le numéro de section qui a déclenché le conflit.
    */
-  conflictPositions?: Array<{ x: number; y: number }>
+  conflictPositions?: Array<{ x: number; y: number; sectionNum: number }>
 }
 
 export interface CarteState {
@@ -70,6 +71,29 @@ export interface CarteState {
   grid:   Map<string, number>
   minX: number; maxX: number
   minY: number; maxY: number
+}
+
+/**
+ * Retourne true si la section `sectionNum` a un conflit de position sur la carte.
+ * Utiliser cette fonction plutôt que d'accéder à `case.conflict` directement,
+ * car plusieurs sections peuvent partager le même objet CarteCase.
+ */
+export function sectionHasConflict(state: CarteState, sectionNum: number): boolean {
+  const c = state.cases.get(sectionNum)
+  if (!c) return false
+  return (c.conflictPositions ?? []).some(p => p.sectionNum === sectionNum)
+}
+
+/**
+ * Retourne les positions conflictuelles pour la section `sectionNum`.
+ */
+export function getSectionConflictPositions(
+  state: CarteState,
+  sectionNum: number,
+): Array<{ x: number; y: number }> {
+  const c = state.cases.get(sectionNum)
+  if (!c) return []
+  return (c.conflictPositions ?? []).filter(p => p.sectionNum === sectionNum)
 }
 
 /**
@@ -277,7 +301,7 @@ export function buildCarte(
       const existingCase = cases.get(num)
       if (existingCase && (existingCase.x !== cx || existingCase.y !== cy) && !existingCase.isPath) {
         existingCase.conflict = true
-        ;(existingCase.conflictPositions ??= []).push({ x: cx, y: cy })
+        ;(existingCase.conflictPositions ??= []).push({ x: cx, y: cy, sectionNum: num })
         console.warn(
           `[CarteEngine] Conflit de position pour §${num} : ` +
           `déjà placée en (${existingCase.x},${existingCase.y}), ` +

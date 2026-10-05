@@ -11,7 +11,7 @@
 
 import type { CarteSectionData, CarteEnv, Adventure } from '../types'
 import { CarteView } from '../ui/CarteView'
-import { buildCarte } from '../carte/CarteEngine'
+import { buildCarte, sectionHasConflict } from '../carte/CarteEngine'
 
 // ─── Listes fixes ─────────────────────────────────────────────────────────────
 
@@ -322,8 +322,8 @@ export class CarteEditorBlock {
       })
     }
     const state = buildCarte(this.options.adventure.sections)
-    // Contour jaune si au moins une case a un conflit de position
-    const hasConflict = [...state.cases.values()].some(c => c.conflict)
+    // Contour jaune si au moins une section a un conflit de position
+    const hasConflict = [...state.cases.values()].some(c => sectionHasConflict(state, c.num))
     this.carteViewEl.style.outline = hasConflict ? '3px solid #ffcc00' : ''
     this.carteViewEl.title = hasConflict
       ? '⚠ Des sections ont un conflit de position sur la carte (placées à plusieurs endroits sans !multi)'

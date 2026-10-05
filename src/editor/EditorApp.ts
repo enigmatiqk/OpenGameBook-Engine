@@ -9,7 +9,7 @@ import type { LivreData } from './LivreEditor'
 import { PersonnageEditor } from './PersonnageEditor'
 import { ReglesEditor } from './ReglesEditor'
 import type { Regles } from '../types'
-import { buildCarte } from '../carte/CarteEngine'
+import { buildCarte, sectionHasConflict, getSectionConflictPositions } from '../carte/CarteEngine'
 import type { CarteState } from '../carte/CarteEngine'
 import { extractTargets } from './SectionTargetExtractor'
 import type { SectionTarget } from './SectionTargetExtractor'
@@ -785,7 +785,7 @@ export class EditorApp {
     const rows = targets.map(t => {
       const badge = `<span class="sidebar-target-badge sidebar-target-badge--${t.badge}">${BADGE_LABEL[t.badge]}</span>`
       if (t.numero !== null) {
-        const isConflict = this.carteState?.cases.get(t.numero)?.conflict ?? false
+        const isConflict = this.carteState ? sectionHasConflict(this.carteState, t.numero) : false
         const conflictAttr = isConflict
           ? ' style="border-color:#ffcc00;color:#ffcc00" title="⚠ Conflit de position sur la carte"'
           : ''
@@ -826,7 +826,7 @@ export class EditorApp {
 
     const numsToBtnColored = (nums: number[]): string =>
       nums.map(n => {
-        const isConflict = this.carteState?.cases.get(n)?.conflict ?? false
+        const isConflict = this.carteState ? sectionHasConflict(this.carteState, n) : false
         const conflictAttr = isConflict
           ? ' style="border-color:#ffcc00;color:#ffcc00" title="⚠ Conflit de position sur la carte"'
           : ''
@@ -853,9 +853,10 @@ export class EditorApp {
           ${positions.map(p => `<span class="value" style="font-family:var(--font-mono)">${_esc(p)}</span>`).join('')}
         </div>`
 
-    const conflictHtml = c.conflict
+    const myConflictPositions = this.carteState ? getSectionConflictPositions(this.carteState, sectionNum) : []
+    const conflictHtml = myConflictPositions.length > 0
       ? `<div class="sidebar-flag" style="color:#ffcc00;border-color:#ffcc00">⚠ Conflit de position — utilisez !multi dans le chemin appelant</div>
-        ${(c.conflictPositions ?? []).map(p =>
+        ${myConflictPositions.map(p =>
           `<div class="sidebar-stat"><span class="label">Position conflictuelle</span><span class="value" style="font-family:var(--font-mono);color:#ffcc00">(${p.x}, ${p.y})</span></div>`
         ).join('')}`
       : ''
@@ -887,17 +888,22 @@ export class EditorApp {
   private _findAdjacentSections(targetNum: number, x: number, y: number): number[] {
     if (!this.carteState) return []
     const result = new Set<number>()
-    const seenNums = new Set<number>()
     const { DELTA } = { DELTA: { N:{dx:0,dy:-1}, S:{dx:0,dy:1}, E:{dx:1,dy:0}, O:{dx:-1,dy:0} } }
 
-    // Numéros qui partagent la même case (section + tous ses alias) — à exclure
+    // Numéros qui partagent la même case (section primaire + tous ses alias) — à exclure
     const targetCase = this.carteState.cases.get(targetNum)
-    const sameCase = new Set<number>([targetNum, ...(targetCase?.aliasNums ?? [])])
+    const primaryNum = targetCase?.num ?? targetNum
+    const sameCase = new Set<number>([primaryNum, ...(targetCase?.aliasNums ?? [])])
 
+    const seenPositions = new Set<string>()
     for (const c of this.carteState.cases.values()) {
-      // Déduplique : une même case peut être stockée sous plusieurs clés (aliases)
-      if (seenNums.has(c.num)) continue
-      seenNums.add(c.num)
+      // Déduplique par position : une même case peut être stockée sous plusieurs clés (aliases)
+      // On ne saute pas les cases de chemin (isPath) car elles ont des positions uniques
+      if (!c.isPath) {
+        const posKey = `${c.x},${c.y}`
+        if (seenPositions.has(posKey)) continue
+        seenPositions.add(posKey)
+      }
 
       // Exclut les cases qui partagent la même position (ne sont pas "entrantes")
       if (c.x === x && c.y === y) continue

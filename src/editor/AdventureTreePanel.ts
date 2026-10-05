@@ -19,7 +19,7 @@
  */
 
 import type { Adventure, Section, Choice, Effet, EffetItem } from '../types'
-import { buildCarte } from '../carte/CarteEngine'
+import { buildCarte, sectionHasConflict } from '../carte/CarteEngine'
 
 // ─── Définition des filtres ────────────────────────────────────────────────
 
@@ -248,8 +248,8 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   const carteState = buildCarte(adventure.sections)
   const conflictNums = new Set(
     [...carteState.cases.values()]
-      .filter(c => c.conflict)
-      .map(c => c.sectionNum),
+      .filter(c => sectionHasConflict(carteState, c.num))
+      .map(c => c.num),
   )
   const filterCtx: FilterContext = { conflictNums }
   for (const f of FILTERS) {
