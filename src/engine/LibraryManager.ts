@@ -1,4 +1,4 @@
-import type { Adventure, AdventureMetadata, ValidationResult } from '../types'
+import type { Adventure, AdventureMetadata, CarteFixe, ValidationResult } from '../types'
 
 const REQUIRED_FIELDS: (keyof Adventure)[] = [
   'titre',
@@ -79,7 +79,10 @@ export class LibraryManager {
           if (!result.valid) {
             throw new Error(`L'aventure "${fullPath}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
           }
-          return data as Adventure
+          // Tente cartefix.json même pour un full.json
+          const adv = data as Adventure
+          adv.cartefix = await this._loadCartefix(dir)
+          return adv
         }
       }
     } catch (err) {
@@ -124,7 +127,27 @@ export class LibraryManager {
       throw new Error(`L'aventure "${dir}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
     }
 
-    return data as unknown as Adventure
+    const adventure = data as unknown as Adventure
+    adventure.cartefix = await this._loadCartefix(dir)
+    return adventure
+  }
+
+  /**
+   * Charge cartefix.json depuis le répertoire de l'aventure.
+   * Retourne undefined si absent ou invalide (erreur silencieuse).
+   */
+  private async _loadCartefix(dir: string): Promise<CarteFixe | undefined> {
+    const url = dir + 'cartefix.json'
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) return undefined
+      const raw = await resp.json() as Record<string, unknown>
+      // Validation légère : on accepte tout objet avec liens?/envs? optionnels
+      if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
+      return raw as CarteFixe
+    } catch {
+      return undefined
+    }
   }
 
   /**

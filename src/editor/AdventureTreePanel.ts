@@ -42,8 +42,10 @@ interface FilterDef {
 
 /** Retourne true si la section est la section 1 ou est référencée par au moins une autre section
  *  (choix, combat, effets, actions, lancer_de… — via collectSectionRefs qui parcourt tout l'objet) */
-function isReachable(section: Section, allSections: Section[]): boolean {
+function isReachable(section: Section, allSections: Section[], cartefix?: import('../types').CarteFixe): boolean {
   if (section.numero === 1) return true
+  // Lien cartefix : la section est cible d'un lien forcé actif
+  if (cartefix?.liens?.some(l => l.source > 0 && l.cible === section.numero)) return true
   for (const s of allSections) {
     if (s.numero === section.numero) continue
     const refs = new Set<number>()
@@ -67,7 +69,7 @@ export const FILTERS: FilterDef[] = [
     label: 'Orphelins',
     emoji: '🔗',
     color: '#e91e8c',
-    match: (section, adventure) => !isReachable(section, adventure.sections),
+    match: (section, adventure) => !isReachable(section, adventure.sections, adventure.cartefix),
   },
   {
     id:    'conflits-carte',
@@ -238,7 +240,7 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   // filterData = { [filterId]: number[] }  — liste des numéros de sections matchées
   const filterData: Record<string, number[]> = {}
   // Construit le contexte carte (conflits de position + sections placées) une seule fois
-  const carteState = buildCarte(adventure.sections)
+  const carteState = buildCarte(adventure.sections, undefined, adventure.cartefix)
   const conflictNums = new Set(
     [...carteState.cases.values()]
       .filter(c => sectionHasConflict(carteState, c.num))
@@ -370,6 +372,33 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
     }
   }
 
+  // ── Arêtes forcées (cartefix.liens) ──────────────────────────────────────
+  // Dessinées en magenta tiretées pour les distinguer des arêtes normales.
+  const cartefixLiens = (adventure.cartefix?.liens ?? []).filter(
+    l => l.source > 0 && l.cible > 0,
+  )
+  for (const lien of cartefixLiens) {
+    const fp = pos.get(lien.source), tp = pos.get(lien.cible)
+    if (!fp || !tp) continue
+    const { fromSide, toSide } = dominantSides(fp, tp)
+    const a1 = anchorXY(fp, { side: fromSide, idx: 0, total: 1 })
+    const a2 = anchorXY(tp, { side: toSide,   idx: 0, total: 1 })
+    const x1 = a1.x, y1 = a1.y, x2 = a2.x, y2 = a2.y
+    const isH1 = fromSide === 'r' || fromSide === 'l'
+    const isH2 = toSide   === 'r' || toSide   === 'l'
+    let path: string
+    if (isH1 && isH2)       { const xm = Math.round((x1+x2)/2); path = `M${x1},${y1} L${xm},${y1} L${xm},${y2} L${x2},${y2}` }
+    else if (!isH1 && !isH2){ const ym = Math.round((y1+y2)/2); path = `M${x1},${y1} L${x1},${ym} L${x2},${ym} L${x2},${y2}` }
+    else if (isH1)           { path = `M${x1},${y1} L${x2},${y1} L${x2},${y2}` }
+    else                     { path = `M${x1},${y1} L${x1},${y2} L${x2},${y2}` }
+    // Arête magenta tiretée, class="edge edge-forced"
+    svgPaths.push(`<path class="edge edge-forced" data-from="${lien.source}" data-to="${lien.cible}" d="${path}" stroke="#e040fb" stroke-width="1.5" fill="none" opacity="0.6" stroke-dasharray="5,3" stroke-linejoin="round" marker-end="url(#mf)" style="pointer-events:none;transition:opacity .15s,stroke-width .15s"/>`)
+    if (lien.raison) {
+      const lx = Math.round((x1+x2)/2)+4, ly = Math.round((y1+y2)/2)-4
+      svgPaths.push(`<text x="${lx}" y="${ly}" fill="#e040fb" font-size="7" font-family="Arial" pointer-events="none" opacity="0.85">${esc(lien.raison)}</text>`)
+    }
+  }
+
   // ── Panels détail ────────────────────────────────────────────────────────
   const panels: string[] = []
   for (const s of sections) {
@@ -393,6 +422,21 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
         }).join('') + `</div>` : ''
     const endBlock = s.end
       ? `<div class="ds"><div class="dl">Fin</div><div style="color:${st.border};font-weight:bold;font-size:13px">${st.emoji} ${s.end==='victoire'?'Victoire !':'Défaite'}</div></div>` : ''
+    // Liens forcés (cartefix) impliquant cette section
+    const fixLiens = (adventure.cartefix?.liens ?? []).filter(
+      l => l.source > 0 && l.cible > 0 && (l.source === s.numero || l.cible === s.numero),
+    )
+    const fixBlock = fixLiens.length > 0
+      ? `<div class="ds"><div class="dl" style="color:#e040fb">🔧 Liens forcés (cartefix)</div>` +
+        fixLiens.map(l => {
+          const isSortant = l.source === s.numero
+          const partner   = isSortant ? l.cible : l.source
+          const arrow     = isSortant ? '→' : '←'
+          const tag       = l.carte?.chemin?.length ? ' [chemin]' : ' [brut]'
+          const raison    = l.raison ? ` — ${esc(l.raison)}` : ''
+          return `<button class="nb" data-goto="${partner}" style="border-color:#e040fb;color:#e040fb">${arrow} §${partner}${esc(tag)}${raison}</button>`
+        }).join('') + `</div>`
+      : ''
     // Bouton "Aller à cette section" (postMessage vers l'éditeur parent)
     const gotoBtn = `<button class="goto-btn" data-goto="${s.numero}" style="margin-top:8px;background:#e94560;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:11px;width:100%">📍 Aller à §${s.numero} dans l'éditeur</button>`
     panels.push(
@@ -403,7 +447,7 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
           `<div style="font-size:9px;color:#888">${st.label}</div></div>` +
         `</div>` +
         `<div class="ds"><div class="dl">Texte</div><div class="dt">${esc(s.texte)}</div></div>` +
-        itemsBlock + destButtons + callerButtons + endBlock + gotoBtn +
+        itemsBlock + destButtons + callerButtons + endBlock + fixBlock + gotoBtn +
       `</div>`
     )
   }
@@ -486,6 +530,7 @@ body{background:#0d0d1a;color:#eee;font-family:Arial,sans-serif;overflow:hidden;
   <marker id="mb" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5z" fill="#4a6fa5"/></marker>
   <marker id="mw" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5z" fill="#ffc107"/></marker>
   <marker id="mc" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5z" fill="#e91e8c"/></marker>
+  <marker id="mf" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5z" fill="#e040fb"/></marker>
 </defs>
 ${svgPaths.join('\n')}</svg></div></div>
 <div id="side">

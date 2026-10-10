@@ -70,6 +70,9 @@ export class CarteEditorBlock {
   private freeInputEl!:  HTMLInputElement
   private carteViewEl!:  HTMLElement
   private carteView: CarteView | null = null
+  private _headerEl:   HTMLElement | null = null
+  private _indicatorEl: HTMLElement | null = null
+  private _isOpen = false
 
   constructor(container: HTMLElement, options: CarteEditorBlockOptions) {
     this.container = container
@@ -88,22 +91,63 @@ export class CarteEditorBlock {
     return { ...this.data, chemin: this.data.chemin?.length ? [...this.data.chemin] : undefined }
   }
 
+  private _hasData(): boolean {
+    return !!(this.data.env || (this.data.chemin && this.data.chemin.length > 0))
+  }
+
+  private _updateHeader(isOpen: boolean): void {
+    if (!this._headerEl || !this._indicatorEl) return
+    const hasData = this._hasData()
+    this._headerEl.classList.toggle('carte-block-header--has-data', hasData)
+    this._indicatorEl.textContent = isOpen ? '▾' : (hasData ? '▸●' : '▸')
+  }
+
   // ── Construction ─────────────────────────────────────────────────────────────
 
   private _build(): void {
     this.container.innerHTML = ''
     this.container.className = 'carte-editor-block'
 
-    // ── Header ────────────────────────────────────────────────────────────────
+    // ── Header cliquable (accordéon) ──────────────────────────────────────────
     const header = document.createElement('div')
-    header.className = 'carte-block-header'
+    header.className = 'carte-block-header carte-block-header--toggle'
+    header.setAttribute('role', 'button')
+    header.tabIndex = 0
+    header.title = 'Cliquer pour déplier / replier'
+    this._headerEl = header
 
     const lbl = document.createElement('div')
     lbl.className = 'targets-block-label'
     lbl.textContent = '🗺 Carte'
+
+    const indicator = document.createElement('span')
+    indicator.className = 'carte-header-indicator'
+    this._indicatorEl = indicator
+
     header.appendChild(lbl)
+    header.appendChild(indicator)
+
+    // Corps replié par défaut
+    const body = document.createElement('div')
+    body.className = 'carte-block-body'
+    this._isOpen = false
+
+    body.style.display = 'none'
+    this._updateHeader(this._isOpen)
+
+    const toggleBody = (): void => {
+      this._isOpen = !this._isOpen
+      body.style.display = this._isOpen ? '' : 'none'
+      this._updateHeader(this._isOpen)
+    }
+
+    header.addEventListener('click', toggleBody)
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBody() }
+    })
 
     this.container.appendChild(header)
+    this.container.appendChild(body)
 
     // ── Environnement ─────────────────────────────────────────────────────────
     if (this.options.showEnv !== false) {
@@ -132,10 +176,11 @@ export class CarteEditorBlock {
         this.data.env = (envSel.value as CarteEnv) || undefined
         this._notify()
         this._refreshPreview()
+        this._updateHeader(this._isOpen)
       })
 
       envRow.append(envLbl, envSel)
-      this.container.appendChild(envRow)
+      body.appendChild(envRow)
     }
 
     // ── Chemin ────────────────────────────────────────────────────────────────
@@ -177,6 +222,7 @@ export class CarteEditorBlock {
       this._rebuildCheminList()
       this._notify()
       this._refreshPreview()
+      this._updateHeader(this._isOpen)
     })
     freeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); addFreeBtn.click() }
@@ -185,14 +231,15 @@ export class CarteEditorBlock {
     freeRow.append(freeInput, addFreeBtn)
     cheminSection.appendChild(freeRow)
 
-    this.container.appendChild(cheminSection)
+    body.appendChild(cheminSection)
 
-    // ── Aperçu carte — toujours ouvert si adventure disponible ───────────────
+    // ── Aperçu carte — toujours visible, hors de l'accordéon ─────────────────
     this.carteViewEl = document.createElement('div')
     this.carteViewEl.className = 'carte-preview-container'
     if (this.options.adventure) {
       this.carteViewEl.classList.add('carte-preview-container--open')
     }
+    this.container.appendChild(body)
     this.container.appendChild(this.carteViewEl)
     if (this.options.adventure) this._refreshPreview()
   }
@@ -236,6 +283,7 @@ export class CarteEditorBlock {
         this._rebuildCheminList()
         this._notify()
         this._refreshPreview()
+        this._updateHeader(this._isOpen)
       })
       item.appendChild(del)
 
@@ -264,6 +312,7 @@ export class CarteEditorBlock {
         this._rebuildCheminList()
         this._notify()
         this._refreshPreview()
+        this._updateHeader(this._isOpen)
       })
       this.cheminListEl.addEventListener('dragover', (e) => e.preventDefault())
 
@@ -306,6 +355,7 @@ export class CarteEditorBlock {
               this._rebuildCheminList()
               this._notify()
               this._refreshPreview()
+              this._updateHeader(this._isOpen)
             }
           })
           group.appendChild(btn)
@@ -332,7 +382,7 @@ export class CarteEditorBlock {
         showSectionNumbers: true,
       })
     }
-    const state = buildCarte(this.options.adventure.sections)
+    const state = buildCarte(this.options.adventure.sections, undefined, this.options.adventure.cartefix)
     // Contour jaune si au moins une section a un conflit de position
     const hasConflict = [...state.cases.values()].some(c => sectionHasConflict(state, c.num))
     this.carteViewEl.style.outline = hasConflict ? '3px solid #ffcc00' : ''

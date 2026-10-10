@@ -1,5 +1,5 @@
 import { LibraryManager } from '../engine/LibraryManager'
-import type { Adventure, AdventureMetadata, Section, PersonnageTemplate } from '../types'
+import type { Adventure, AdventureMetadata, Section, PersonnageTemplate, CarteFixe } from '../types'
 import { SectionEditor } from './SectionEditor'
 import { AdventureTreePanel, collectSectionRefs } from './AdventureTreePanel'
 import { CouvertureEditor } from './CouvertureEditor'
@@ -9,6 +9,7 @@ import type { LivreData } from './LivreEditor'
 import { PersonnageEditor } from './PersonnageEditor'
 import { ReglesEditor } from './ReglesEditor'
 import type { Regles } from '../types'
+import { CarteFixeEditor } from './CarteFixeEditor'
 import { buildCarte, sectionHasConflict, getSectionConflictPositions } from '../carte/CarteEngine'
 import type { CarteState } from '../carte/CarteEngine'
 import { extractTargets } from './SectionTargetExtractor'
@@ -16,7 +17,7 @@ import type { SectionTarget } from './SectionTargetExtractor'
 
 // ─── Onglets disponibles ──────────────────────────────────────────────────────
 
-type TabId = 'sections' | 'couverture' | 'livre' | 'personnage' | 'regles'
+type TabId = 'sections' | 'couverture' | 'livre' | 'personnage' | 'regles' | 'cartefix'
 
 interface Tab {
   id:    TabId
@@ -29,6 +30,7 @@ const TABS: Tab[] = [
   { id: 'couverture', label: 'Couverture',  icon: '🎭' },
   { id: 'personnage', label: 'Personnage',  icon: '🧙' },
   { id: 'regles',     label: 'Règles',      icon: '⚙️' },
+  { id: 'cartefix',   label: 'Carte Fix',   icon: '🔧' },
   { id: 'sections',   label: 'Sections',    icon: '📖' },
 ]
 
@@ -57,6 +59,7 @@ export class EditorApp {
   private dirtyLivre:      boolean = false
   private dirtyPersonnage: boolean = false
   private dirtyRegles:     boolean = false
+  private dirtyCartefix:   boolean = false
 
   // Nombre de sections individuellement modifiées (pour le badge)
   private modifiedSectionNums: Set<number> = new Set()
@@ -74,6 +77,7 @@ export class EditorApp {
   private livreEditor!:      LivreEditor
   private personnageEditor!: PersonnageEditor
   private reglesEditor!:     ReglesEditor
+  private carteFixeEditor!:  CarteFixeEditor
 
   private sectionInput!:      HTMLInputElement
   private sectionTotal!:      HTMLElement
@@ -230,11 +234,18 @@ export class EditorApp {
       onChange: () => { this._editorDirtyFlags.regles = true; this._updateDirtyButtons() },
     })
 
+    const carteFixeEl = document.createElement('div')
+    carteFixeEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
+    this.carteFixeEditor = new CarteFixeEditor(carteFixeEl, {
+      onChange: () => { this._editorDirtyFlags.cartefix = true; this._updateDirtyButtons() },
+    })
+
     // Tous les panneaux dans tabContent — ordre identique à TABS
     this.tabContentEl.appendChild(livreEl)
     this.tabContentEl.appendChild(couvertureEl)
     this.tabContentEl.appendChild(personnageEl)
     this.tabContentEl.appendChild(reglesEl)
+    this.tabContentEl.appendChild(carteFixeEl)
     this.tabContentEl.appendChild(this.sectionEditorEl)
 
     // Écouteurs toolbar
@@ -299,6 +310,7 @@ export class EditorApp {
       this.dirtyLivre          = false
       this.dirtyPersonnage     = false
       this.dirtyRegles         = false
+      this.dirtyCartefix       = false
       this.modifiedSectionNums = new Set()
       this.currentIndex        = 0
 
@@ -319,9 +331,10 @@ export class EditorApp {
       this.livreEditor.render(this.adventure)
       this.personnageEditor.render(this.adventure)
       this.reglesEditor.render(this.adventure)
+      this.carteFixeEditor.render(this.adventure)
 
       // Construit la carte pour la sidebar
-      this.carteState = buildCarte(this.adventure.sections)
+      this.carteState = buildCarte(this.adventure.sections, undefined, this.adventure.cartefix)
 
       splash.style.display = 'none'
       this.tabContentEl.style.display = 'flex'
@@ -364,7 +377,7 @@ export class EditorApp {
 
     // Affiche/cache chaque panneau via les enfants de tabContentEl (ordre = TABS)
     const panels = this.tabContentEl.children
-    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'regles', 'sections']
+    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'regles', 'cartefix', 'sections']
     panelIds.forEach((id, i) => {
       (panels[i] as HTMLElement).style.display = id === this.activeTab ? 'block' : 'none'
     })
@@ -464,6 +477,7 @@ export class EditorApp {
       case 'livre':      return this._livreHasChanges()
       case 'personnage': return this._personnageHasChanges()
       case 'regles':     return this._reglesHasChanges()
+      case 'cartefix':   return this._cartefixHasChanges()
     }
   }
 
@@ -477,6 +491,7 @@ export class EditorApp {
   private _livreHasChanges(): boolean      { return this._editorDirtyFlags.livre }
   private _personnageHasChanges(): boolean  { return this._editorDirtyFlags.personnage }
   private _reglesHasChanges(): boolean      { return this._editorDirtyFlags.regles }
+  private _cartefixHasChanges(): boolean    { return this._editorDirtyFlags.cartefix }
 
   // Flags levés par onChange des sous-éditeurs (réinitialisés au save/cancel/render)
   private _editorDirtyFlags = {
@@ -484,6 +499,7 @@ export class EditorApp {
     livre:      false,
     personnage: false,
     regles:     false,
+    cartefix:   false,
   }
 
   private _onDirtyChange(patch: Partial<Section>): void {
@@ -530,6 +546,10 @@ export class EditorApp {
         this._editorDirtyFlags.regles = false
         if (this.adventure) this.reglesEditor.render(this.adventure)
         break
+      case 'cartefix':
+        this._editorDirtyFlags.cartefix = false
+        if (this.adventure) this.carteFixeEditor.render(this.adventure)
+        break
     }
     this._updateDirtyButtons()
   }
@@ -559,6 +579,9 @@ export class EditorApp {
         break
       case 'regles':
         this._commitRegles()
+        break
+      case 'cartefix':
+        this._commitCartefix()
         break
     }
     this._updateDirtyButtons()
@@ -592,7 +615,7 @@ export class EditorApp {
     this.initialHtml = this.sectionEditor.getCurrentText()
 
     // Reconstruire la carte
-    this.carteState = buildCarte(this.adventure.sections)
+    this.carteState = buildCarte(this.adventure.sections, undefined, this.adventure.cartefix)
 
     // Mettre à jour l'aperçu carte dans l'éditeur de section
     this.sectionEditor.refreshCarte()
@@ -670,9 +693,26 @@ export class EditorApp {
     this._showToast('Règles enregistrées', 'success')
   }
 
+  private _commitCartefix(): void {
+    if (!this.adventure) return
+    const data: CarteFixe = this.carteFixeEditor.getData()
+    this.adventure.cartefix = (data.liens?.length || data.envs?.length) ? data : undefined
+
+    this._editorDirtyFlags.cartefix = false
+    this.dirtyCartefix = true
+
+    // Reconstruire la carte avec les nouvelles corrections
+    this.carteState = buildCarte(this.adventure.sections, undefined, this.adventure.cartefix)
+    this.sectionEditor.refreshCarte()
+
+    this._updateExportButton()
+    this._updateTabBadges()
+    this._showToast('Carte Fix enregistrée', 'success')
+  }
+
   private _updateExportButton(): void {
     const hasChanges = this.dirtySections || this.dirtyCouverture || this.dirtyLivre
-      || this.dirtyPersonnage || this.dirtyRegles
+      || this.dirtyPersonnage || this.dirtyRegles || this.dirtyCartefix
 
     this.btnExport.disabled = !hasChanges
 
@@ -682,6 +722,7 @@ export class EditorApp {
     if (this.dirtyLivre)      parts.push('livre')
     if (this.dirtyPersonnage) parts.push('perso')
     if (this.dirtyRegles)     parts.push('règles')
+    if (this.dirtyCartefix)   parts.push('cartefix')
 
     const verb = this.devSaveAvailable ? '💾 Sauvegarder' : '💾 Exporter'
     this.btnExport.textContent = hasChanges
@@ -698,6 +739,7 @@ export class EditorApp {
       livre:      this.dirtyLivre      ? 1 : 0,
       personnage: this.dirtyPersonnage ? 1 : 0,
       regles:     this.dirtyRegles     ? 1 : 0,
+      cartefix:   this.dirtyCartefix   ? 1 : 0,
     }
 
     this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {
@@ -870,6 +912,7 @@ export class EditorApp {
         ${posHtml}
         ${conflictHtml}
         ${c.isPath ? `<div class="sidebar-flag active">📍 Case de chemin de §${c.sectionNum}</div>` : ''}
+        ${c.envForced ? `<div class="sidebar-flag active" style="color:#e040fb;border-color:#e040fb">🔧 Env forcé (cartefix)</div>` : ''}
         ${aliasNums.length > 0 ? `
         <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
           <span class="label">Partagée avec</span>
@@ -885,6 +928,7 @@ export class EditorApp {
           <span class="label">Cases adjacentes</span>
           <div style="display:flex;flex-wrap:wrap;gap:0.25rem">${numsToBtnColored(adjacentNums)}</div>
         </div>` : ''}
+        ${this._buildCarteFixeInfos(sectionNum)}
       </div>`
   }
 
@@ -938,6 +982,42 @@ export class EditorApp {
       if (refs.has(targetNum)) result.add(s.numero)
     }
     return [...result].sort((a, b) => a - b)
+  }
+
+  /**
+   * Retourne le HTML décrivant les liens forcés (cartefix) impliquant cette section.
+   * Affiche les liens sortants (source = sectionNum) et entrants (cible = sectionNum).
+   */
+  private _buildCarteFixeInfos(sectionNum: number): string {
+    const cartefix = this.carteState?.cartefix
+    if (!cartefix) return ''
+
+    const actifs = (cartefix.liens ?? []).filter(
+      l => l.source > 0 && l.cible > 0 && (l.source === sectionNum || l.cible === sectionNum),
+    )
+    if (actifs.length === 0) return ''
+
+    const rows = actifs.map(l => {
+      const isSortant = l.source === sectionNum
+      const partner   = isSortant ? l.cible : l.source
+      const arrow     = isSortant ? '→' : '←'
+      const label     = l.raison ? ` <span style="color:var(--text-muted);font-size:0.75rem">(${_esc(l.raison)})</span>` : ''
+      const hasChemin = !!l.carte?.chemin?.length
+      const cheminBadge = hasChemin
+        ? ` <span style="font-size:0.7rem;color:#e040fb;border:1px solid #e040fb;border-radius:3px;padding:0 3px">chemin</span>`
+        : ` <span style="font-size:0.7rem;color:#90caf9;border:1px solid #90caf9;border-radius:3px;padding:0 3px">brut</span>`
+      return `<div class="sidebar-target-row">
+        <span style="color:#e040fb;font-size:0.8rem;min-width:1rem">${arrow}</span>
+        <button class="sidebar-carte-nav sidebar-carte-btn" data-section="${partner}" style="border-color:#e040fb;color:#e040fb" title="Lien forcé (cartefix)">§${partner}</button>
+        ${cheminBadge}${label}
+      </div>`
+    }).join('')
+
+    return `
+      <div class="sidebar-stat" style="flex-direction:column;gap:0.25rem;align-items:flex-start">
+        <span class="label">🔧 Liens forcés (cartefix)</span>
+        <div style="display:flex;flex-direction:column;gap:0.25rem;width:100%">${rows}</div>
+      </div>`
   }
 
   // ── Arbre ─────────────────────────────────────────────────────────────────
@@ -1048,6 +1128,10 @@ export class EditorApp {
       tasks.push(saveFile('regles.json', this.adventure.regles))
     }
 
+    if (this.dirtyCartefix) {
+      tasks.push(saveFile('cartefix.json', this.adventure.cartefix ?? {}))
+    }
+
     if (tasks.length === 0) {
       this._showToast('Aucune modification à sauvegarder', 'info')
       return
@@ -1065,6 +1149,7 @@ export class EditorApp {
       if (saved.includes('livre.json'))      this.dirtyLivre      = false
       if (saved.includes('personnage.json')) this.dirtyPersonnage = false
       if (saved.includes('regles.json'))     this.dirtyRegles     = false
+      if (saved.includes('cartefix.json'))   this.dirtyCartefix   = false
       this._updateExportButton()
       this._updateTabBadges()
     }
@@ -1133,6 +1218,12 @@ export class EditorApp {
     if (this.dirtyRegles) {
       this._download('regles.json', this.adventure.regles)
       exported.push('regles.json')
+    }
+
+    // cartefix.json
+    if (this.dirtyCartefix) {
+      this._download('cartefix.json', this.adventure.cartefix ?? {})
+      exported.push('cartefix.json')
     }
 
     if (exported.length === 0) {

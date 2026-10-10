@@ -229,7 +229,7 @@ export class GameView {
     // Construit la carte avec le fog of war (sections visitées via le journal)
     const state = this.engine.getGameState()
     const visitedNums = this._getVisitedSections()
-    const carteState = buildCarte(adventure.sections, visitedNums)
+    const carteState = buildCarte(adventure.sections, visitedNums, adventure.cartefix)
     const currentSection = this.engine.getCurrentSection()
     // Section précédente pour localiser les instances !multi :
     // avant-dernière entrée de section dans le journal du héros

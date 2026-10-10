@@ -1964,6 +1964,39 @@ html, body {
   gap: 0.75rem;
 }
 
+/* Header cliquable */
+.carte-block-header--toggle {
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius);
+  padding: 2px 4px;
+  transition: background 0.12s;
+}
+.carte-block-header--toggle:hover {
+  background: var(--bg-secondary);
+}
+
+/* Coloré quand des données carte sont présentes */
+.carte-block-header--has-data .targets-block-label {
+  color: #4fc3f7;
+}
+.carte-block-header--has-data .carte-header-indicator {
+  color: #4fc3f7;
+}
+
+.carte-header-indicator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.carte-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .carte-field-lbl {
   font-size: 0.78rem;
   color: var(--text-secondary);
@@ -2320,4 +2353,133 @@ html, body {
 .combat-event-choix-row input[type="text"] {
   flex: 1;
   min-width: 8rem;
+}
+
+/* ── CarteFixeEditor ─────────────────────────────────────────────────────── */
+
+.cartefix-editor { padding: 1.5rem 2rem; display: flex; flex-direction: column; }
+.cartefix-editor .part-form { max-width: 960px; }
+
+.cartefix-notice {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-left: 3px solid #e040fb;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  line-height: 1.5;
+}
+
+.cartefix-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cartefix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cartefix-empty {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Une entrée lien ou env = ligne principale + éventuel bloc chemin en dessous */
+.cartefix-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Ligne principale compacte */
+.cartefix-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cartefix-entry-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #e040fb;
+  min-width: 1.2rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.cartefix-inline-lbl {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cartefix-arrow {
+  font-size: 1rem;
+  color: #e040fb;
+  flex-shrink: 0;
+}
+
+.cartefix-num-input {
+  width: 64px;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.cartefix-raison-input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 240px;
+  font-size: 0.82rem;
+}
+
+.cartefix-env-sel {
+  flex-shrink: 0;
+}
+
+/* Toggle compact (🗺 chemin / zone) */
+.cartefix-toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Bloc CarteEditorBlock inséré sous la ligne lien */
+.cartefix-chemin-block {
+  margin-left: 1.8rem;
+  margin-top: 0.15rem;
+  border-left: 2px solid #e040fb44;
+  padding-left: 0.75rem;
+}
+
+/* Positions env inline */
+.cartefix-pos-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cartefix-coord-input {
+  width: 56px;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.cartefix-coord-sep {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }

@@ -258,6 +258,19 @@ export class CarteView {
     if (c.isPath && !hasSectionAtPosition) rect.setAttribute('opacity', '0.7')
     this.vpGroup.appendChild(rect)
 
+    // Env forcé (cartefix) : petit triangle magenta dans le coin haut-gauche
+    // Visible uniquement en mode éditeur (showSectionNumbers) pour ne pas polluer le jeu
+    if (c.envForced && this.options.showSectionNumbers) {
+      const tri = this._svgEl('polygon')
+      const px2 = x + 1, py2 = y + 1
+      tri.setAttribute('points', `${px2},${py2} ${px2 + 10},${py2} ${px2},${py2 + 10}`)
+      tri.setAttribute('fill', '#e040fb')
+      tri.setAttribute('opacity', '0.85')
+      tri.setAttribute('pointer-events', 'none')
+      tri.setAttribute('title', 'Env forcé (cartefix)')
+      this.vpGroup.appendChild(tri)
+    }
+
 
 
     // Numéro affiché : si joueur sur cette case → numéro de la section courante

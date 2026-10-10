@@ -589,6 +589,47 @@ export interface CarteChoixData {
   chemin: string[]
 }
 
+// ─── Carte Fix ────────────────────────────────────────────────────────────────
+
+/**
+ * Lien forcé entre deux sections : connexion non déductible du JSON des sections
+ * (kidnapping, réveil sur une case différente, saisie libre, etc.).
+ *
+ * - Sans `carte`  → lien brut (point 1) : les deux sections sont reliées sur la
+ *                   carte sans déplacement visible entre elles.
+ * - Avec `carte`  → chemin forcé (point 2) : le bloc `carte` est le même format
+ *                   que `CarteChoixData` et décrit le déplacement entre source et cible.
+ */
+export interface CarteFixeLien {
+  source:  number           // numéro de section source (valeur ≤ 0 = entrée désactivée)
+  cible:   number           // numéro de section cible
+  raison?: string           // label libre affiché dans l'éditeur
+  carte?:  CarteChoixData   // déplacement (même format que choice.carte)
+}
+
+/**
+ * Surcharge d'environnement sur une ou plusieurs cases de la carte.
+ * Prioritaire sur l'env des sections et cases de chemin.
+ *
+ * - `positions` contient 1 ou 2 entrées [x, y] :
+ *   - 1 entrée  → case unique (point 4)
+ *   - 2 entrées → rectangle défini par les 2 angles opposés (point 5)
+ */
+export interface CarteFixeEnv {
+  positions: [[number, number]] | [[number, number], [number, number]]
+  env:        CarteEnv
+}
+
+/**
+ * Fichier `cartefix.json` — corrections de carte pour une aventure.
+ * Toutes les propriétés sont optionnelles ; les entrées avec source/cible ≤ 0
+ * ou positions hors grille sont silencieusement ignorées.
+ */
+export interface CarteFixe {
+  liens?: CarteFixeLien[]
+  envs?:  CarteFixeEnv[]
+}
+
 export interface Section {
   numero: number
   texte: string
@@ -632,6 +673,7 @@ export interface Adventure {
   personnage: PersonnageTemplate
   regles: Regles
   sections: Section[]
+  cartefix?: CarteFixe    // corrections de carte (optionnel)
 }
 
 export interface AdventureMetadata {

@@ -16,7 +16,7 @@
  *   - le mur opposé (retour) est ouvert sur la case de destination
  */
 
-import type { Section, CarteEnv } from '../types'
+import type { Section, CarteEnv, CarteFixe } from '../types'
 import {
   parseChemin, premiereMoveDir, commenceParPorte, estIci,
   DELTA, OPPOSITE,
@@ -70,6 +70,11 @@ export interface CarteCase {
    * avec le numéro de section qui a déclenché le conflit.
    */
   conflictPositions?: Array<{ x: number; y: number; sectionNum: number }>
+  /**
+   * Vrai si l'environnement de cette case a été forcé par cartefix.json.
+   * L'éditeur l'affiche différemment pour signaler l'override.
+   */
+  envForced?: boolean
 }
 
 export interface CarteState {
@@ -78,6 +83,8 @@ export interface CarteState {
   grid:   Map<string, number>
   minX: number; maxX: number
   minY: number; maxY: number
+  /** Données brutes de cartefix.json — transmises pour affichage dans l'éditeur */
+  cartefix?: CarteFixe
 }
 
 /**
@@ -168,6 +175,7 @@ function applyPathSimple(
 export function buildCarte(
   sections: Section[],
   visitedNums?: Set<number>,
+  cartefix?: CarteFixe,
 ): CarteState {
   const sectionMap = new Map<number, Section>()
   for (const s of sections) sectionMap.set(s.numero, s)
@@ -777,6 +785,140 @@ export function buildCarte(
     delete c.tp
   }
 
+  // ── Liens forcés (cartefix.liens) ─────────────────────────────────────────
+  // Traités après le BFS complet : les deux sections doivent être placées.
+  // Un lien sans `carte` (point 1) : connecte visuellement source → cible sans
+  // créer de cases intermédiaires.
+  // Un lien avec `carte.chemin` (point 2) : joue processChoice depuis la position
+  // de la source, comme un choix normal.
+  if (cartefix?.liens) {
+    for (const lien of cartefix.liens) {
+      // Entrées désactivées ou invalides
+      if (!lien.source || lien.source <= 0 || !lien.cible || lien.cible <= 0) continue
+
+      const sourceCase = cases.get(lien.source)
+      if (!sourceCase) continue  // source pas encore placée — impossible de relier
+
+      if (lien.carte?.chemin?.length) {
+        // Lien avec chemin : traiter comme un choix depuis la position courante de la source
+        const px = sourceCase.endX
+        const py = sourceCase.endY
+        const curCase = cases.get(grid.get(gridKey(px, py)) ?? -Infinity) ?? sourceCase
+        // Réplique processChoice localement (on ne peut pas appeler processChoice
+        // directement depuis ici car il est dans la closure BFS — on déclenche
+        // via la queue en injectant un pseudo-item, mais c'est complexe).
+        // Solution pragmatique : on traite le chemin directement.
+        const chemin = lien.carte.chemin
+        const etapes   = parseChemin(chemin)
+        const firstDir = premiereMoveDir(chemin)
+        const isPorte  = commenceParPorte(chemin)
+        if (firstDir) {
+          const murType: MurType = isPorte ? 'porte' : 'ouvert'
+          openMur(curCase, firstDir, murType)
+
+          let x = px, y = py
+          let prevCase2 = curCase
+          let lastDir: Direction | null = null
+          let currentEnv: CarteEnv | null = curCase.env ?? null
+
+          for (const etape of etapes) {
+            if (etape.kind === 'env') {
+              if (etape.env === 'porte') continue
+              const dir2: Direction | null = lastDir
+              if (!dir2) continue
+              const { dx, dy } = DELTA[dir2]
+              if (prevCase2) openMur(prevCase2, dir2, 'ouvert')
+              x += dx; y += dy
+              const existingNum = grid.get(gridKey(x, y))
+              let terrainCase: CarteCase
+              if (existingNum !== undefined) {
+                terrainCase = cases.get(existingNum)!
+              } else {
+                const id = pathIdCounter--
+                terrainCase = getOrCreateCase(x, y, id, currentEnv, true, lien.source)
+                terrainCase.visible = terrainCase.visible || visitedNums === undefined || visitedNums.has(lien.cible)
+              }
+              if (prevCase2) {
+                if (!prevCase2.passages[dir2]) prevCase2.passages[dir2] = []
+                prevCase2.passages[dir2]!.push(etape.env)
+              }
+              openMur(terrainCase, OPPOSITE[dir2], 'ouvert')
+              prevCase2 = terrainCase
+              lastDir = dir2
+            } else if (etape.kind === 'envCase') {
+              currentEnv = etape.env
+            } else if (etape.kind === 'move') {
+              lastDir = etape.dir
+              const { dx, dy } = DELTA[etape.dir]
+              for (let i = 0; i < etape.cases; i++) {
+                if (prevCase2) openMur(prevCase2, etape.dir, murType)
+                x += dx; y += dy
+                const existingNum = grid.get(gridKey(x, y))
+                let stepCase: CarteCase | undefined
+                if (existingNum !== undefined) {
+                  stepCase = cases.get(existingNum)!
+                } else {
+                  const needsNext = i < etape.cases - 1 || etapes.slice(etapes.indexOf(etape) + 1).some(s => s.kind === 'move' || s.kind === 'env')
+                  if (needsNext) {
+                    const id = pathIdCounter--
+                    stepCase = getOrCreateCase(x, y, id, currentEnv, true, lien.source)
+                    stepCase.visible = stepCase.visible || visitedNums === undefined || visitedNums.has(lien.cible)
+                  }
+                }
+                if (stepCase) {
+                  openMur(stepCase, OPPOSITE[etape.dir], murType)
+                  prevCase2 = stepCase
+                }
+              }
+            } else if (etape.kind === 'action' && etape.action === 'retour') {
+              break
+            }
+          }
+
+          // Place la section cible à la position finale
+          const targetSection = sectionMap.get(lien.cible)
+          if (targetSection) {
+            placeSection(lien.cible, x, y, targetSection)
+            const destCase = cases.get(lien.cible) ?? (grid.get(gridKey(x, y)) !== undefined ? cases.get(grid.get(gridKey(x, y))!) : undefined)
+            if (destCase && lastDir) openMur(destCase, OPPOSITE[lastDir], murType)
+          }
+        }
+      } else {
+        // Lien brut sans chemin (point 1) : la section cible est déjà placée
+        // (ou sera placée plus tard). On tente juste de la placer si elle ne l'est pas.
+        const targetSection = sectionMap.get(lien.cible)
+        if (targetSection && !placed.has(lien.cible)) {
+          // Pas de position disponible via le BFS : on ne peut pas créer une case
+          // dans le vide. Ce lien est purement sémantique (utilisé pour l'arbre/sidebar)
+          // et n'a pas d'effet géométrique si la cible n'est pas placée par ailleurs.
+        }
+        // Si la cible est déjà placée, le lien est purement sémantique (pas de case créée) :
+        // visible dans l'éditeur/arbre via cartefix, pas sur la carte géométrique.
+      }
+    }
+  }
+
+  // ── Envs forcés (cartefix.envs) ──────────────────────────────────────────
+  // Appliqués en dernier : prioritaires sur tout env issu du BFS.
+  // 1 position  → case unique forcée
+  // 2 positions → rectangle (les 2 coins opposés définissent la zone)
+  if (cartefix?.envs) {
+    for (const envDef of cartefix.envs) {
+      if (!envDef.positions?.length || !envDef.env) continue
+      const [[x1, y1], corner2] = envDef.positions
+      const [x2, y2] = corner2 ?? [x1, y1]
+      const minXe = Math.min(x1, x2), maxXe = Math.max(x1, x2)
+      const minYe = Math.min(y1, y2), maxYe = Math.max(y1, y2)
+
+      for (const c of cases.values()) {
+        if (c.x >= minXe && c.x <= maxXe && c.y >= minYe && c.y <= maxYe) {
+          c.env      = envDef.env
+          c.envForced = true
+        }
+      }
+    }
+  }
+
   // ── Bbox ──────────────────────────────────────────────────────────────────
   let minX = 0, maxX = 0, minY = 0, maxY = 0
   for (const c of cases.values()) {
@@ -785,7 +927,7 @@ export function buildCarte(
     if (c.y < minY) minY = c.y
     if (c.y > maxY) maxY = c.y
   }
-  return { cases, grid, minX, maxX, minY, maxY }
+  return { cases, grid, minX, maxX, minY, maxY, cartefix }
 }
 
 export function updateFog(state: CarteState, visitedNums: Set<number>): void {
