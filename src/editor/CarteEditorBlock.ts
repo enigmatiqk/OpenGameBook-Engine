@@ -40,7 +40,7 @@ const ENV_LABELS: Record<CarteEnv, string> = {
 const QUICK_DIRS      = ['N', 'S', 'E', 'O', '2N', '2S', '2E', '2O', '3N', '3S', '3E', '3O']
 const QUICK_ENVS      = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte']
 const QUICK_ENV_CASES = ['#riviere', '#lac', '#foret', '#montagne', '#grotte', '#marais', '#plaine', '#village', '#route', '#mer', '#trou']
-const QUICK_ACTS      = ['!ici', '!retour']
+const QUICK_ACTS      = ['!ici', '!multi', '!retour', '!tp:']
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -53,6 +53,8 @@ export interface CarteEditorBlockOptions {
   adventure?: Adventure
   /** Numéro de la section courante (pour la surbrillance dans l'aperçu) */
   sectionNum?: number
+  /** Section précédente, pour localiser les instances !multi dans l'aperçu */
+  prevSection?: number
   /** Afficher le sélecteur d'environnement (défaut: true). False pour les choix/outcomes. */
   showEnv?: boolean
 }
@@ -65,6 +67,7 @@ export class CarteEditorBlock {
   private data:      CarteSectionData
 
   private cheminListEl!: HTMLElement
+  private freeInputEl!:  HTMLInputElement
   private carteViewEl!:  HTMLElement
   private carteView: CarteView | null = null
 
@@ -161,6 +164,7 @@ export class CarteEditorBlock {
     freeInput.className = 'part-field-input'
     freeInput.placeholder = 'ex: 2N, @porte, #riviere, !retour'
     freeInput.style.flex = '1'
+    this.freeInputEl = freeInput
 
     const addFreeBtn = document.createElement('button')
     addFreeBtn.type = 'button'; addFreeBtn.className = 'btn btn-ghost btn-sm'
@@ -293,10 +297,16 @@ export class CarteEditorBlock {
           btn.textContent = s
           btn.title = s
           btn.addEventListener('click', () => {
-            ;(this.data.chemin ??= []).push(s)
-            this._rebuildCheminList()
-            this._notify()
-            this._refreshPreview()
+            if (s.endsWith(':')) {
+              // Valeur incomplète : copier dans le champ libre pour que l'utilisateur complète
+              this.freeInputEl.value = s
+              this.freeInputEl.focus()
+            } else {
+              ;(this.data.chemin ??= []).push(s)
+              this._rebuildCheminList()
+              this._notify()
+              this._refreshPreview()
+            }
           })
           group.appendChild(btn)
         }
@@ -318,6 +328,7 @@ export class CarteEditorBlock {
       this.carteView = new CarteView(this.carteViewEl, {
         showAll: true,
         currentSection: this.options.sectionNum,
+        prevSection: this.options.prevSection,
         showSectionNumbers: true,
       })
     }

@@ -27,6 +27,8 @@ import { buildCarte, sectionHasConflict } from '../carte/CarteEngine'
 export interface FilterContext {
   /** Numéros de sections ayant un conflit de position sur la carte */
   conflictNums?: Set<number>
+  /** Numéros de sections placées sur la carte (via leur propre chemin OU via un choix entrant) */
+  placedNums?: Set<number>
 }
 
 interface FilterDef {
@@ -37,15 +39,6 @@ interface FilterDef {
   match: (section: Section, adventure: Adventure, ctx?: FilterContext) => boolean
 }
 
-/** Retourne true si la section ou au moins un de ses choix a un chemin carte défini */
-function hasCarte(section: Section): boolean {
-  if (section.carte?.chemin && section.carte.chemin.length > 0) return true
-  if (section.carte?.env) return true
-  for (const c of section.choix ?? []) {
-    if (c.carte?.chemin && c.carte.chemin.length > 0) return true
-  }
-  return false
-}
 
 /** Retourne true si la section est la section 1 ou est référencée par au moins une autre section
  *  (choix, combat, effets, actions, lancer_de… — via collectSectionRefs qui parcourt tout l'objet) */
@@ -67,7 +60,7 @@ export const FILTERS: FilterDef[] = [
     label: 'Sans carte/chemin',
     emoji: '🗺',
     color: '#ff9800',
-    match: (section) => !hasCarte(section),
+    match: (section, _adventure, ctx) => !(ctx?.placedNums?.has(section.numero) ?? false),
   },
   {
     id:    'orphelins',
@@ -244,14 +237,47 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   // ── Calcul des sets de filtres (côté TS, sérialisés en JSON) ─────────────
   // filterData = { [filterId]: number[] }  — liste des numéros de sections matchées
   const filterData: Record<string, number[]> = {}
-  // Construit le contexte carte (conflits de position) une seule fois
+  // Construit le contexte carte (conflits de position + sections placées) une seule fois
   const carteState = buildCarte(adventure.sections)
   const conflictNums = new Set(
     [...carteState.cases.values()]
       .filter(c => sectionHasConflict(carteState, c.num))
       .map(c => c.num),
   )
-  const filterCtx: FilterContext = { conflictNums }
+  // Une section est "placée" si elle apparaît dans carteState (via son propre chemin ou un choix entrant)
+  // On collecte les sectionNum des cases non-chemin (sections réelles placées)
+  const placedNums = new Set<number>()
+  for (const c of carteState.cases.values()) {
+    if (!c.isPath) placedNums.add(c.sectionNum)
+  }
+  // On ajoute aussi les sections qui ont des sorties cartographiées (choix, combat, actions)
+  // mais PAS section.carte (chemin de déplacement de la section elle-même — non pertinent ici)
+  for (const s of adventure.sections) {
+    // Choix avec chemin carte
+    if ((s.choix ?? []).some(c => c.carte?.chemin?.length)) { placedNums.add(s.numero); continue }
+    // Outcomes de combat avec chemin carte (global + phases)
+    const combatOutcomes = [
+      s.combat?.victoire, s.combat?.fuite, s.combat?.mort,
+      ...(s.combat?.phases ?? []).flatMap(p => [p.victoire, p.fuite, p.mort]),
+    ]
+    if (combatOutcomes.some(o => o?.carte?.chemin?.length)) { placedNums.add(s.numero); continue }
+    // Actions (si_reussi / si_echoue / lancer_de) avec chemin carte
+    for (const c of s.choix ?? []) {
+      const action = c.action as Record<string, unknown> | undefined
+      if (!action || typeof action === 'string') continue
+      const regle = action as { si_reussi?: { carte?: { chemin?: string[] } }; si_echoue?: { carte?: { chemin?: string[] } } }
+      if (regle.si_reussi?.carte?.chemin?.length || regle.si_echoue?.carte?.chemin?.length) {
+        placedNums.add(s.numero); break
+      }
+      const ld = action as { type?: string; lancer_de?: { resultats?: Record<string, { carte?: { chemin?: string[] } }> } }
+      if (ld.type === 'lancer_de' && ld.lancer_de?.resultats) {
+        if (Object.values(ld.lancer_de.resultats).some(r => r.carte?.chemin?.length)) {
+          placedNums.add(s.numero); break
+        }
+      }
+    }
+  }
+  const filterCtx: FilterContext = { conflictNums, placedNums }
   for (const f of FILTERS) {
     filterData[f.id] = sections.filter(s => f.match(s, adventure, filterCtx)).map(s => s.numero)
   }

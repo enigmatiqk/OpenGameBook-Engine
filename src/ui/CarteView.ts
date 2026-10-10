@@ -69,12 +69,14 @@ export class CarteView {
   private container: HTMLElement
   private options:   CarteViewOptions
 
-  private vpGroup!: SVGGElement
-  private innerEl!: HTMLElement   // groupe zoomable/pannable
+  private vpGroup!:   SVGGElement
+  private innerEl!:   HTMLElement
+  private zoomLabel!: HTMLElement
 
   private scale = 1
   private panX  = 0
   private panY  = 0
+  private baseScale = 1  // scale de référence (vue d'ensemble) = 100%
 
   private state: CarteState | null = null
 
@@ -119,7 +121,9 @@ export class CarteView {
     const { minX, maxX, minY, maxY } = this.state!
     const mapW = (maxX - minX + 1) * STEP + PAD * 2
     const mapH = (maxY - minY + 1) * STEP + PAD * 2
-    this.scale = Math.min(2, Math.min(rect.width / mapW, rect.height / mapH) * 1.5)
+    void mapW; void mapH
+    this.scale = 1.5
+    this.baseScale = 1.5
     const caseCx = PAD + c.x * STEP + CELL / 2
     const caseCy = PAD - c.y * STEP + CELL / 2
     this.panX = rect.width  / 2 - caseCx * this.scale
@@ -162,6 +166,19 @@ export class CarteView {
     this.vpGroup = vp
     this.innerEl = inner
     inner.appendChild(svg)
+
+    // Badge zoom — positionné en haut à droite
+    const zoomLabel = document.createElement('div')
+    zoomLabel.style.cssText = [
+      'position:absolute', 'top:6px', 'right:8px',
+      'font-size:11px', 'font-family:var(--font-mono,monospace)',
+      'color:rgba(255,255,255,0.55)', 'background:rgba(0,0,0,0.45)',
+      'padding:2px 6px', 'border-radius:4px',
+      'pointer-events:none', 'user-select:none', 'z-index:10',
+    ].join(';')
+    zoomLabel.textContent = '100%'
+    inner.appendChild(zoomLabel)
+    this.zoomLabel = zoomLabel
 
     this._attachZoomPan(inner)
   }
@@ -459,6 +476,7 @@ export class CarteView {
       'transform',
       `translate(${this.panX},${this.panY}) scale(${this.scale})`,
     )
+    this.zoomLabel.textContent = `${Math.round((this.scale / this.baseScale) * 100)}%`
   }
 
   private _centerView(): void {
@@ -469,11 +487,13 @@ export class CarteView {
       return
     }
     const { minX, maxX, minY, maxY } = this.state
-    const mapW = (maxX - minX + 1) * STEP + PAD * 2
-    const mapH = (maxY - minY + 1) * STEP + PAD * 2
-    this.scale = Math.min(1.5, Math.min(rect.width / mapW, rect.height / mapH))
-    this.panX  = (rect.width  - mapW * this.scale) / 2
-    this.panY  = (rect.height - mapH * this.scale) / 2
+    // Centre sur le milieu de la carte à scale fixe 1.5
+    this.scale = 1.5
+    this.baseScale = 1.5
+    const mapCx = PAD + ((minX + maxX) / 2) * STEP + CELL / 2
+    const mapCy = PAD - ((minY + maxY) / 2) * STEP + CELL / 2
+    this.panX = rect.width  / 2 - mapCx * this.scale
+    this.panY = rect.height / 2 - mapCy * this.scale
     this._applyTransform()
   }
 

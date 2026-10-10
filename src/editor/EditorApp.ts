@@ -42,6 +42,7 @@ export class EditorApp {
   private adventure: Adventure | null = null
   private sortedSections: Section[] = []
   private currentIndex = 0
+  private prevSectionNum: number | undefined = undefined
   private activeTab: TabId = 'sections'
 
   // ── Dirty state ────────────────────────────────────────────────────────────
@@ -385,6 +386,7 @@ export class EditorApp {
     const next = this.currentIndex + delta
     if (next < 0 || next >= this.sortedSections.length) return
     if (!await this._guardDirty()) return
+    this.prevSectionNum = this.sortedSections[this.currentIndex]?.numero
     this.currentIndex = next
     this._renderSection()
   }
@@ -405,6 +407,7 @@ export class EditorApp {
       this.sectionInput.value = String(this.sortedSections[this.currentIndex]?.numero ?? 1)
       return
     }
+    this.prevSectionNum = this.sortedSections[this.currentIndex]?.numero
     this.currentIndex = idx
     this._renderSection()
   }
@@ -441,7 +444,7 @@ export class EditorApp {
     this.btnNext.disabled   = this.currentIndex === this.sortedSections.length - 1
 
     const imageBaseUrl = this.adventure.repertoire_images ?? ''
-    this.sectionEditor.render(section, imageBaseUrl, this.adventure)
+    this.sectionEditor.render(section, imageBaseUrl, this.adventure, this.prevSectionNum)
     this.initialHtml = this.sectionEditor.getCurrentText()
 
     this._updateDirtyButtons()

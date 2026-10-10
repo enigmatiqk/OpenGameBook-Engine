@@ -185,21 +185,21 @@ export class CombatEditor {
     const cv = c as unknown as Record<string, { section?: unknown; carte?: { chemin?: string[] } }>
 
     outSection.appendChild(this._destBlock(
-      '🏆 Victoire → §', resolveRef(c.victoire?.section),
+      '🏆 Victoire → §', c.victoire?.section,
       () => (cv['victoire'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
-      n => { c.victoire = n ? { ...c.victoire, section: n } : undefined; this._notify() },
+      n => { c.victoire = n !== undefined ? { ...c.victoire, section: n } : undefined; this._notify() },
       ch => { if (c.victoire) (cv['victoire'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
     ))
     outSection.appendChild(this._destBlock(
-      '🏃 Fuite → §', resolveRef(c.fuite?.section),
+      '🏃 Fuite → §', c.fuite?.section,
       () => (cv['fuite'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
-      n => { c.fuite = n ? { ...c.fuite, section: n } : undefined; this._notify() },
+      n => { c.fuite = n !== undefined ? { ...c.fuite, section: n } : undefined; this._notify() },
       ch => { if (c.fuite) (cv['fuite'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
     ))
     outSection.appendChild(this._destBlock(
-      '💀 Mort → §', resolveRef(c.mort?.section),
+      '💀 Mort → §', c.mort?.section,
       () => (cv['mort'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,
-      n => { c.mort = n ? { ...c.mort, section: n } : undefined; this._notify() },
+      n => { c.mort = n !== undefined ? { ...c.mort, section: n } : undefined; this._notify() },
       ch => { if (c.mort) (cv['mort'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
     ))
 
@@ -923,7 +923,7 @@ export class CombatEditor {
 
   private _destBlock(
     label: string,
-    value: number,
+    value: import('../types').SectionRef | undefined,
     getCarte: () => string[] | undefined,
     onChangeNum: (n: number | undefined) => void,
     onChangeCarte: (chemin: string[] | undefined) => void,
@@ -938,14 +938,28 @@ export class CombatEditor {
     const lbl = document.createElement('span')
     lbl.className = 'combat-dest-lbl'; lbl.textContent = label
 
-    const input = document.createElement('input')
-    input.type = 'number'; input.className = 'cpm-input-number'
-    input.min = '0'; input.placeholder = '—'
-    if (value > 0) input.value = String(value)
-    input.addEventListener('input', () => {
-      const n = parseInt(input.value, 10)
-      onChangeNum(isNaN(n) || n <= 0 ? undefined : n)
-    })
+    const isParam = value !== undefined && typeof value !== 'number'
+
+    if (isParam) {
+      // Destination paramétrique {param: string} — affichage readonly, pas d'écrasement possible
+      const badge = document.createElement('span')
+      badge.className = 'cpm-input-text'
+      badge.style.cssText = 'opacity:0.7;font-family:var(--font-mono);font-size:0.85em;padding:2px 6px;border:1px solid var(--border);border-radius:4px;'
+      badge.textContent = `{${(value as { param: string }).param}}`
+      badge.title = 'Destination paramétrique — définie par la section appelante via section_params'
+      mainRow.append(lbl, badge)
+    } else {
+      const numValue = typeof value === 'number' ? value : 0
+      const input = document.createElement('input')
+      input.type = 'number'; input.className = 'cpm-input-number'
+      input.min = '0'; input.placeholder = '—'
+      if (numValue > 0) input.value = String(numValue)
+      input.addEventListener('input', () => {
+        const n = parseInt(input.value, 10)
+        onChangeNum(isNaN(n) || n <= 0 ? undefined : n)
+      })
+      mainRow.append(lbl, input)
+    }
 
     // Bouton toggle carte
     const carteToggle = document.createElement('button')
@@ -962,7 +976,7 @@ export class CombatEditor {
     }
     updateToggle()
 
-    mainRow.append(lbl, input, carteToggle)
+    mainRow.append(carteToggle)
     wrap.appendChild(mainRow)
 
     // ── Bloc carte collapsible ────────────────────────────────────────────────

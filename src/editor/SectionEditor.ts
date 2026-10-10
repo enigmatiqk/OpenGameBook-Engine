@@ -34,7 +34,7 @@ export class SectionEditor {
 
   // ── API publique ─────────────────────────────────────────────────────────────
 
-  render(section: Section, imageBaseUrl: string, adventure?: Adventure): void {
+  render(section: Section, imageBaseUrl: string, adventure?: Adventure, prevSection?: number): void {
     this.imageDataUrls = {}
     this.container.innerHTML = ''
     this.container.className = 'section-editor'
@@ -98,6 +98,7 @@ export class SectionEditor {
       onChange:   (carte) => this.options.onCarteChange(carte),
       adventure:  adventure,
       sectionNum: section.numero,
+      prevSection,
     })
     leftCol.appendChild(carteEl)
 
