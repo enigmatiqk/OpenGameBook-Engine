@@ -36,3 +36,7 @@ Thumbs.db
 .env.local
 test-results/.last-run.json
 graphify-out/cache
+ia
+old
+scannerPDF
+scripts
