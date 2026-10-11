@@ -919,6 +919,8 @@ export function buildCarte(
               const id = pathIdCounter--
               const ghost = getOrCreateCase(cx, cy, id, envDef.env, true)
               ghost.visible = true
+              // Cases décoratives : pas de murs (elles ne font pas partie du graphe de navigation)
+              ghost.murs = { N: 'ouvert', S: 'ouvert', E: 'ouvert', O: 'ouvert' }
             }
           }
         }
