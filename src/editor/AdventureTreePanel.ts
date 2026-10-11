@@ -48,10 +48,21 @@ function isReachable(section: Section, allSections: Section[], cartefix?: import
   if (cartefix?.liens?.some(l => l.source > 0 && l.cible === section.numero)) return true
   for (const s of allSections) {
     if (s.numero === section.numero) continue
+    // Refs directes (nombres)
     const refs = new Set<number>()
     collectSectionRefs(s, refs)
-    refs.delete(s.numero) // ne pas compter la section elle-même
+    refs.delete(s.numero)
     if (refs.has(section.numero)) return true
+    // Refs paramétriques : choix avec section_params appelant une section qui résout vers section.numero
+    for (const ch of s.choix ?? []) {
+      if (!ch.section_params) continue
+      const cibleNum = typeof ch.section === 'number' ? ch.section : null
+      if (!cibleNum) continue
+      const cibleSection = allSections.find(sec => sec.numero === cibleNum)
+      if (!cibleSection) continue
+      const resolved = resolveParamRefs(cibleSection, ch.section_params)
+      if (resolved.includes(section.numero)) return true
+    }
   }
   return false
 }
@@ -169,20 +180,104 @@ function combatTargets(s: Section): number[] {
   return [...new Set(t)]
 }
 
-interface Edge { from: number; to: number; cond: boolean; combat: boolean; items: string[] }
+interface Edge { from: number; to: number; cond: boolean; combat: boolean; forced: boolean; raison?: string; items: string[] }
+
+/**
+ * Extrait les cibles !tp:<num> depuis tous les chemins d'une section.
+ */
+function extractTpTargets(s: Section): number[] {
+  const result = new Set<number>()
+  for (const step of s.carte?.chemin ?? []) {
+    const m = /^!tp:(\d+)$/.exec(step.trim())
+    if (m) result.add(parseInt(m[1], 10))
+  }
+  for (const ch of s.choix ?? []) {
+    for (const step of ch.carte?.chemin ?? []) {
+      const m = /^!tp:(\d+)$/.exec(step.trim())
+      if (m) result.add(parseInt(m[1], 10))
+    }
+  }
+  return [...result]
+}
+
+/**
+ * Résout toutes les SectionRef paramétriques ({ param }) dans un objet
+ * en les substituant par leur valeur depuis sectionParams.
+ */
+function resolveParamRefs(obj: unknown, sectionParams: Record<string, number>): number[] {
+  const result: number[] = []
+  const walk = (o: unknown): void => {
+    if (!o || typeof o !== 'object') return
+    if (Array.isArray(o)) { for (const item of o) walk(item); return }
+    const rec = o as Record<string, unknown>
+    for (const [key, val] of Object.entries(rec)) {
+      if (key === 'section' && val !== null && typeof val === 'object' && 'param' in val) {
+        const paramName = (val as { param: string }).param
+        const resolved = sectionParams[paramName]
+        if (typeof resolved === 'number' && resolved > 0) result.push(resolved)
+      } else {
+        walk(val)
+      }
+    }
+  }
+  walk(obj)
+  return result
+}
 
 function buildEdges(adventure: Adventure): Edge[] {
   const nums = new Set(adventure.sections.map(s => s.numero))
+  const sectionMap = new Map(adventure.sections.map(s => [s.numero, s]))
   const edges: Edge[] = []
+  // Déduplique : évite d'ajouter deux fois la même arête from→to
+  const seen = new Set<string>()
+  const addEdge = (e: Edge): void => {
+    const key = `${e.from}>${e.to}`
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push(e)
+  }
+
   for (const s of adventure.sections) {
+    // Cibles normales (choix, combat, actions…)
     const targets = allTargetsFromSection(s).filter(t => nums.has(t))
     for (const t of targets) {
       const fromCombat = !!s.combat && combatTargets(s).includes(t)
       const fromCond = !fromCombat && (s.choix ?? []).some(ch => !ch.local && ch.condition && choiceTargets(ch).includes(t))
       const items = (s.choix ?? []).filter(ch => !ch.local && choiceTargets(ch).includes(t)).flatMap(ch => itemsFromChoice(ch))
-      edges.push({ from: s.numero, to: t, cond: fromCond, combat: fromCombat, items })
+      addEdge({ from: s.numero, to: t, cond: fromCond, combat: fromCombat, forced: false, items })
+    }
+
+    // !tp: — arête directe source → tp_target
+    for (const t of extractTpTargets(s)) {
+      if (nums.has(t)) addEdge({ from: s.numero, to: t, cond: false, combat: false, forced: false, items: [] })
+    }
+
+    // !multi avec section_params : source → cible (déjà dans targets), puis cible → résolu
+    // Pour chaque choix avec section_params, on parcourt la section cible et résout ses { param }
+    // dans le contexte des section_params fournis par l'appelant.
+    // Ex : §234 → §161 avec params { section_victoire: 43 }
+    //      §161.combat.victoire.section = { param: "section_victoire" } → résout en 43
+    //      → on ajoute §161 → §43
+    for (const ch of s.choix ?? []) {
+      if (!ch.section_params) continue
+      const cibleNum = typeof ch.section === 'number' ? ch.section : null
+      if (!cibleNum || !nums.has(cibleNum)) continue
+      const cibleSection = sectionMap.get(cibleNum)
+      if (!cibleSection) continue
+      const resolved = resolveParamRefs(cibleSection, ch.section_params)
+      for (const r of resolved) {
+        if (nums.has(r)) addEdge({ from: cibleNum, to: r, cond: false, combat: false, forced: false, items: [] })
+      }
     }
   }
+
+  // Liens forcés (cartefix.liens) — arête distincte (forced: true)
+  for (const lien of adventure.cartefix?.liens ?? []) {
+    if (lien.source <= 0 || lien.cible <= 0) continue
+    if (!nums.has(lien.source) || !nums.has(lien.cible)) continue
+    addEdge({ from: lien.source, to: lien.cible, cond: false, combat: false, forced: true, raison: lien.raison, items: [] })
+  }
+
   return edges
 }
 
@@ -362,40 +457,18 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
     else if (!isH1 && !isH2) { const ym = Math.round((y1+y2)/2); path = `M${x1},${y1} L${x1},${ym} L${x2},${ym} L${x2},${y2}` }
     else if (isH1) { path = `M${x1},${y1} L${x2},${y1} L${x2},${y2}` }
     else { path = `M${x1},${y1} L${x1},${y2} L${x2},${y2}` }
-    const color = e.combat ? '#e91e8c' : e.cond ? '#ffc107' : '#4a6fa5'
-    const marker = e.combat ? 'mc' : e.cond ? 'mw' : 'mb'
+    const color = e.forced ? '#e040fb' : (e.combat ? '#e91e8c' : e.cond ? '#ffc107' : '#4a6fa5')
+    const marker = e.forced ? 'mf' : (e.combat ? 'mc' : e.cond ? 'mw' : 'mb')
+    const dash = e.forced ? ' stroke-dasharray="5,3"' : ''
     svgPaths.push(`<path class="edge-hit" data-from="${e.from}" data-to="${e.to}" d="${path}" stroke="transparent" stroke-width="12" fill="none" style="cursor:default;pointer-events:none"/>`)
-    svgPaths.push(`<path id="e${e.from}-${e.to}" class="edge" data-from="${e.from}" data-to="${e.to}" d="${path}" stroke="${color}" stroke-width="1.2" fill="none" opacity="0.45" stroke-linejoin="round" marker-end="url(#${marker})" style="pointer-events:none;transition:opacity .15s,stroke-width .15s"/>`)
+    svgPaths.push(`<path id="e${e.from}-${e.to}" class="edge${e.forced ? ' edge-forced' : ''}" data-from="${e.from}" data-to="${e.to}" d="${path}" stroke="${color}" stroke-width="1.2" fill="none" opacity="0.45" stroke-linejoin="round" marker-end="url(#${marker})"${dash} style="pointer-events:none;transition:opacity .15s,stroke-width .15s"/>`)
     if (e.items.length > 0) {
       const lx = Math.round((x1+x2)/2)+4, ly = Math.round((y1+y2)/2)-4
       svgPaths.push(`<text x="${lx}" y="${ly}" fill="#a5d6a7" font-size="7" font-family="Arial" pointer-events="none">${esc(e.items[0])}</text>`)
     }
-  }
-
-  // ── Arêtes forcées (cartefix.liens) ──────────────────────────────────────
-  // Dessinées en magenta tiretées pour les distinguer des arêtes normales.
-  const cartefixLiens = (adventure.cartefix?.liens ?? []).filter(
-    l => l.source > 0 && l.cible > 0,
-  )
-  for (const lien of cartefixLiens) {
-    const fp = pos.get(lien.source), tp = pos.get(lien.cible)
-    if (!fp || !tp) continue
-    const { fromSide, toSide } = dominantSides(fp, tp)
-    const a1 = anchorXY(fp, { side: fromSide, idx: 0, total: 1 })
-    const a2 = anchorXY(tp, { side: toSide,   idx: 0, total: 1 })
-    const x1 = a1.x, y1 = a1.y, x2 = a2.x, y2 = a2.y
-    const isH1 = fromSide === 'r' || fromSide === 'l'
-    const isH2 = toSide   === 'r' || toSide   === 'l'
-    let path: string
-    if (isH1 && isH2)       { const xm = Math.round((x1+x2)/2); path = `M${x1},${y1} L${xm},${y1} L${xm},${y2} L${x2},${y2}` }
-    else if (!isH1 && !isH2){ const ym = Math.round((y1+y2)/2); path = `M${x1},${y1} L${x1},${ym} L${x2},${ym} L${x2},${y2}` }
-    else if (isH1)           { path = `M${x1},${y1} L${x2},${y1} L${x2},${y2}` }
-    else                     { path = `M${x1},${y1} L${x1},${y2} L${x2},${y2}` }
-    // Arête magenta tiretée, class="edge edge-forced"
-    svgPaths.push(`<path class="edge edge-forced" data-from="${lien.source}" data-to="${lien.cible}" d="${path}" stroke="#e040fb" stroke-width="1.5" fill="none" opacity="0.6" stroke-dasharray="5,3" stroke-linejoin="round" marker-end="url(#mf)" style="pointer-events:none;transition:opacity .15s,stroke-width .15s"/>`)
-    if (lien.raison) {
+    if (e.forced && e.raison) {
       const lx = Math.round((x1+x2)/2)+4, ly = Math.round((y1+y2)/2)-4
-      svgPaths.push(`<text x="${lx}" y="${ly}" fill="#e040fb" font-size="7" font-family="Arial" pointer-events="none" opacity="0.85">${esc(lien.raison)}</text>`)
+      svgPaths.push(`<text x="${lx}" y="${ly}" fill="#e040fb" font-size="7" font-family="Arial" pointer-events="none" opacity="0.85">${esc(e.raison)}</text>`)
     }
   }
 
@@ -559,19 +632,41 @@ ${svgPaths.join('\n')}</svg></div></div>
   var FILTER_META=${JSON.stringify(FILTERS.map(f => ({ id: f.id, label: f.label, emoji: f.emoji, color: f.color })))};
 
   // ── Zoom / pan ─────────────────────────────────────────────────────────
-  function setScale(s,px,py){
-    var prev=sc; sc=Math.max(0.08,Math.min(4,s));
-    if(px!==undefined){outer.scrollLeft+=px*(sc-prev);outer.scrollTop+=py*(sc-prev);}
-    vp.style.transform='scale('+sc+')';
-    vp.style.width=(TW*sc)+'px'; vp.style.height=(TH*sc)+'px';
+  var panX=0,panY=0;
+  function applyTransform(){
+    vp.style.transform='translate('+panX+'px,'+panY+'px) scale('+sc+')';
+    vp.style.transformOrigin='0 0';
+    vp.style.width=TW+'px'; vp.style.height=TH+'px';
     zlvl.textContent=Math.round(sc*100)+'%';
   }
-  window.zoomBy=function(d){var r=outer.getBoundingClientRect();setScale(sc+d,(outer.scrollLeft+r.width/2)/sc,(outer.scrollTop+r.height/2)/sc);};
-  window.resetView=function(){setScale(0.65);outer.scrollLeft=0;outer.scrollTop=0;};
+  function setScale(s,cx,cy){
+    // cx,cy : coordonnées dans l'espace viewport (pixels écran depuis le coin de #outer)
+    var prev=sc; sc=Math.max(0.08,Math.min(4,s));
+    if(cx!==undefined){
+      panX=cx-(cx-panX)*(sc/prev);
+      panY=cy-(cy-panY)*(sc/prev);
+    }
+    applyTransform();
+  }
+  window.zoomBy=function(d){var r=outer.getBoundingClientRect();setScale(sc+d,r.width/2,r.height/2);};
+  window.resetView=function(){sc=0.65;panX=0;panY=0;applyTransform();};
   outer.addEventListener('wheel',function(e){
-    e.preventDefault();var r=outer.getBoundingClientRect();
-    setScale(sc*(e.deltaY<0?1.1:0.9),(e.clientX-r.left+outer.scrollLeft)/sc,(e.clientY-r.top+outer.scrollTop)/sc);
+    var r=outer.getBoundingClientRect();
+    if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+    e.preventDefault();
+    setScale(sc*(e.deltaY<0?1.1:0.9),e.clientX-r.left,e.clientY-r.top);
   },{passive:false});
+  // drag to pan
+  var drag=false,sx=0,sy=0,spx=0,spy=0;
+  outer.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    if(e.target.closest&&e.target.closest('.nd'))return;
+    if(e.target.classList&&e.target.classList.contains('edge-hit'))return;
+    drag=true;outer.classList.add('drag');sx=e.clientX;sy=e.clientY;spx=panX;spy=panY;
+  });
+  document.addEventListener('mousemove',function(e){if(!drag)return;panX=spx+(e.clientX-sx);panY=spy+(e.clientY-sy);applyTransform();});
+  document.addEventListener('mouseup',function(){drag=false;outer.classList.remove('drag');});
+  sc=0.65; applyTransform();
   setScale(0.65);
 
   // ── Gestion du panneau detail/filtre ──────────────────────────────────
@@ -684,8 +779,10 @@ ${svgPaths.join('\n')}</svg></div></div>
     if(nd){
       nd.classList.add('hl');
       var r=outer.getBoundingClientRect();
-      outer.scrollLeft=nd.offsetLeft*sc-r.width/2+NW*sc/2;
-      outer.scrollTop=nd.offsetTop*sc-r.height/2+NH*sc/2;
+      // Centrage en pan (translate) plutôt que scroll
+      panX=r.width/2  - (nd.offsetLeft + NW/2)*sc;
+      panY=r.height/2 - (nd.offsetTop  + NH/2)*sc;
+      applyTransform();
     }
     document.querySelectorAll('.edge').forEach(function(path){
       var from=+path.dataset.from,to=+path.dataset.to;
@@ -733,16 +830,6 @@ ${svgPaths.join('\n')}</svg></div></div>
     var v=+this.value.replace(/\\D/g,'');
     if(v&&document.getElementById('n'+v))show(v);
   });
-
-  // ── Drag to pan ────────────────────────────────────────────────────────
-  var drag=false,sx=0,sy=0,sl=0,st2=0;
-  outer.addEventListener('mousedown',function(e){
-    if(e.target.closest&&e.target.closest('.nd'))return;
-    if(e.target.classList&&e.target.classList.contains('edge-hit'))return;
-    drag=true;outer.classList.add('drag');sx=e.clientX;sy=e.clientY;sl=outer.scrollLeft;st2=outer.scrollTop;
-  });
-  document.addEventListener('mousemove',function(e){if(!drag)return;outer.scrollLeft=sl-(e.clientX-sx);outer.scrollTop=st2-(e.clientY-sy);});
-  document.addEventListener('mouseup',function(){drag=false;outer.classList.remove('drag');});
 
   // ── Afficher la section initiale ───────────────────────────────────────
   var init=${initialSection};

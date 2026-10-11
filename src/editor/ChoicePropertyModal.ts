@@ -788,14 +788,7 @@ export class ChoicePropertyModal {
         row.appendChild(mainRow)
 
         // ── Carte (chemin) optionnel ───────────────────────────────────────
-        const hasCarteInitially = !!(outcome.carte?.chemin?.length)
-        const carteToggle = document.createElement('button')
-        carteToggle.type = 'button'
-        carteToggle.className = 'cpm-ld-toggle-btn' + (hasCarteInitially ? ' active' : '')
-        carteToggle.textContent = hasCarteInitially ? '🗺 Carte ▲' : '🗺 Carte ▼'
-
         const carteEl = document.createElement('div')
-        carteEl.style.display = hasCarteInitially ? '' : 'none'
 
         new CarteEditorBlock(carteEl, {
           initial: outcome.carte ? { chemin: [...(outcome.carte.chemin ?? [])] } : { chemin: [] },
@@ -805,17 +798,6 @@ export class ChoicePropertyModal {
           showEnv: false,
         })
 
-        carteToggle.addEventListener('click', () => {
-          const visible = carteEl.style.display !== 'none'
-          carteEl.style.display = visible ? 'none' : ''
-          carteToggle.textContent = visible ? '🗺 Carte ▼' : '🗺 Carte ▲'
-          carteToggle.classList.toggle('active', !visible)
-        })
-
-        const carteToggleRow = document.createElement('div')
-        carteToggleRow.className = 'cpm-ld-toggle-row'
-        carteToggleRow.appendChild(carteToggle)
-        row.appendChild(carteToggleRow)
         row.appendChild(carteEl)
 
         // ── Effets optionnels ──────────────────────────────────────────────
@@ -912,15 +894,7 @@ export class ChoicePropertyModal {
     wrap.appendChild(secRow)
 
     // ── Carte (déplacement) — portée directement sur l'outcome ────────────
-    const hasCarteInitially = !!(regle[key]?.carte?.chemin?.length)
-    const carteToggle = document.createElement('button')
-    carteToggle.type = 'button'
-    carteToggle.className = 'cpm-ld-toggle-btn' + (hasCarteInitially ? ' active' : '')
-    carteToggle.textContent = hasCarteInitially ? '🗺 Carte ▲' : '🗺 Carte ▼'
-    carteToggle.style.marginTop = '0.3rem'
-
     const carteEl = document.createElement('div')
-    carteEl.style.display = hasCarteInitially ? '' : 'none'
 
     // Rétrocompatibilité : lire aussi choix.carte si outcome.carte absent
     const initialCarte = regle[key]?.carte ?? regle[key]?.choix?.carte
@@ -933,14 +907,6 @@ export class ChoicePropertyModal {
       showEnv: false,
     })
 
-    carteToggle.addEventListener('click', () => {
-      const visible = carteEl.style.display !== 'none'
-      carteEl.style.display = visible ? 'none' : ''
-      carteToggle.textContent = visible ? '🗺 Carte ▼' : '🗺 Carte ▲'
-      carteToggle.classList.toggle('active', !visible)
-    })
-
-    wrap.appendChild(carteToggle)
     wrap.appendChild(carteEl)
 
     return wrap
