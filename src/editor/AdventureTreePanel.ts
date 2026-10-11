@@ -362,8 +362,9 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
     for (const c of s.choix ?? []) {
       const action = c.action as Record<string, unknown> | undefined
       if (!action || typeof action === 'string') continue
-      const regle = action as { si_reussi?: { carte?: { chemin?: string[] } }; si_echoue?: { carte?: { chemin?: string[] } } }
-      if (regle.si_reussi?.carte?.chemin?.length || regle.si_echoue?.carte?.chemin?.length) {
+      const regle = action as { si_reussi?: { carte?: { chemin?: string[] }; choix?: { carte?: { chemin?: string[] } } }; si_echoue?: { carte?: { chemin?: string[] }; choix?: { carte?: { chemin?: string[] } } } }
+      if (regle.si_reussi?.carte?.chemin?.length || regle.si_reussi?.choix?.carte?.chemin?.length
+        || regle.si_echoue?.carte?.chemin?.length || regle.si_echoue?.choix?.carte?.chemin?.length) {
         placedNums.add(s.numero); break
       }
       const ld = action as { type?: string; lancer_de?: { resultats?: Record<string, { carte?: { chemin?: string[] } }> } }
