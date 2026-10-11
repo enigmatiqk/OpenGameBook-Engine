@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Vérification commits en fin de session",
+      "trigger": "Stop",
+      "action": {
+        "type": "agent",
+        "prompt": "Exécute `git status --short` dans le répertoire du workspace. Si des fichiers trackés apparaissent comme modifiés (lignes commençant par M, D, ou A en zone non stagée), rappelle à Kiro qu'il a peut-être oublié de committer des changements liés à la dernière tâche, et propose de les committer maintenant en respectant la convention définie dans `.kiro/steering/git-convention.md`. Si le working tree est propre ou ne contient que des fichiers untrackés sans rapport avec la tâche, ne rien faire."
+      }
+    }
+  ]
+}
