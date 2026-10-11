@@ -961,48 +961,22 @@ export class CombatEditor {
       mainRow.append(lbl, input)
     }
 
-    // Bouton toggle carte
-    const carteToggle = document.createElement('button')
-    carteToggle.type = 'button'
-    carteToggle.className = 'combat-carte-toggle btn btn-ghost btn-sm'
-
-    const chemin = getCarte()
-    const hasData = (chemin?.length ?? 0) > 0
-    let expanded = hasData
-
-    const updateToggle = (): void => {
-      carteToggle.textContent = expanded ? '▼ carte' : '▶ carte'
-      if (hasData || expanded) carteToggle.classList.toggle('combat-carte-toggle--active', hasData || expanded)
-    }
-    updateToggle()
-
-    mainRow.append(carteToggle)
     wrap.appendChild(mainRow)
 
-    // ── Bloc carte collapsible ────────────────────────────────────────────────
-    const carteWrap = document.createElement('div')
-    carteWrap.className = 'combat-carte-collapse'
-    carteWrap.hidden = !expanded
+    // ── Bloc carte (accordéon géré par CarteEditorBlock lui-même) ─────────────
+    const chemin = getCarte()
+    const hasData = (chemin?.length ?? 0) > 0
 
     const carteEl = document.createElement('div')
     new CarteEditorBlock(carteEl, {
       initial: { chemin: chemin ?? [] },
       onChange: (data) => {
         onChangeCarte(data?.chemin?.length ? data.chemin : undefined)
-        // Met à jour la classe active si données présentes
-        const hasCh = (data?.chemin?.length ?? 0) > 0
-        carteToggle.classList.toggle('combat-carte-toggle--active', hasCh)
       },
       showEnv: false,
+      initialOpen: hasData,
     })
-    carteWrap.appendChild(carteEl)
-    wrap.appendChild(carteWrap)
-
-    carteToggle.addEventListener('click', () => {
-      expanded = !expanded
-      carteWrap.hidden = !expanded
-      updateToggle()
-    })
+    wrap.appendChild(carteEl)
 
     return wrap
   }

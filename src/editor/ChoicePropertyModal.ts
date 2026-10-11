@@ -1019,6 +1019,7 @@ export class ChoicePropertyModal {
     // CarteChoixData n'a que `chemin` (pas d'env)
     // On réutilise CarteEditorBlock en mode "chemin uniquement"
     // en lui passant des données CarteSectionData-compatibles (env toujours undefined)
+    const hasCarte = !!(this.working.carte?.chemin?.length)
     const initial = this.working.carte
       ? { chemin: [...(this.working.carte.chemin ?? [])] }
       : { chemin: [] }
@@ -1033,6 +1034,9 @@ export class ChoicePropertyModal {
         }
       },
       showEnv: false,
+      // Ouvert directement si on vient d'ajouter la propriété (pas encore de données)
+      // ou si des données existent déjà (pour les voir immédiatement)
+      initialOpen: !hasCarte,
       // Pas d'adventure ni de sectionNum : l'aperçu carte n'est pas disponible ici
     })
 

@@ -57,6 +57,8 @@ export interface CarteEditorBlockOptions {
   prevSection?: number
   /** Afficher le sélecteur d'environnement (défaut: true). False pour les choix/outcomes. */
   showEnv?: boolean
+  /** Ouvrir le bloc directement à la construction (défaut: false, replié). */
+  initialOpen?: boolean
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -127,12 +129,12 @@ export class CarteEditorBlock {
     header.appendChild(lbl)
     header.appendChild(indicator)
 
-    // Corps replié par défaut
+    // Corps replié par défaut, sauf si initialOpen demandé
     const body = document.createElement('div')
     body.className = 'carte-block-body'
-    this._isOpen = false
+    this._isOpen = this.options.initialOpen === true
 
-    body.style.display = 'none'
+    body.style.display = this._isOpen ? '' : 'none'
     this._updateHeader(this._isOpen)
 
     const toggleBody = (): void => {
