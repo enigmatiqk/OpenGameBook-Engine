@@ -1,0 +1,8 @@
+sources:
+  sorcier-montagne:
+    file: Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu/sections.json
+    identifier: numero
+
+    properties:
+      numero: integer
+      texte: string
