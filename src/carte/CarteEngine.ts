@@ -763,10 +763,14 @@ export function buildCarte(
       // Choix multiples de l'event (CombatEventChoix[])
       if (Array.isArray(ev.choix)) {
         for (const ch of ev.choix as Array<{ section?: unknown; carte?: { chemin?: string[] } }>) {
-          if (!ch.carte?.chemin?.length) continue
+          // Le chemin peut être sur le choix lui-même, ou hérité de l'event parent
+          const chemin = ch.carte?.chemin?.length ? ch.carte.chemin
+            : ev.carte?.chemin?.length ? ev.carte.chemin
+            : null
+          if (!chemin) continue
           const targetNum = typeof ch.section === 'number' ? ch.section : null
           if (!targetNum || targetNum <= 0) continue
-          processChoice(targetNum, ch.carte.chemin)
+          processChoice(targetNum, chemin)
         }
       }
     }
