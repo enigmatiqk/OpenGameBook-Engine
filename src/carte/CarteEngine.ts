@@ -902,6 +902,7 @@ export function buildCarte(
   // Appliqués en dernier : prioritaires sur tout env issu du BFS.
   // 1 position  → case unique forcée
   // 2 positions → rectangle (les 2 coins opposés définissent la zone)
+  // create:true → crée des cases fantômes aux positions si elles n'existent pas
   if (cartefix?.envs) {
     for (const envDef of cartefix.envs) {
       if (!envDef.positions?.length || !envDef.env) continue
@@ -909,6 +910,19 @@ export function buildCarte(
       const [x2, y2] = corner2 ?? [x1, y1]
       const minXe = Math.min(x1, x2), maxXe = Math.max(x1, x2)
       const minYe = Math.min(y1, y2), maxYe = Math.max(y1, y2)
+
+      // Si create:true, crée les cases manquantes dans la zone
+      if (envDef.create) {
+        for (let cx = minXe; cx <= maxXe; cx++) {
+          for (let cy = minYe; cy <= maxYe; cy++) {
+            if (!grid.has(gridKey(cx, cy))) {
+              const id = pathIdCounter--
+              const ghost = getOrCreateCase(cx, cy, id, envDef.env, true)
+              ghost.visible = true
+            }
+          }
+        }
+      }
 
       for (const c of cases.values()) {
         if (c.x >= minXe && c.x <= maxXe && c.y >= minYe && c.y <= maxYe) {

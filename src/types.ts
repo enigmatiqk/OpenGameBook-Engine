@@ -614,10 +614,13 @@ export interface CarteFixeLien {
  * - `positions` contient 1 ou 2 entrées [x, y] :
  *   - 1 entrée  → case unique (point 4)
  *   - 2 entrées → rectangle défini par les 2 angles opposés (point 5)
+ * - `create` : si true, crée des cases fantômes aux positions spécifiées si elles
+ *   n'existent pas encore dans la grille (décor sans section rattachée).
  */
 export interface CarteFixeEnv {
   positions: [[number, number]] | [[number, number], [number, number]]
   env:        CarteEnv
+  create?:    boolean
 }
 
 /**

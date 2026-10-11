@@ -358,6 +358,24 @@ export class CarteFixeEditor {
       this._notify()
     })
 
+    // Toggle créer — crée des cases fantômes si elles n'existent pas dans la grille
+    const createToggle = document.createElement('label')
+    createToggle.className = 'cartefix-toggle-inline'
+    createToggle.title = 'Créer des cases décoratives aux positions spécifiées (même si aucune section ne passe par là)'
+    const chkCreate = document.createElement('input')
+    chkCreate.type = 'checkbox'
+    chkCreate.checked = envDef.create === true
+    const createLbl = document.createElement('span')
+    createLbl.textContent = 'créer la case'
+    createToggle.appendChild(chkCreate)
+    createToggle.appendChild(createLbl)
+    mainRow.appendChild(createToggle)
+
+    chkCreate.addEventListener('change', () => {
+      envDef.create = chkCreate.checked || undefined
+      this._notify()
+    })
+
     // Bouton supprimer
     const delBtn = document.createElement('button')
     delBtn.type = 'button'; delBtn.className = 'cpm-list-del'; delBtn.innerHTML = '🗑'
