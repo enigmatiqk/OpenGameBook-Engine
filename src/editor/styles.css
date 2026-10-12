@@ -1720,6 +1720,53 @@ html, body {
   padding-left: 0.2rem;
 }
 
+.tenter-chance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.tenter-chance-entry {
+  background: var(--bg-alt, rgba(0,0,0,0.04));
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tenter-chance-entry-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tenter-chance-resultats-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tenter-chance-add-crit {
+  align-self: flex-start;
+  opacity: 0.75;
+}
+
+.tenter-chance-remove-row {
+  margin-top: 0.4rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tenter-chance-remove-btn {
+  opacity: 0.6;
+  font-size: 0.78rem;
+}
+
 /* Phases */
 .combat-phases-list { display: flex; flex-direction: column; gap: 0.6rem; }
 

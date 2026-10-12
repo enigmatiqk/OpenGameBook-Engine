@@ -198,66 +198,7 @@ export class CombatEditor {
     ))
 
     // ── Tenter la chance (fuite) — échec/réussite critique ────────────────────
-    type TenterChance = {
-      echec_critique?:   { section?: import('../types').SectionRef; carte?: { chemin?: string[] }; resultats?: number[] }
-      reussite_critique?: { section?: import('../types').SectionRef; carte?: { chemin?: string[] }; resultats?: number[] }
-    }
-    const fuiteRaw = cv['fuite'] as Record<string, unknown> | undefined
-    const tc       = fuiteRaw?.['tenter_chance'] as TenterChance | undefined
-
-    if (tc !== undefined) {
-      const tcSection = this._sectionBlock('🎲 Tenter la chance (fuite)')
-
-      // Échec critique
-      if (tc.echec_critique !== undefined) {
-        const ecLbl = document.createElement('div')
-        ecLbl.className = 'combat-section-subtitle'
-        ecLbl.textContent = `💥 Échec critique (dés : ${tc.echec_critique.resultats?.join(', ') ?? '—'})`
-        tcSection.appendChild(ecLbl)
-        tcSection.appendChild(this._destBlock(
-          '💥 → §', tc.echec_critique.section,
-          () => tc.echec_critique?.carte?.chemin,
-          n => {
-            if (!fuiteRaw) return
-            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
-            t.echec_critique = { ...t.echec_critique, section: n ?? undefined }
-            this._notify()
-          },
-          ch => {
-            if (!fuiteRaw) return
-            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
-            if (t.echec_critique) t.echec_critique.carte = ch ? { chemin: ch } : undefined
-            this._notify()
-          },
-        ))
-      }
-
-      // Réussite critique
-      if (tc.reussite_critique !== undefined) {
-        const rcLbl = document.createElement('div')
-        rcLbl.className = 'combat-section-subtitle'
-        rcLbl.textContent = `✨ Réussite critique (dés : ${tc.reussite_critique.resultats?.join(', ') ?? '—'})`
-        tcSection.appendChild(rcLbl)
-        tcSection.appendChild(this._destBlock(
-          '✨ → §', tc.reussite_critique.section,
-          () => tc.reussite_critique?.carte?.chemin,
-          n => {
-            if (!fuiteRaw) return
-            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
-            t.reussite_critique = { ...t.reussite_critique, section: n ?? undefined }
-            this._notify()
-          },
-          ch => {
-            if (!fuiteRaw) return
-            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
-            if (t.reussite_critique) t.reussite_critique.carte = ch ? { chemin: ch } : undefined
-            this._notify()
-          },
-        ))
-      }
-
-      outSection.appendChild(tcSection)
-    }
+    outSection.appendChild(this._buildTenterChanceEditor(c))
 
     outSection.appendChild(this._destBlock(
       '💀 Mort → §', c.mort?.section,
@@ -984,6 +925,171 @@ export class CombatEditor {
     return card
   }
 
+  // ── Tenter la chance (fuite) ──────────────────────────────────────────────
+  /**
+   * Construit le bloc éditeur de `combat.fuite.tenter_chance`.
+   *
+   * UX :
+   * - Si tenter_chance absent : un seul bouton "+ Activer tenter la chance"
+   * - Si présent : affiche les sous-blocs critiques + bouton "🗑 Supprimer tenter_chance"
+   * - Pour chaque sous-bloc (echec / reussite) :
+   *     - Si absent : bouton "+ Ajouter l'échec critique" (ou réussite) en bas de liste
+   *     - Si présent : bloc avec header contenant un 🗑 pour le supprimer
+   */
+  private _buildTenterChanceEditor(c: CombatData): HTMLElement {
+    type CritEntry = { section?: import('../types').SectionRef; carte?: { chemin?: string[] }; resultats?: number[] }
+    type TC = { echec_critique?: CritEntry; reussite_critique?: CritEntry }
+
+    const getFuiteRaw = (): Record<string, unknown> | undefined =>
+      (c as unknown as Record<string, unknown>)['fuite'] as Record<string, unknown> | undefined
+
+    const getTC = (): TC | undefined =>
+      getFuiteRaw()?.['tenter_chance'] as TC | undefined
+
+    const ensureFuite = (): Record<string, unknown> => {
+      const cv = c as unknown as Record<string, unknown>
+      if (!cv['fuite']) cv['fuite'] = {}
+      return cv['fuite'] as Record<string, unknown>
+    }
+
+    const tcSection = this._sectionBlock('🎲 Tenter la chance (fuite)')
+    const body = document.createElement('div')
+    body.className = 'tenter-chance-body'
+    tcSection.appendChild(body)
+
+    const rebuild = (): void => {
+      body.innerHTML = ''
+      const tc = getTC()
+
+      if (tc === undefined) {
+        // ── Pas de tenter_chance : bouton d'ajout ──────────────────────────
+        const addBtn = document.createElement('button')
+        addBtn.type = 'button'
+        addBtn.className = 'btn btn-ghost btn-sm'
+        addBtn.textContent = '+ Activer tenter la chance'
+        addBtn.addEventListener('click', () => {
+          ensureFuite()['tenter_chance'] = {}
+          rebuild(); this._notify()
+        })
+        body.appendChild(addBtn)
+        return
+      }
+
+      // ── tenter_chance actif ─────────────────────────────────────────────
+
+      // Helper : sous-bloc pour echec_critique ou reussite_critique
+      const buildCritBlock = (
+        key: 'echec_critique' | 'reussite_critique',
+        emoji: string,
+        label: string,
+      ): void => {
+        const entry = tc[key]
+
+        if (entry !== undefined) {
+          // Bloc existant : header avec titre + bouton 🗑
+          const entryWrap = document.createElement('div')
+          entryWrap.className = 'tenter-chance-entry'
+
+          const hdr = document.createElement('div')
+          hdr.className = 'tenter-chance-entry-hdr'
+
+          const hdrLbl = document.createElement('span')
+          hdrLbl.className = 'combat-section-subtitle'
+          hdrLbl.textContent = `${emoji} ${label}`
+          hdr.appendChild(hdrLbl)
+
+          const delBtn = document.createElement('button')
+          delBtn.type = 'button'
+          delBtn.className = 'cpm-list-del'
+          delBtn.innerHTML = '🗑'
+          delBtn.title = `Supprimer ${label.toLowerCase()}`
+          delBtn.addEventListener('click', () => {
+            delete tc[key]
+            rebuild(); this._notify()
+          })
+          hdr.appendChild(delBtn)
+          entryWrap.appendChild(hdr)
+
+          // Valeurs de dés
+          const resultatsRow = document.createElement('div')
+          resultatsRow.className = 'tenter-chance-resultats-row'
+
+          const resultatsLbl = document.createElement('label')
+          resultatsLbl.className = 'parte-labeled-lbl'
+          resultatsLbl.textContent = 'Valeurs dés (2d6)'
+
+          const resultatsIn = document.createElement('input')
+          resultatsIn.type = 'text'
+          resultatsIn.className = 'cpm-input-text'
+          resultatsIn.placeholder = 'ex: 11, 12'
+          resultatsIn.value = (entry.resultats ?? []).join(', ')
+          resultatsIn.title = 'Valeurs séparées par des virgules (2–12)'
+          resultatsIn.addEventListener('change', () => {
+            const vals = resultatsIn.value
+              .split(',')
+              .map(s => parseInt(s.trim(), 10))
+              .filter(n => !isNaN(n) && n >= 2 && n <= 12)
+            const t = getTC()
+            if (t?.[key]) t[key]!.resultats = vals
+            this._notify()
+          })
+          resultatsRow.append(resultatsLbl, resultatsIn)
+          entryWrap.appendChild(resultatsRow)
+
+          // Destination + carte
+          entryWrap.appendChild(this._destBlock(
+            `${emoji} → §`, entry.section,
+            () => (getTC()?.[key] as CritEntry | undefined)?.carte?.chemin,
+            n => {
+              const t = getTC()
+              if (t?.[key]) t[key]!.section = n ?? undefined
+              this._notify()
+            },
+            ch => {
+              const t = getTC()
+              if (t?.[key]) t[key]!.carte = ch ? { chemin: ch } : undefined
+              this._notify()
+            },
+          ))
+
+          body.appendChild(entryWrap)
+        } else {
+          // Entrée absente : bouton d'ajout discret
+          const addBtn = document.createElement('button')
+          addBtn.type = 'button'
+          addBtn.className = 'btn btn-ghost btn-sm tenter-chance-add-crit'
+          addBtn.textContent = `+ Ajouter ${label.toLowerCase()}`
+          addBtn.addEventListener('click', () => {
+            tc[key] = { resultats: [] }
+            rebuild(); this._notify()
+          })
+          body.appendChild(addBtn)
+        }
+      }
+
+      buildCritBlock('echec_critique',    '💥', 'Échec critique')
+      buildCritBlock('reussite_critique', '✨', 'Réussite critique')
+
+      // Bouton de suppression globale de tenter_chance
+      const removeRow = document.createElement('div')
+      removeRow.className = 'tenter-chance-remove-row'
+      const removeBtn = document.createElement('button')
+      removeBtn.type = 'button'
+      removeBtn.className = 'btn btn-ghost btn-sm tenter-chance-remove-btn'
+      removeBtn.textContent = '🗑 Supprimer tenter_chance'
+      removeBtn.addEventListener('click', () => {
+        const fuite = getFuiteRaw()
+        if (fuite) delete fuite['tenter_chance']
+        rebuild(); this._notify()
+      })
+      removeRow.appendChild(removeBtn)
+      body.appendChild(removeRow)
+    }
+
+    rebuild()
+    return tcSection
+  }
+
   private _destBlock(
     label: string,
     value: import('../types').SectionRef | undefined,
@@ -1085,6 +1191,15 @@ export class CombatEditor {
   }
 
   private _notify(): void {
-    this.options.onChange(this.combat ? JSON.parse(JSON.stringify(this.combat)) as CombatData : null)
+    if (!this.combat) { this.options.onChange(null); return }
+    // Purge tenter_chance vide (ni echec_critique ni reussite_critique) avant sérialisation
+    const fuite = (this.combat as unknown as Record<string, unknown>)['fuite'] as Record<string, unknown> | undefined
+    if (fuite) {
+      const tc = fuite['tenter_chance'] as Record<string, unknown> | undefined
+      if (tc !== undefined && tc['echec_critique'] === undefined && tc['reussite_critique'] === undefined) {
+        delete fuite['tenter_chance']
+      }
+    }
+    this.options.onChange(JSON.parse(JSON.stringify(this.combat)) as CombatData)
   }
 }
