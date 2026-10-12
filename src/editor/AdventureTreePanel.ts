@@ -19,7 +19,7 @@
  */
 
 import type { Adventure, Section, Choice, Effet, EffetItem } from '../types'
-import { buildCarte, sectionHasConflict } from '../carte/CarteEngine'
+import { buildCarte } from '../carte/CarteEngine'
 
 // ─── Définition des filtres ────────────────────────────────────────────────
 
@@ -350,11 +350,14 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   const filterData: Record<string, number[]> = {}
   // Construit le contexte carte (conflits de position + sections placées) une seule fois
   const carteState = buildCarte(adventure.sections, undefined, adventure.cartefix)
-  const conflictNums = new Set(
-    [...carteState.cases.values()]
-      .filter(c => sectionHasConflict(carteState, c.num))
-      .map(c => c.num),
-  )
+  const conflictNums = new Set<number>()
+  for (const c of carteState.cases.values()) {
+    if ((c.conflictPositions?.length ?? 0) > 0) {
+      for (const p of c.conflictPositions!) {
+        conflictNums.add(p.sectionNum)
+      }
+    }
+  }
   // Une section est "placée" si elle apparaît dans carteState (via son propre chemin ou un choix entrant)
   // On collecte les sectionNum des cases non-chemin (sections réelles placées)
   const placedNums = new Set<number>()
