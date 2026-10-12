@@ -367,6 +367,8 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
   // On ajoute aussi les sections qui ont des sorties cartographiées (choix, combat, actions)
   // mais PAS section.carte (chemin de déplacement de la section elle-même — non pertinent ici)
   for (const s of adventure.sections) {
+    // Sections terminales (victoire/défaite) : pas de chemin attendu, on les exclut du filtre
+    if (s.end === 'victoire' || s.end === 'defaite') { placedNums.add(s.numero); continue }
     // Choix avec chemin carte
     if ((s.choix ?? []).some(c => c.carte?.chemin?.length)) { placedNums.add(s.numero); continue }
     // Outcomes de combat avec chemin carte (global + phases)
@@ -375,6 +377,15 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
       ...(s.combat?.phases ?? []).flatMap(p => [p.victoire, p.fuite, p.mort]),
     ]
     if (combatOutcomes.some(o => o?.carte?.chemin?.length)) { placedNums.add(s.numero); continue }
+    // Événements de combat avec chemin carte (source = la section qui contient l'event)
+    const allEvents = [
+      ...(s.combat?.events ?? []),
+      ...(s.combat?.phases ?? []).flatMap(p => p.events ?? []),
+    ]
+    if (allEvents.some(ev =>
+      ev.carte?.chemin?.length ||
+      (Array.isArray(ev.choix) && (ev.choix as Array<{ carte?: { chemin?: string[] } }>).some(ch => ch.carte?.chemin?.length)),
+    )) { placedNums.add(s.numero); continue }
     // Actions (si_reussi / si_echoue / lancer_de) avec chemin carte
     for (const c of s.choix ?? []) {
       const action = c.action as Record<string, unknown> | undefined
