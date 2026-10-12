@@ -804,8 +804,7 @@ export class EditorApp {
           ${(section.notes ?? []).map(n => `<div class="question-item" style="border-left-color:#66bb6a">${_esc(n)}</div>`).join('')}
         </div>
       </div>` : ''}
-      ${carteInfos}
-      ${this._buildMeneVers(section)}
+      ${carteInfos}      ${this._buildMeneVers(section)}
       <div class="sidebar-section">
         <div class="sidebar-section-title">Export</div>
         <div class="sidebar-stat"><span class="label">Index</span><span class="value">${this.currentIndex + 1} / ${this.sortedSections.length}</span></div>

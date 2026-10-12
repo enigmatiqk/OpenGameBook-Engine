@@ -527,6 +527,14 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
       : ''
     // Bouton "Aller à cette section" (postMessage vers l'éditeur parent)
     const gotoBtn = `<button class="goto-btn" data-goto="${s.numero}" style="margin-top:8px;background:#e94560;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:11px;width:100%">📍 Aller à §${s.numero} dans l'éditeur</button>`
+    const questionsBlock = (s.questions?.length ?? 0) > 0
+      ? `<div class="ds"><div class="dl" style="color:#29b6f6">❓ Questions (${s.questions!.length})</div>` +
+        s.questions!.map(q => `<div style="color:#b3e5fc;font-size:10px;padding:3px 0;border-left:2px solid #29b6f6;padding-left:6px;margin-bottom:3px">${esc(q)}</div>`).join('') +
+        `</div>` : ''
+    const notesBlock = (s.notes?.length ?? 0) > 0
+      ? `<div class="ds"><div class="dl" style="color:#66bb6a">📝 Notes (${s.notes!.length})</div>` +
+        s.notes!.map(n => `<div style="color:#c8e6c9;font-size:10px;padding:3px 0;border-left:2px solid #66bb6a;padding-left:6px;margin-bottom:3px">${esc(n)}</div>`).join('') +
+        `</div>` : ''
     panels.push(
       `<div id="dp${s.numero}" class="dp" style="display:none">` +
         `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">` +
@@ -535,7 +543,7 @@ function buildTreeHtml(adventure: Adventure, initialSection: number): string {
           `<div style="font-size:9px;color:#888">${st.label}</div></div>` +
         `</div>` +
         `<div class="ds"><div class="dl">Texte</div><div class="dt">${esc(s.texte)}</div></div>` +
-        itemsBlock + destButtons + callerButtons + endBlock + fixBlock + gotoBtn +
+        itemsBlock + destButtons + callerButtons + endBlock + fixBlock + questionsBlock + notesBlock + gotoBtn +
       `</div>`
     )
   }
