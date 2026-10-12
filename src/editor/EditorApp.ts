@@ -792,9 +792,16 @@ export class EditorApp {
       </div>
       ${(section.questions?.length ?? 0) > 0 ? `
       <div class="sidebar-section">
-        <div class="sidebar-section-title">Questions</div>
+        <div class="sidebar-section-title">❓ Questions</div>
         <div class="questions-list">
           ${(section.questions ?? []).map(q => `<div class="question-item">${_esc(q)}</div>`).join('')}
+        </div>
+      </div>` : ''}
+      ${(section.notes?.length ?? 0) > 0 ? `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">📝 Notes</div>
+        <div class="questions-list">
+          ${(section.notes ?? []).map(n => `<div class="question-item" style="border-left-color:#66bb6a">${_esc(n)}</div>`).join('')}
         </div>
       </div>` : ''}
       ${carteInfos}

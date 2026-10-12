@@ -89,6 +89,20 @@ export const FILTERS: FilterDef[] = [
     color: '#ffcc00',
     match: (section, _adventure, ctx) => ctx?.conflictNums?.has(section.numero) ?? false,
   },
+  {
+    id:    'questions',
+    label: 'Questions',
+    emoji: '❓',
+    color: '#29b6f6',
+    match: (section) => (section.questions?.length ?? 0) > 0,
+  },
+  {
+    id:    'notes',
+    label: 'Notes',
+    emoji: '📝',
+    color: '#66bb6a',
+    match: (section) => (section.notes?.length ?? 0) > 0,
+  },
 ]
 
 // ─── Re-export du type pour usage externe ─────────────────────────────────────
