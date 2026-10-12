@@ -196,6 +196,69 @@ export class CombatEditor {
       n => { c.fuite = n !== undefined ? { ...c.fuite, section: n } : undefined; this._notify() },
       ch => { if (c.fuite) (cv['fuite'] as Record<string, unknown>)['carte'] = ch ? { chemin: ch } : undefined; this._notify() },
     ))
+
+    // ── Tenter la chance (fuite) — échec/réussite critique ────────────────────
+    type TenterChance = {
+      echec_critique?:   { section?: import('../types').SectionRef; carte?: { chemin?: string[] }; resultats?: number[] }
+      reussite_critique?: { section?: import('../types').SectionRef; carte?: { chemin?: string[] }; resultats?: number[] }
+    }
+    const fuiteRaw = cv['fuite'] as Record<string, unknown> | undefined
+    const tc       = fuiteRaw?.['tenter_chance'] as TenterChance | undefined
+
+    if (tc !== undefined) {
+      const tcSection = this._sectionBlock('🎲 Tenter la chance (fuite)')
+
+      // Échec critique
+      if (tc.echec_critique !== undefined) {
+        const ecLbl = document.createElement('div')
+        ecLbl.className = 'combat-section-subtitle'
+        ecLbl.textContent = `💥 Échec critique (dés : ${tc.echec_critique.resultats?.join(', ') ?? '—'})`
+        tcSection.appendChild(ecLbl)
+        tcSection.appendChild(this._destBlock(
+          '💥 → §', tc.echec_critique.section,
+          () => tc.echec_critique?.carte?.chemin,
+          n => {
+            if (!fuiteRaw) return
+            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
+            t.echec_critique = { ...t.echec_critique, section: n ?? undefined }
+            this._notify()
+          },
+          ch => {
+            if (!fuiteRaw) return
+            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
+            if (t.echec_critique) t.echec_critique.carte = ch ? { chemin: ch } : undefined
+            this._notify()
+          },
+        ))
+      }
+
+      // Réussite critique
+      if (tc.reussite_critique !== undefined) {
+        const rcLbl = document.createElement('div')
+        rcLbl.className = 'combat-section-subtitle'
+        rcLbl.textContent = `✨ Réussite critique (dés : ${tc.reussite_critique.resultats?.join(', ') ?? '—'})`
+        tcSection.appendChild(rcLbl)
+        tcSection.appendChild(this._destBlock(
+          '✨ → §', tc.reussite_critique.section,
+          () => tc.reussite_critique?.carte?.chemin,
+          n => {
+            if (!fuiteRaw) return
+            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
+            t.reussite_critique = { ...t.reussite_critique, section: n ?? undefined }
+            this._notify()
+          },
+          ch => {
+            if (!fuiteRaw) return
+            const t = (fuiteRaw['tenter_chance'] as TenterChance) ??= {}
+            if (t.reussite_critique) t.reussite_critique.carte = ch ? { chemin: ch } : undefined
+            this._notify()
+          },
+        ))
+      }
+
+      outSection.appendChild(tcSection)
+    }
+
     outSection.appendChild(this._destBlock(
       '💀 Mort → §', c.mort?.section,
       () => (cv['mort'] as { carte?: { chemin?: string[] } } | undefined)?.carte?.chemin,

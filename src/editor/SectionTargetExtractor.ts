@@ -125,6 +125,33 @@ export function extractTargets(section: Section): SectionTarget[] {
       })
     }
 
+    // Tenter la chance (fuite) — échec/réussite critique
+    {
+      type TenterChance = {
+        echec_critique?:    { section?: SectionRef }
+        reussite_critique?: { section?: SectionRef }
+      }
+      const tc = (c.fuite as unknown as Record<string, unknown>)?.['tenter_chance'] as TenterChance | undefined
+      if (tc?.echec_critique?.section !== undefined) {
+        const ref = tc.echec_critique.section
+        out.push({
+          numero: resolveRef(ref),
+          badge: 'fuite',
+          texte: 'Échec critique (tenter chance fuite)',
+          dynamicLabel: dynamicLabel(ref),
+        })
+      }
+      if (tc?.reussite_critique?.section !== undefined) {
+        const ref = tc.reussite_critique.section
+        out.push({
+          numero: resolveRef(ref),
+          badge: 'fuite',
+          texte: 'Réussite critique (tenter chance fuite)',
+          dynamicLabel: dynamicLabel(ref),
+        })
+      }
+    }
+
     if (c.mort?.section !== undefined) {
       const ref = c.mort.section
       out.push({

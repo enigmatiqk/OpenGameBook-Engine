@@ -735,6 +735,15 @@ export function buildCarte(
       section.combat?.victoire,
       section.combat?.fuite,
       section.combat?.mort,
+      // Tenter la chance (fuite) — échec/réussite critique
+      ...(() => {
+        type TC = {
+          echec_critique?:    { section?: import('../types').SectionRef; carte?: { chemin?: string[] } }
+          reussite_critique?: { section?: import('../types').SectionRef; carte?: { chemin?: string[] } }
+        }
+        const tc = (section.combat?.fuite as unknown as Record<string, unknown>)?.['tenter_chance'] as TC | undefined
+        return [tc?.echec_critique, tc?.reussite_critique].filter(Boolean)
+      })(),
       ...(section.combat?.phases ?? []).flatMap(phase => [
         phase.victoire,
         phase.fuite,
