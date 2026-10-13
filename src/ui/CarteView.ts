@@ -384,7 +384,7 @@ export class CarteView {
   private _drawSecretPassageWall(
     coords: { x1: number; y1: number; x2: number; y2: number },
   ): void {
-    // Mur en pointillés violet — indique un passage secret
+    // Mur violet — indique un passage secret
     const line = this._svgEl('line')
     line.setAttribute('x1', String(coords.x1))
     line.setAttribute('y1', String(coords.y1))
@@ -392,7 +392,6 @@ export class CarteView {
     line.setAttribute('y2', String(coords.y2))
     line.setAttribute('stroke', '#9b59b6')
     line.setAttribute('stroke-width', String(GAP))
-    line.setAttribute('stroke-dasharray', '3,3')
     line.setAttribute('stroke-linecap', 'square')
     line.setAttribute('pointer-events', 'none')
     this.vpGroup.appendChild(line)

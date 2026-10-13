@@ -626,7 +626,7 @@ export function buildCarte(
       for (let etapeIndex = 0; etapeIndex < etapes.length; etapeIndex++) {
         const etape = etapes[etapeIndex]
         if (etape.kind === 'env') {
-          if (etape.env === 'porte') continue
+          if (etape.env === 'porte' || etape.env === 'passage-secret') continue
           // @env dans un chemin de choix : passage sur mur (arête) → crée une case et marque passages
           const nextMove = etapes.slice(etapeIndex + 1).find(step => step.kind === 'move')
           const dir: Direction | null = lastDir ?? (nextMove?.kind === 'move' ? nextMove.dir : null)
@@ -860,7 +860,7 @@ export function buildCarte(
 
           for (const etape of etapes) {
             if (etape.kind === 'env') {
-              if (etape.env === 'porte') continue
+              if (etape.env === 'porte' || etape.env === 'passage-secret') continue
               const dir2: Direction | null = lastDir
               if (!dir2) continue
               const { dx, dy } = DELTA[dir2]
