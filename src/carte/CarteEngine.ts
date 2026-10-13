@@ -252,6 +252,19 @@ export function buildCarte(
     instanceKey?: string,
     callerSectionParams?: Record<string, number>,
   ): { px: number; py: number } | null => {
+    // ── Redirection pure : pas de case propre, on saute directement à la cible ─
+    if (section.redirection === true && !instanceKey) {
+      const cibleRef = section.choix?.[0]?.section
+      const cibleNum = typeof cibleRef === 'number' ? cibleRef : null
+      if (cibleNum !== null) {
+        const cibleSection = sectionMap.get(cibleNum)
+        if (cibleSection) {
+          return placeSection(cibleNum, cx, cy, cibleSection, undefined, callerSectionParams)
+        }
+      }
+      return null  // redirection sans cible valide : on ignore silencieusement
+    }
+
     // ── Cas !multi : instance indépendante ────────────────────────────────────
     if (instanceKey) {
       if (placedMulti.has(instanceKey)) return null  // déjà créée (BFS peut repasser)

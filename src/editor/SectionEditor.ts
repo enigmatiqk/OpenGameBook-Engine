@@ -356,6 +356,14 @@ export class SectionEditor {
       v => this.options.onPropsChange({ equipement_dropable: v || undefined }),
     ))
 
+    // ── redirection ────────────────────────────────────────────────────────────
+    row.appendChild(this._propToggle(
+      'Redirection',
+      '↪ Section sans contenu narratif : le moteur saute directement à choix[0].section',
+      section.redirection ?? false,
+      v => this.options.onPropsChange({ redirection: v || undefined }),
+    ))
+
     block.appendChild(row)
 
     // ── Questions ─────────────────────────────────────────────────────────────

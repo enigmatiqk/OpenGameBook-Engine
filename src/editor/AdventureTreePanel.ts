@@ -73,7 +73,15 @@ export const FILTERS: FilterDef[] = [
     label: 'Sans carte/chemin',
     emoji: '🗺',
     color: '#ff9800',
-    match: (section, _adventure, ctx) => !(ctx?.placedNums?.has(section.numero) ?? false),
+    // Les sections redirection n'ont pas de case propre par conception — on les exclut du filtre
+    match: (section, _adventure, ctx) => !section.redirection && !(ctx?.placedNums?.has(section.numero) ?? false),
+  },
+  {
+    id:    'redirections',
+    label: 'Redirections',
+    emoji: '↪',
+    color: '#9c27b0',
+    match: (section) => section.redirection === true,
   },
   {
     id:    'orphelins',
