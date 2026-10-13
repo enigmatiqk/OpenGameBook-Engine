@@ -859,55 +859,142 @@ export class ChoicePropertyModal {
     const wrap = document.createElement('div')
     wrap.className = 'cpm-outcome-wrap'
 
-    // ── Ligne section ──────────────────────────────────────────────────────
-    const secRow = document.createElement('div')
-    secRow.className = 'cpm-outcome-row'
+    const labelText = key === 'si_reussi' ? '✔ Si réussi' : '✘ Si échoué'
 
+    // ── Titre de l'outcome ─────────────────────────────────────────────────
+    const titleRow = document.createElement('div')
+    titleRow.className = 'cpm-outcome-row'
     const lbl = document.createElement('span')
     lbl.className = 'cpm-outcome-lbl'
-    lbl.textContent = key === 'si_reussi' ? '✔ Si réussi → §' : '✘ Si échoué → §'
-    secRow.appendChild(lbl)
+    lbl.textContent = labelText
+    titleRow.appendChild(lbl)
+    wrap.appendChild(titleRow)
 
-    const secInput = document.createElement('input')
-    secInput.type = 'number'
-    secInput.className = 'cpm-input-number'
-    secInput.min = '0'
-    secInput.placeholder = '—'
-    const current = regle[key]?.choix?.section
-    if (typeof current === 'number') secInput.value = String(current)
+    // ── Sélecteur de mode : section | end ─────────────────────────────────
+    const currentEnd = regle[key]?.end
+    let mode: 'section' | 'end' = currentEnd ? 'end' : 'section'
+
+    const modeRow = document.createElement('div')
+    modeRow.className = 'cpm-outcome-mode-row'
+
+    const modeSel = document.createElement('select')
+    modeSel.className = 'cpm-select cpm-select-sm'
+    ;[
+      ['section', '→ Aller à une section'],
+      ['end',     '🏁 Fin de partie'],
+    ].forEach(([v, l]) => {
+      const opt = document.createElement('option')
+      opt.value = v; opt.textContent = l
+      if (v === mode) opt.selected = true
+      modeSel.appendChild(opt)
+    })
+    modeRow.appendChild(modeSel)
+    wrap.appendChild(modeRow)
+
+    // ── Zone de contenu selon le mode ──────────────────────────────────────
+    const contentWrap = document.createElement('div')
+    contentWrap.className = 'cpm-outcome-content'
+    wrap.appendChild(contentWrap)
 
     const ensureOutcome = (): void => {
       if (!regle[key]) regle[key] = {}
-      if (!regle[key]!.choix) regle[key]!.choix = { texte: '', section: 0 }
     }
 
-    secInput.addEventListener('input', () => {
-      const n = parseInt(secInput.value, 10)
-      if (isNaN(n)) {
-        if (regle[key]?.choix) regle[key]!.choix = undefined
+    const renderContent = (): void => {
+      contentWrap.innerHTML = ''
+      mode = modeSel.value as 'section' | 'end'
+
+      if (mode === 'section') {
+        // ── Mode section ───────────────────────────────────────────────────
+        // Nettoyer end sur l'outcome si on bascule vers section
+        if (regle[key]?.end) delete regle[key]!.end
+
+        const secRow = document.createElement('div')
+        secRow.className = 'cpm-outcome-row'
+
+        const secLbl = document.createElement('span')
+        secLbl.className = 'cpm-outcome-lbl'
+        secLbl.textContent = '→ §'
+        secRow.appendChild(secLbl)
+
+        const secInput = document.createElement('input')
+        secInput.type = 'number'
+        secInput.className = 'cpm-input-number'
+        secInput.min = '0'
+        secInput.placeholder = '—'
+        const current = regle[key]?.choix?.section
+        if (typeof current === 'number') secInput.value = String(current)
+
+        secInput.addEventListener('input', () => {
+          const n = parseInt(secInput.value, 10)
+          ensureOutcome()
+          if (isNaN(n)) {
+            if (regle[key]!.choix) regle[key]!.choix = undefined
+          } else {
+            if (!regle[key]!.choix) regle[key]!.choix = { texte: '', section: 0 }
+            regle[key]!.choix!.section = n
+          }
+        })
+        secRow.appendChild(secInput)
+        contentWrap.appendChild(secRow)
+
+        // ── Carte (déplacement) — portée directement sur l'outcome ────────
+        const carteEl = document.createElement('div')
+        const initialCarte = regle[key]?.carte ?? regle[key]?.choix?.carte
+        new CarteEditorBlock(carteEl, {
+          initial: initialCarte ? { chemin: [...(initialCarte.chemin ?? [])] } : { chemin: [] },
+          onChange: (data) => {
+            ensureOutcome()
+            regle[key]!.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
+          },
+          showEnv: false,
+        })
+        contentWrap.appendChild(carteEl)
+
       } else {
+        // ── Mode fin de partie ─────────────────────────────────────────────
+        // Nettoyer choix + carte si on bascule vers end
+        if (regle[key]?.choix) delete regle[key]!.choix
+        if (regle[key]?.carte) delete regle[key]!.carte
+
         ensureOutcome()
-        regle[key]!.choix!.section = n
+
+        const endRow = document.createElement('div')
+        endRow.className = 'cpm-outcome-row'
+
+        const endLbl = document.createElement('span')
+        endLbl.className = 'cpm-outcome-lbl'
+        endLbl.textContent = '🏁 Type de fin'
+        endRow.appendChild(endLbl)
+
+        const endSel = document.createElement('select')
+        endSel.className = 'cpm-select'
+        ;[
+          ['victoire', '🏆 Victoire'],
+          ['defaite',  '💀 Défaite'],
+        ].forEach(([v, l]) => {
+          const opt = document.createElement('option')
+          opt.value = v; opt.textContent = l
+          if (v === (regle[key]?.end ?? 'defaite')) opt.selected = true
+          endSel.appendChild(opt)
+        })
+
+        // Initialise la valeur par défaut
+        if (!regle[key]!.end) {
+          regle[key]!.end = endSel.value as 'victoire' | 'defaite'
+        }
+
+        endSel.addEventListener('change', () => {
+          ensureOutcome()
+          regle[key]!.end = endSel.value as 'victoire' | 'defaite'
+        })
+        endRow.appendChild(endSel)
+        contentWrap.appendChild(endRow)
       }
-    })
-    secRow.appendChild(secInput)
-    wrap.appendChild(secRow)
+    }
 
-    // ── Carte (déplacement) — portée directement sur l'outcome ────────────
-    const carteEl = document.createElement('div')
-
-    // Rétrocompatibilité : lire aussi choix.carte si outcome.carte absent
-    const initialCarte = regle[key]?.carte ?? regle[key]?.choix?.carte
-    new CarteEditorBlock(carteEl, {
-      initial: initialCarte ? { chemin: [...(initialCarte.chemin ?? [])] } : { chemin: [] },
-      onChange: (data) => {
-        ensureOutcome()
-        regle[key]!.carte = data?.chemin?.length ? { chemin: data.chemin } : undefined
-      },
-      showEnv: false,
-    })
-
-    wrap.appendChild(carteEl)
+    modeSel.addEventListener('change', renderContent)
+    renderContent()
 
     return wrap
   }
