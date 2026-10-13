@@ -529,9 +529,7 @@ export interface ActionRegle {
 export type Action = ActionLancerDe | ActionRegle
 
 export interface SectionSaisie {
-  min?: number              // section minimum autorisée (défaut: 1)
-  max?: number              // section maximum autorisée (défaut: nb sections de l'aventure)
-  liste?: number[]          // liste fixe de sections valides — affiche un select, valide par message
+  liste: number[]           // liste fixe de sections valides — affiche un select, valide par message
   message_invalide?: string // message affiché 2s si la saisie n'est pas dans liste (défaut: générique)
 }
 

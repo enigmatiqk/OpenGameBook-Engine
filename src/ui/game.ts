@@ -926,11 +926,7 @@ export class GameView {
   }
 
   private _showSectionSaisieInput(choice: import('../types').Choice): void {
-    const saisie = choice.section_saisie ?? {}
-    const aventure = this.engine.getAdventure()
-    const maxAventure = aventure ? Math.max(...aventure.sections.map(s => s.numero)) : 400
-    const min = saisie.min ?? 1
-    const max = saisie.max ?? maxAventure
+    const saisie = choice.section_saisie!
     const liste = saisie.liste
     const messageInvalide = saisie.message_invalide ?? 'Cette section n\'est pas valide.'
 
@@ -943,10 +939,9 @@ export class GameView {
           <h2 class="modal-title">${this._escHtml(choice.texte)}</h2>
         </div>
         <div class="modal-body">
-          <p class="action-roll-condition">Saisissez le numéro de section (${min} – ${max})</p>
+          <p class="action-roll-condition">Saisissez le numéro de section</p>
           <div class="duel-mise-input-row">
-            <input class="duel-mise-input section-saisie-input" type="number"
-              min="${min}" max="${max}" />
+            <input class="duel-mise-input section-saisie-input" type="number" min="1" />
           </div>
           <div class="section-saisie-error" style="color:var(--color-error,#e94560);font-size:12px;min-height:18px;visibility:hidden;margin-top:4px"></div>
           <div class="duel-mise-actions">
@@ -971,8 +966,7 @@ export class GameView {
     const doConfirm = () => {
       const section = parseInt(input.value, 10)
       if (isNaN(section)) { showError(); return }
-      if (liste && !liste.includes(section)) { showError(); return }
-      if (section < min || section > max) { showError(); return }
+      if (!liste.includes(section)) { showError(); return }
       overlay.remove()
       this.engine.applyChoice({ ...choice, section })
       this._render()

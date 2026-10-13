@@ -39,7 +39,7 @@ const PROP_DEFAULTS: Partial<Record<keyof Choice, () => unknown>> = {
   groupe:          () => '',
   local:           () => false,
   end:             () => 'victoire',
-  section_saisie:  () => ({}),
+  section_saisie:  () => ({ liste: [] } as SectionSaisie),
   section_params:  () => ({}),
   regle_surcharge: () => ({}),
   stat_monstre:    () => '',
@@ -1005,20 +1005,8 @@ export class ChoicePropertyModal {
     const wrap = document.createElement('div')
     wrap.className = 'cpm-saisie-wrap'
 
-    const ss: SectionSaisie = (this.working.section_saisie as SectionSaisie | undefined) ?? {}
+    const ss: SectionSaisie = (this.working.section_saisie as SectionSaisie | undefined) ?? { liste: [] }
     this.working.section_saisie = ss
-
-    const minInput = document.createElement('input')
-    minInput.type = 'number'; minInput.className = 'cpm-input-number'
-    minInput.placeholder = '1'; minInput.value = ss.min !== undefined ? String(ss.min) : ''
-    minInput.addEventListener('input', () => { ss.min = parseInt(minInput.value,10) || undefined })
-    wrap.appendChild(this._labeledRow('Min §', minInput))
-
-    const maxInput = document.createElement('input')
-    maxInput.type = 'number'; maxInput.className = 'cpm-input-number'
-    maxInput.placeholder = '400'; maxInput.value = ss.max !== undefined ? String(ss.max) : ''
-    maxInput.addEventListener('input', () => { ss.max = parseInt(maxInput.value,10) || undefined })
-    wrap.appendChild(this._labeledRow('Max §', maxInput))
 
     const msgInput = document.createElement('input')
     msgInput.type = 'text'; msgInput.className = 'cpm-input-text'
@@ -1031,8 +1019,8 @@ export class ChoicePropertyModal {
     hint.textContent = 'Liste fixe de sections (JSON, ex: [42, 71, 278]) :'
     wrap.appendChild(hint)
     wrap.appendChild(this._buildJsonRawValue(
-      ss.liste ?? [],
-      v => { ss.liste = (v as number[]).length > 0 ? v as number[] : undefined },
+      ss.liste,
+      v => { ss.liste = (v as number[]) },
     ))
 
     return wrap
