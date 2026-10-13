@@ -283,6 +283,17 @@ export class GameEngine {
     const section = this.adventure.sections.find(s => s.numero === target)
     if (!section) throw new Error(`Section ${target} introuvable`)
 
+    // Redirection pure : section sans contenu narratif qui pointe directement vers une cible
+    // (artefact du format papier — inutile en version numérique)
+    if (section.redirection === true) {
+      const cible = section.choix?.[0]?.section
+      if (cible === undefined) {
+        console.warn(`[GameEngine] Section ${target} marquée redirection mais sans choix[0].section`)
+      } else {
+        return this.navigateTo(cible, section.choix[0].section_params)
+      }
+    }
+
     // Normalise choix au cas où il est absent du JSON
     if (!section.choix) section.choix = []
 

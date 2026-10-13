@@ -647,6 +647,12 @@ export interface Section {
   questions?: string[]
   /** Notes diverses sur cette section */
   notes?: string[]
+  /**
+   * Si true, cette section est une redirection pure (issue du format papier) :
+   * elle ne contient aucun contenu narratif et pointe vers une unique section cible
+   * via choix[0].section. Le moteur saute directement à cette cible sans rien afficher.
+   */
+  redirection?: boolean
   carte?: CarteSectionData         // données de positionnement sur la carte
 }
 
