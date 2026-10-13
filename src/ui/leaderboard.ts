@@ -38,7 +38,8 @@ export class LeaderboardView {
                     <th>#</th>
                     <th>Nom</th>
                     <th>Temps</th>
-                    <th>Sauvegardes</th>
+                    <th>Sections</th>
+                    <th>Carte</th>
                     ${statsHeaderHtml}
                   </tr>
                 </thead>
@@ -82,7 +83,8 @@ export class LeaderboardView {
         <td class="rank">#${rank}</td>
         <td class="name">${this.escHtml(entry.nom)}</td>
         <td class="time">${timeStr}</td>
-        <td class="saves">${entry.nombreSauvegardes ?? 0}</td>
+        <td class="sections">${entry.nombreSectionsParcourues ?? '-'}</td>
+        <td class="carte">${entry.nombreOuverturesCarte ?? '-'}</td>
         ${statsHtml}
       </tr>
     `

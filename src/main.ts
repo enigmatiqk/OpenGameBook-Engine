@@ -235,13 +235,16 @@ function initVictoryView(engine: GameEngine): void {
     if (!adventure) return
     const nameInput = container.querySelector<HTMLInputElement>('#winner-name')
     const nom = nameInput?.value.trim() || 'Anonyme'
-    const nombreSauvegardes = saveStore.countSaves(adventure.titre)
+    const journal = engine.getHero()?.journal ?? []
+    const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
+    const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
     const statistiques = engine.getHero()?.statistiques || {}
     saveStore.addLeaderboardEntry(adventure.titre, { 
       nom, 
       tempsJeuMs: finalTime, 
       date: new Date().toISOString(),
-      nombreSauvegardes,
+      nombreSectionsParcourues,
+      nombreOuverturesCarte,
       statistiques
     })
     saveStore.deleteSave(adventure.titre)

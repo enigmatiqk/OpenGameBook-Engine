@@ -201,6 +201,13 @@ export class GameView {
       return
     }
 
+    // Enregistre l'ouverture de la carte dans le journal du héros
+    const hero = this.engine.getHero()
+    if (hero) {
+      if (!hero.journal) hero.journal = []
+      hero.journal.push({ timestamp: Date.now(), section: this.engine.getCurrentSection(), name: 'carte', tags: ['carte'] })
+    }
+
     const overlay = document.createElement('div')
     overlay.style.cssText = [
       'position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;',

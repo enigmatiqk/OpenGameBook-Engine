@@ -734,7 +734,8 @@ export interface LeaderboardEntry {
   nom: string
   tempsJeuMs: number
   date: string
-  nombreSauvegardes?: number
+  nombreSectionsParcourues?: number
+  nombreOuverturesCarte?: number
   statistiques?: Record<string, number>
 }
 
