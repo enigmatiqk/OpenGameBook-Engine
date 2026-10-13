@@ -18,14 +18,14 @@
 
 import type { Section, CarteEnv, CarteFixe } from '../types'
 import {
-  parseChemin, premiereMoveDir, commenceParPorte, estIci,
+  parseChemin, premiereMoveDir, commenceParPorte, commenceParPassageSecret, estIci,
   DELTA, OPPOSITE,
   type Direction,
 } from './CheminParser'
 
 // ─── Types publics ────────────────────────────────────────────────────────────
 
-export type MurType = 'ferme' | 'ouvert' | 'porte'
+export type MurType = 'ferme' | 'ouvert' | 'porte' | 'passage-secret'
 
 export interface CarteCase {
   num:        number
@@ -400,9 +400,12 @@ export function buildCarte(
           } else if (etape.kind === 'move') {
             lastDir2 = etape.dir
             const { dx, dy } = DELTA[etape.dir]
-            // Porte uniquement si @porte précède ce move (dans pendingEnvs2)
+            // Porte/passage-secret uniquement si @porte/@passage-secret précède ce move (dans pendingEnvs2)
             const hasPorte = pendingEnvs2.includes('porte' as CarteEnv)
-            const murType: MurType = (firstMove2 && hasPorte) ? 'porte' : 'ouvert'
+            const hasPassageSecret = pendingEnvs2.includes('passage-secret' as CarteEnv)
+            const murType: MurType = (firstMove2 && hasPorte) ? 'porte'
+              : (firstMove2 && hasPassageSecret) ? 'passage-secret'
+              : 'ouvert'
             firstMove2 = false
             lastMoveCases2 = []
             for (let i = 0; i < etape.cases; i++) {
@@ -576,10 +579,11 @@ export function buildCarte(
           placeSection(targetNum, px, py, targetSection, instanceKey, callerSectionParams)
           if (!isMulti) {
             const hasPorteInChoice = chemin.some(s => s === '@porte')
-            if (hasPorteInChoice && targetSection.carte?.chemin?.length) {
+            const hasPassageSecretInChoice = chemin.some(s => s === '@passage-secret')
+            if ((hasPorteInChoice || hasPassageSecretInChoice) && targetSection.carte?.chemin?.length) {
               const destFirstDir = premiereMoveDir(targetSection.carte.chemin)
               if (destFirstDir && curCase) {
-                openMur(curCase, destFirstDir, 'porte')
+                openMur(curCase, destFirstDir, hasPorteInChoice ? 'porte' : 'passage-secret')
               }
             }
           }
@@ -589,9 +593,10 @@ export function buildCarte(
       const etapes   = parseChemin(cheminEffectif)
       const firstDir = premiereMoveDir(cheminEffectif)
       const isPorte  = commenceParPorte(cheminEffectif)
+      const isPassageSecret = commenceParPassageSecret(cheminEffectif)
       if (!firstDir) return
 
-      const murType: MurType = isPorte ? 'porte' : 'ouvert'
+      const murType: MurType = isPorte ? 'porte' : isPassageSecret ? 'passage-secret' : 'ouvert'
 
       // Ouvre le mur sur la case courante (position px,py)
       if (curCase) openMur(curCase, firstDir, murType)

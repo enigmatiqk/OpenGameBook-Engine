@@ -27,7 +27,8 @@ const ENV_LABELS: Record<CarteEnv, string> = {
   route:    '🛤️ Route',
   mer:      '⚓ Mer',
   porte:    '🚪 Porte',
-  trou:     '🕳 Trou',
+  trou:             '🕳 Trou',
+  'passage-secret': '🔮 Passage secret',
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

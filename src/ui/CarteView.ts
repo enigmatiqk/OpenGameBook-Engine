@@ -43,6 +43,7 @@ const ENV_COLOR: Record<CarteEnv, { fill: string; stroke: string; text: string }
   mer:      { fill: '#0a3a6a', stroke: '#062644', text: '#80b8e8' },
   porte:    { fill: '#5a3a1a', stroke: '#3a2410', text: '#e8c890' },
   trou:     { fill: '#0a0a0a', stroke: '#1a1a1a', text: '#666666' },
+  'passage-secret': { fill: '#1a0a2a', stroke: '#3a1a4a', text: '#c890f0' },
 }
 
 const ENV_DEFAULT = { fill: '#1a1a2e', stroke: '#2a2a4a', text: '#a0a0b0' }
@@ -374,8 +375,27 @@ export class CarteView {
         this.vpGroup.appendChild(line)
       } else if (murType === 'porte') {
         this._drawDoorWall(coords, dir)
+      } else if (murType === 'passage-secret') {
+        this._drawSecretPassageWall(coords)
       }
     }
+  }
+
+  private _drawSecretPassageWall(
+    coords: { x1: number; y1: number; x2: number; y2: number },
+  ): void {
+    // Mur en pointillés violet — indique un passage secret
+    const line = this._svgEl('line')
+    line.setAttribute('x1', String(coords.x1))
+    line.setAttribute('y1', String(coords.y1))
+    line.setAttribute('x2', String(coords.x2))
+    line.setAttribute('y2', String(coords.y2))
+    line.setAttribute('stroke', '#9b59b6')
+    line.setAttribute('stroke-width', String(GAP))
+    line.setAttribute('stroke-dasharray', '3,3')
+    line.setAttribute('stroke-linecap', 'square')
+    line.setAttribute('pointer-events', 'none')
+    this.vpGroup.appendChild(line)
   }
 
   private _drawDoorWall(
@@ -533,4 +553,5 @@ export const ENV_ICON: Partial<Record<CarteEnv, string>> = {
   route:    '🛤️',
   plaine:   '',
   trou:     '🕳',
+  // passage-secret : pas d'icône sur l'arête (le rendu est le mur pointillé)
 }

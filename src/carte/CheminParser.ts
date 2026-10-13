@@ -139,6 +139,18 @@ export function commenceParPorte(chemin: string[]): boolean {
 }
 
 /**
+ * Indique si un chemin commence par un passage secret avant tout mouvement.
+ * "@passage-secret" suivi d'un move = le mur est en pointillés.
+ */
+export function commenceParPassageSecret(chemin: string[]): boolean {
+  for (const etape of parseChemin(chemin)) {
+    if (etape.kind === 'env' && etape.env === 'passage-secret') return true
+    if (etape.kind === 'move') return false
+  }
+  return false
+}
+
+/**
  * Indique si un chemin contient uniquement `!ici` (même case, alias).
  */
 export function estIci(chemin: string[]): boolean {

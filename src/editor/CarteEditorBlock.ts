@@ -17,28 +17,29 @@ import { buildCarte, sectionHasConflict } from '../carte/CarteEngine'
 
 export const CARTE_ENV_LIST: CarteEnv[] = [
   'plaine', 'foret', 'montagne', 'donjon', 'grotte',
-  'riviere', 'lac', 'marais', 'village', 'route', 'mer', 'porte', 'trou',
+  'riviere', 'lac', 'marais', 'village', 'route', 'mer', 'porte', 'trou', 'passage-secret',
 ]
 
 const ENV_LABELS: Record<CarteEnv, string> = {
-  plaine:   '🌾 Plaine',
-  foret:    '🌲 Forêt',
-  montagne: '⛰️ Montagne',
-  donjon:   '🏰 Donjon',
-  grotte:   '🕳️ Grotte',
-  riviere:  '🌊 Rivière',
-  lac:      '💧 Lac',
-  marais:   '🌿 Marais',
-  village:  '🏘️ Village',
-  route:    '🛤️ Route',
-  mer:      '⚓ Mer',
-  porte:    '🚪 Porte',
-  trou:     '🕳 Trou',
+  plaine:           '🌾 Plaine',
+  foret:            '🌲 Forêt',
+  montagne:         '⛰️ Montagne',
+  donjon:           '🏰 Donjon',
+  grotte:           '🕳️ Grotte',
+  riviere:          '🌊 Rivière',
+  lac:              '💧 Lac',
+  marais:           '🌿 Marais',
+  village:          '🏘️ Village',
+  route:            '🛤️ Route',
+  mer:              '⚓ Mer',
+  porte:            '🚪 Porte',
+  trou:             '🕳 Trou',
+  'passage-secret': '🔮 Passage secret',
 }
 
 // Boutons rapides pour les étapes de chemin
 const QUICK_DIRS      = ['N', 'S', 'E', 'O', '2N', '2S', '2E', '2O', '3N', '3S', '3E', '3O']
-const QUICK_ENVS      = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte']
+const QUICK_ENVS      = ['@riviere', '@lac', '@foret', '@montagne', '@grotte', '@marais', '@porte', '@passage-secret']
 const QUICK_ENV_CASES = ['#riviere', '#lac', '#foret', '#montagne', '#grotte', '#marais', '#plaine', '#village', '#route', '#mer', '#trou']
 const QUICK_ACTS      = ['!ici', '!multi', '!retour', '!tp:']
 
@@ -260,6 +261,13 @@ export class CarteEditorBlock {
       return
     }
 
+    // Variable partagée entre tous les items — indispensable pour que l'item
+    // cible du drop puisse lire l'index source défini par l'item draggé.
+    let dragIdx: number | null = null
+
+    // Un seul dragover sur le conteneur suffit (évite N listeners cumulés).
+    this.cheminListEl.addEventListener('dragover', (e) => e.preventDefault())
+
     chemin.forEach((step, i) => {
       const item = document.createElement('div')
       item.className = 'carte-chemin-item'
@@ -289,24 +297,35 @@ export class CarteEditorBlock {
       })
       item.appendChild(del)
 
-      // Drag & drop pour réordonner
-      let dragIdx: number | null = null
+      // Drag & drop — dragIdx est partagé entre tous les items de la liste
       item.addEventListener('dragstart', (e) => {
-        dragIdx = i; item.classList.add('choice-dragging')
+        dragIdx = i
+        item.classList.add('choice-dragging')
         e.dataTransfer!.effectAllowed = 'move'
         e.dataTransfer!.setData('text/plain', String(i))
       })
-      item.addEventListener('dragend', () => { item.classList.remove('choice-dragging') })
+      item.addEventListener('dragend', () => {
+        item.classList.remove('choice-dragging')
+        this.cheminListEl.querySelectorAll('.carte-chemin-item').forEach(el =>
+          el.classList.remove('choice-drop-over'),
+        )
+      })
       item.addEventListener('dragenter', (e) => {
         e.preventDefault()
-        if (dragIdx !== null && dragIdx !== i) item.classList.add('choice-drop-over')
+        if (dragIdx !== null && dragIdx !== i) {
+          this.cheminListEl.querySelectorAll('.carte-chemin-item').forEach(el =>
+            el.classList.remove('choice-drop-over'),
+          )
+          item.classList.add('choice-drop-over')
+        }
       })
       item.addEventListener('dragleave', (e) => {
         if (item.contains(e.relatedTarget as Node)) return
         item.classList.remove('choice-drop-over')
       })
       item.addEventListener('drop', (e) => {
-        e.preventDefault(); item.classList.remove('choice-drop-over')
+        e.preventDefault()
+        item.classList.remove('choice-drop-over')
         if (dragIdx === null || dragIdx === i) return
         const [moved] = chemin.splice(dragIdx, 1)
         chemin.splice(i, 0, moved)
@@ -316,7 +335,6 @@ export class CarteEditorBlock {
         this._refreshPreview()
         this._updateHeader(this._isOpen)
       })
-      this.cheminListEl.addEventListener('dragover', (e) => e.preventDefault())
 
       this.cheminListEl.appendChild(item)
     })
