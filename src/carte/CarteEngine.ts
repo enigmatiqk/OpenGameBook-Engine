@@ -697,9 +697,15 @@ export function buildCarte(
     for (const choice of (section.choix ?? [])) {
       if (!choice.carte?.chemin?.length) continue
       const targetNum = typeof choice.section === 'number' ? choice.section : null
-      if (!targetNum || targetNum <= 0) continue
       const params = choice.section_params as Record<string, number> | undefined
-      processChoice(targetNum, choice.carte.chemin, params)
+      if (targetNum && targetNum > 0) {
+        processChoice(targetNum, choice.carte.chemin, params)
+      } else if (choice.section_saisie?.liste?.length) {
+        // Saisie libre avec liste fixe : propager le chemin à chaque section cible
+        for (const listeNum of choice.section_saisie.liste) {
+          processChoice(listeNum, choice.carte.chemin, params)
+        }
+      }
     }
 
     // ── 2. Outcomes d'actions (si_reussi / si_echoue) ──────────────────────
