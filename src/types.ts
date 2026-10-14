@@ -732,10 +732,12 @@ export interface SaveState {
 
 export interface LeaderboardEntry {
   nom: string
+  resultat: 'victoire' | 'defaite'
   tempsJeuMs: number
   date: string
   nombreSectionsParcourues?: number
   nombreOuverturesCarte?: number
+  sectionMort?: number
   statistiques?: Record<string, number>
 }
 

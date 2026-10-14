@@ -241,6 +241,7 @@ function initVictoryView(engine: GameEngine): void {
     const statistiques = engine.getHero()?.statistiques || {}
     saveStore.addLeaderboardEntry(adventure.titre, { 
       nom, 
+      resultat: 'victoire',
       tempsJeuMs: finalTime, 
       date: new Date().toISOString(),
       nombreSectionsParcourues,
@@ -262,15 +263,49 @@ function initDefeatView(engine: GameEngine): void {
   if (!container) return
 
   const adventure = engine.getAdventure()
+  const finalTime = engine.getFinalTimeMs() || engine.timer.getElapsedMs()
+  const minutes = Math.floor(finalTime / 60000)
+  const seconds = Math.floor((finalTime % 60000) / 1000)
+  const sectionMort = engine.getCurrentSection()
 
   container.innerHTML = `
     <h2>💀 Défaite</h2>
-    <p class="end-message">Votre aventure s'arrête ici… Mais rien ne vous empêche de recommencer !</p>
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+    <p class="end-message">Votre aventure s'arrête ici en ${minutes}m ${seconds}s… Mais rien ne vous empêche de recommencer !</p>
+    <div class="name-input-group">
+      <input class="name-input" type="text" placeholder="Votre nom (optionnel)" maxlength="40" id="loser-name" />
+      <button class="btn btn-primary" id="btn-submit-defeat-score" type="button">Enregistrer</button>
+    </div>
+    <div id="defeat-leaderboard-area"></div>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem">
       <button class="btn btn-primary" id="btn-restart" type="button">Recommencer</button>
       <button class="btn btn-secondary" id="btn-back-library" type="button">Retour à la bibliothèque</button>
     </div>
   `
+
+  const saveStore = new SaveStore()
+
+  container.querySelector<HTMLButtonElement>('#btn-submit-defeat-score')!.addEventListener('click', () => {
+    if (!adventure) return
+    const nameInput = container.querySelector<HTMLInputElement>('#loser-name')
+    const nom = nameInput?.value.trim() || 'Anonyme'
+    const journal = engine.getHero()?.journal ?? []
+    const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
+    const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
+    const statistiques = engine.getHero()?.statistiques || {}
+    saveStore.addLeaderboardEntry(adventure.titre, {
+      nom,
+      resultat: 'defaite',
+      tempsJeuMs: finalTime,
+      date: new Date().toISOString(),
+      nombreSectionsParcourues,
+      nombreOuverturesCarte,
+      sectionMort,
+      statistiques
+    })
+    saveStore.deleteSave(adventure.titre)
+    const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
+    if (inputGroup) inputGroup.style.display = 'none'
+  })
 
   container.querySelector<HTMLButtonElement>('#btn-restart')!.addEventListener('click', () => {
     if (!adventure) { showView('library'); return }
