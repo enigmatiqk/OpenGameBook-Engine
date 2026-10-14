@@ -4,105 +4,15 @@
     "ast_hash": "92749756d0def9e14eba3f7baca8a6e4",
     "semantic_hash": "92749756d0def9e14eba3f7baca8a6e4"
   },
-  "ia_sections/convert.py": {
-    "mtime": 1780431573.529319,
-    "ast_hash": "0936e2db68b0ae78218b9ccafac49029",
-    "semantic_hash": "0936e2db68b0ae78218b9ccafac49029"
-  },
   "package.json": {
     "mtime": 1778015498.8254385,
     "ast_hash": "32e04ab404fc9231cd0bf96c99f98232",
     "semantic_hash": "32e04ab404fc9231cd0bf96c99f98232"
   },
-  "pdf/test.py": {
-    "mtime": 1778079665.224907,
-    "ast_hash": "d6b7091a6dac6ce84c0a61581217c07b",
-    "semantic_hash": "d6b7091a6dac6ce84c0a61581217c07b"
-  },
   "playwright.config.ts": {
     "mtime": 1777672411.927781,
     "ast_hash": "d57863e898b26006549d451011e3d450",
     "semantic_hash": "d57863e898b26006549d451011e3d450"
-  },
-  "scannerPDF/__init__.py": {
-    "mtime": 1776981527.003352,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
-  },
-  "scannerPDF/main.py": {
-    "mtime": 1776981689.5594652,
-    "ast_hash": "0d1d19709a054bf34174cc26467a127f",
-    "semantic_hash": "0d1d19709a054bf34174cc26467a127f"
-  },
-  "scannerPDF/pdf_scanner.py": {
-    "mtime": 1777150560.96604,
-    "ast_hash": "d6d94b96c17900d493ebbbb26453cdf9",
-    "semantic_hash": "d6d94b96c17900d493ebbbb26453cdf9"
-  },
-  "scannerPDF/pretty_printer.py": {
-    "mtime": 1776981681.3756292,
-    "ast_hash": "e70f229a369fb48466f87bae6c1cbc4a",
-    "semantic_hash": "e70f229a369fb48466f87bae6c1cbc4a"
-  },
-  "scannerPDF/tests/__init__.py": {
-    "mtime": 1776981527.020936,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
-  },
-  "scannerPDF/tests/test_pdf_scanner.py": {
-    "mtime": 1776981717.3765213,
-    "ast_hash": "cf15bbc50a7dc6eb646c1b4a27d45fc5",
-    "semantic_hash": "cf15bbc50a7dc6eb646c1b4a27d45fc5"
-  },
-  "scripts/compare_sections.py": {
-    "mtime": 1780342181.0300512,
-    "ast_hash": "2034a4c49f1780cb7a5e3c83b1125f2b",
-    "semantic_hash": "2034a4c49f1780cb7a5e3c83b1125f2b"
-  },
-  "scripts/compare_sections_structure.py": {
-    "mtime": 1780431573.5282943,
-    "ast_hash": "05aded45888c834cf2a6742257ee426c",
-    "semantic_hash": "05aded45888c834cf2a6742257ee426c"
-  },
-  "scripts/convert.py": {
-    "mtime": 1780342080.9958093,
-    "ast_hash": "c8a85e73e49c03cd238fdc72798bce29",
-    "semantic_hash": "c8a85e73e49c03cd238fdc72798bce29"
-  },
-  "scripts/extract_pdf-to-json.py": {
-    "mtime": 1780342080.9958093,
-    "ast_hash": "3fcb2d41566db085cd98b4af54c2ff81",
-    "semantic_hash": "3fcb2d41566db085cd98b4af54c2ff81"
-  },
-  "scripts/ia_generate_images.py": {
-    "mtime": 1778254194.7906637,
-    "ast_hash": "c6daa7f9e5138b255d279f00f7c9c6a6",
-    "semantic_hash": "c6daa7f9e5138b255d279f00f7c9c6a6"
-  },
-  "scripts/migrate_effets.py": {
-    "mtime": 1785582747.502311,
-    "ast_hash": "e9e27de9b46a2e39b753f2e569ce2941",
-    "semantic_hash": "e9e27de9b46a2e39b753f2e569ce2941"
-  },
-  "scripts/patch_convert_prompt.py": {
-    "mtime": 1780431573.5313213,
-    "ast_hash": "53babec4a055db027809bbe4e5dbf303",
-    "semantic_hash": "53babec4a055db027809bbe4e5dbf303"
-  },
-  "scripts/post-build.ps1": {
-    "mtime": 1778016499.5418887,
-    "ast_hash": "7bd8537a13478b5896cc55f87ea906e4",
-    "semantic_hash": "7bd8537a13478b5896cc55f87ea906e4"
-  },
-  "scripts/serve.ps1": {
-    "mtime": 1778015490.6339014,
-    "ast_hash": "9e68fd5f40034d1442480ba3a8f2a1f6",
-    "semantic_hash": "9e68fd5f40034d1442480ba3a8f2a1f6"
-  },
-  "scripts/serve.sh": {
-    "mtime": 1778015484.8800728,
-    "ast_hash": "552ebacf698689265efa8a4374c80350",
-    "semantic_hash": "552ebacf698689265efa8a4374c80350"
   },
   "src/engine/CombatResolver.ts": {
     "mtime": 1788729890.9485726,
@@ -110,9 +20,9 @@
     "semantic_hash": "7525b9896e5828a22680d4a0ee8d7521"
   },
   "src/engine/GameEngine.ts": {
-    "mtime": 1788938490.0444047,
-    "ast_hash": "35240bf9e6d863772f4afb7b4476eff0",
-    "semantic_hash": "35240bf9e6d863772f4afb7b4476eff0"
+    "mtime": 1791982429.864747,
+    "ast_hash": "ca76639e2eceba2eefd9eaecd771779b",
+    "semantic_hash": "ca76639e2eceba2eefd9eaecd771779b"
   },
   "src/engine/GameEngineActions.ts": {
     "mtime": 1788808435.2669535,
@@ -160,9 +70,9 @@
     "semantic_hash": "a1fe579397d665674687def696ee301d"
   },
   "src/engine/LibraryManager.ts": {
-    "mtime": 1777321123.322081,
-    "ast_hash": "01df09c325bca82fb6bbdc33be513f13",
-    "semantic_hash": "01df09c325bca82fb6bbdc33be513f13"
+    "mtime": 1791982426.643456,
+    "ast_hash": "e837cda03acbcb5482ee0ea904f509e4",
+    "semantic_hash": "e837cda03acbcb5482ee0ea904f509e4"
   },
   "src/engine/PlayTimer.ts": {
     "mtime": 1776978878.555343,
@@ -185,19 +95,19 @@
     "semantic_hash": "a11b88055f32560ba6a6732da3e303ca"
   },
   "src/engine/schema-effects.ts": {
-    "mtime": 1788812920.6872053,
-    "ast_hash": "b0680f26b8ae0e7868967111d740df75",
-    "semantic_hash": "b0680f26b8ae0e7868967111d740df75"
+    "mtime": 1791985633.8588178,
+    "ast_hash": "fc2e6c845697bd033c2bbdb1cf60b2b1",
+    "semantic_hash": "fc2e6c845697bd033c2bbdb1cf60b2b1"
   },
   "src/main.ts": {
-    "mtime": 1788958013.1593354,
-    "ast_hash": "a9aa5cef43b4bb3adbd04c6d0501bde1",
-    "semantic_hash": "a9aa5cef43b4bb3adbd04c6d0501bde1"
+    "mtime": 1791985158.0501623,
+    "ast_hash": "d56566acaed35d0fd33059cf956ddad2",
+    "semantic_hash": "d56566acaed35d0fd33059cf956ddad2"
   },
   "src/types.ts": {
-    "mtime": 1789327658.798897,
-    "ast_hash": "63359988ae3be52601225e3f85bef985",
-    "semantic_hash": "63359988ae3be52601225e3f85bef985"
+    "mtime": 1791985667.9652479,
+    "ast_hash": "b5bab17016a7cd45a0650b46aca83825",
+    "semantic_hash": "b5bab17016a7cd45a0650b46aca83825"
   },
   "src/ui/accessibility.ts": {
     "mtime": 1777066320.1349342,
@@ -225,9 +135,9 @@
     "semantic_hash": "9917599d14ed3d5d536755920f20d153"
   },
   "src/ui/game.ts": {
-    "mtime": 1789542205.3970022,
-    "ast_hash": "7b1373b9aec3500a8df589d959ac9c85",
-    "semantic_hash": "7b1373b9aec3500a8df589d959ac9c85"
+    "mtime": 1791982330.4326534,
+    "ast_hash": "819200ef974894107bbedb910602a109",
+    "semantic_hash": "819200ef974894107bbedb910602a109"
   },
   "src/ui/imagePreferences.ts": {
     "mtime": 1778166929.823751,
@@ -240,9 +150,9 @@
     "semantic_hash": "4772e1a1ecfd84eb447d9443c15dd834"
   },
   "src/ui/leaderboard.ts": {
-    "mtime": 1777239851.7921107,
-    "ast_hash": "87b7e091806b78d86b8fbe1617100391",
-    "semantic_hash": "87b7e091806b78d86b8fbe1617100391"
+    "mtime": 1791985171.583454,
+    "ast_hash": "e361afdc6decb95f57aa66629bd11dec",
+    "semantic_hash": "e361afdc6decb95f57aa66629bd11dec"
   },
   "src/ui/library.ts": {
     "mtime": 1788934779.6729991,
@@ -1060,9 +970,9 @@
     "semantic_hash": "4c4cc321cf39197ea7aceb25843dcad2"
   },
   "vite.config.ts": {
-    "mtime": 1789235584.7852468,
-    "ast_hash": "3f1226bf323c903455c198a28397bcbd",
-    "semantic_hash": "3f1226bf323c903455c198a28397bcbd"
+    "mtime": 1791178519.9544845,
+    "ast_hash": "9f49d5cd9760b5f83db7073547237042",
+    "semantic_hash": "9f49d5cd9760b5f83db7073547237042"
   },
   "vitest.config.ts": {
     "mtime": 1776973287.779983,
@@ -1132,11 +1042,6 @@
   ".kiro/steering/graphify.md": {
     "mtime": 1786271302.3857715,
     "ast_hash": "81be1a4201e0893879433cddab9ffd20",
-    "semantic_hash": ""
-  },
-  "NOTES-duel-de.md": {
-    "mtime": 1786050780.866232,
-    "ast_hash": "aa0a40e9daeb4e6cdbf6995df9f81459",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1244,39 +1149,9 @@
     "ast_hash": "21540e7efc212d7509606d13e2754341",
     "semantic_hash": ""
   },
-  "ia/ollama/moteur-gamebook.yaml": {
-    "mtime": 1780431573.5282943,
-    "ast_hash": "a577485ad3e1b8e72523713546b82ab5",
-    "semantic_hash": ""
-  },
-  "ia_sections/Modelfile.txt": {
-    "mtime": 1779139253.8673813,
-    "ast_hash": "9d5ff6a2d852b0b699bdb1203c405142",
-    "semantic_hash": ""
-  },
-  "ia_sections/readme.txt": {
-    "mtime": 1779139061.1907704,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": ""
-  },
   "index.html": {
     "mtime": 1785501658.4343157,
     "ast_hash": "8874c3166ed94fd64b084eed97d8d264",
-    "semantic_hash": ""
-  },
-  "pdf/03-creer-une-aventure.md": {
-    "mtime": 1778079427.4775138,
-    "ast_hash": "7da3983ffc3a5b0f4387714d57b55779",
-    "semantic_hash": ""
-  },
-  "pdf/07-items-gain.md": {
-    "mtime": 1777324030.6659014,
-    "ast_hash": "3ae49af2f534b64aa244e0fbfa90a563",
-    "semantic_hash": ""
-  },
-  "pdf/08-effets-section.md": {
-    "mtime": 1777809291.511302,
-    "ast_hash": "4aeda8f6608f1063d9dc95589db39ef5",
     "semantic_hash": ""
   },
   "playwright-report/index.html": {
@@ -1284,209 +1159,9 @@
     "ast_hash": "005d38df9a9a3123407ff00df0df4204",
     "semantic_hash": ""
   },
-  "scannerPDF/OVERRIDES.md": {
-    "mtime": 1777022178.4919498,
-    "ast_hash": "d29fdaafed672dc098b459366bfc9d97",
-    "semantic_hash": ""
-  },
-  "scannerPDF/requirements.txt": {
-    "mtime": 1776981338.8917503,
-    "ast_hash": "fd6eed9db2ba3697593236cac71704f4",
-    "semantic_hash": ""
-  },
-  "scripts/output/raw.txt": {
-    "mtime": 1780255045.458509,
-    "ast_hash": "5fe5770125904e133d6ebbff90c17454",
-    "semantic_hash": ""
-  },
-  "scripts/requirements.txt": {
-    "mtime": 1777131246.7457306,
-    "ast_hash": "53f4a847d9b952f1c245097f697ede25",
-    "semantic_hash": ""
-  },
   "tests/e2e/README.md": {
     "mtime": 1786484415.2026794,
     "ast_hash": "ce2194c82f00cf67c8c0d9025d43eb59",
-    "semantic_hash": ""
-  },
-  "ia_section_003.jpeg": {
-    "mtime": 1778106064.2072394,
-    "ast_hash": "3956c9c3e3efd27336d1891346415112",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/cover.jpeg": {
-    "mtime": 1780255044.6383128,
-    "ast_hash": "a54dc93ef5d8a3de3bf2f888f83d266c",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/intro_page170_img01.jpeg": {
-    "mtime": 1780255045.4379997,
-    "ast_hash": "5ca68919389ea857a9e84b464001015d",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_001.jpeg": {
-    "mtime": 1780255044.6578763,
-    "ast_hash": "73ca8bc9a25cc55cd04333730239adf8",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_011.jpeg": {
-    "mtime": 1780255044.6763825,
-    "ast_hash": "76bd419286d2c5139893af404752b918",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_038.jpeg": {
-    "mtime": 1780255044.7048843,
-    "ast_hash": "2d952a441b046304f4dc99a3faeb7e0c",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_072.jpeg": {
-    "mtime": 1780255044.7514439,
-    "ast_hash": "2ef75b4b3694058ea85aae00394bcec9",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_084.jpeg": {
-    "mtime": 1780255044.7704887,
-    "ast_hash": "e0f7e617fe0b238b99727919456223a9",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_098.jpeg": {
-    "mtime": 1780255044.7899926,
-    "ast_hash": "1ce4d06653d2f52bf64b67d5ff82d010",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_123.jpeg": {
-    "mtime": 1780255044.8838108,
-    "ast_hash": "080e2378a68d42e3879d8f1b0566136d",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_144.jpeg": {
-    "mtime": 1780255044.9253445,
-    "ast_hash": "2da63a98d47e155e4036996f037beee3",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_152.jpeg": {
-    "mtime": 1780255044.8185725,
-    "ast_hash": "668586d04b63363bdf901af2dbff3ac9",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_156.jpeg": {
-    "mtime": 1780255044.944872,
-    "ast_hash": "f60e58a56c04d14607147d324c479dc4",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_169.jpeg": {
-    "mtime": 1780255044.9748416,
-    "ast_hash": "eec07d073d3b328ab751d4488131dc02",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_180.jpeg": {
-    "mtime": 1780255044.9933524,
-    "ast_hash": "8c318dd710dfb4878545b5f7fe1d562e",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_191_a.jpeg": {
-    "mtime": 1780255045.0223746,
-    "ast_hash": "04d3b0f7c3895b09a66825e4b55fdcd9",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_193.jpeg": {
-    "mtime": 1780255045.0403893,
-    "ast_hash": "398b88e5da32abc6828701fd7276324f",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_205.jpeg": {
-    "mtime": 1780255045.060894,
-    "ast_hash": "e4467c5726d15682d076b725f71c1f0a",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_217.jpeg": {
-    "mtime": 1780255045.0902264,
-    "ast_hash": "175fd444fa5b8a94a933ebad1bdcc0c4",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_228.jpeg": {
-    "mtime": 1780255045.1107426,
-    "ast_hash": "9d9c3c0c9a4685e68b49e975adb396a1",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_241.jpeg": {
-    "mtime": 1780255045.1282506,
-    "ast_hash": "4552ea7161ed37fced36c3b3647369a3",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_251.jpeg": {
-    "mtime": 1780255045.1573613,
-    "ast_hash": "6ce9c3376b3e18374cc437db09bee100",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_267.jpeg": {
-    "mtime": 1780255045.1999025,
-    "ast_hash": "dfc1917112688a83317b939410134dd4",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_276.jpeg": {
-    "mtime": 1780255045.2184248,
-    "ast_hash": "5367945475df61dd14b7e3a66ff85a83",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_287.jpeg": {
-    "mtime": 1780255045.2379334,
-    "ast_hash": "15043e0b58867f424691c583662dc321",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_297.jpeg": {
-    "mtime": 1780255045.251436,
-    "ast_hash": "5408b8f9d5ea12ab0547218b982208e2",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_305.jpeg": {
-    "mtime": 1780255045.2697566,
-    "ast_hash": "a0a53127b816d33570451e2fad5d8266",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_312.jpeg": {
-    "mtime": 1780255045.2882657,
-    "ast_hash": "e119686027e01d8b93ccb4a76e2bb83e",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_327.jpeg": {
-    "mtime": 1780255045.3020759,
-    "ast_hash": "34c8e9dd54bbf7977f9d8acabc599a0f",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_336.jpeg": {
-    "mtime": 1780255045.3216805,
-    "ast_hash": "414405ba353c0e7af367e08ed18f75bd",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_349.jpeg": {
-    "mtime": 1780255045.351699,
-    "ast_hash": "07ac489120fe8549f12815c218c9168c",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_358.jpeg": {
-    "mtime": 1780255045.3707721,
-    "ast_hash": "d86d00800805e907e3ef89a5cb7b3007",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_372.jpeg": {
-    "mtime": 1780255045.3905015,
-    "ast_hash": "42881a14d8bcfa31efbe4cd243da8997",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_383.jpeg": {
-    "mtime": 1780255045.4118989,
-    "ast_hash": "3cc9fae2e11862d7d718e4857130c3ba",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_395.jpeg": {
-    "mtime": 1780255045.4254916,
-    "ast_hash": "c6518524aac9fa7ea8c932800f212f97",
-    "semantic_hash": ""
-  },
-  "scripts/output/images/section_400.jpeg": {
-    "mtime": 1780255045.458509,
-    "ast_hash": "52243caca0a316e2c97640cfa5993e8c",
     "semantic_hash": ""
   },
   "section_003.jpeg": {
@@ -2815,29 +2490,29 @@
     "semantic_hash": "8b72e825a6ceb4bef2b8b096e878c0e6"
   },
   "src/carte/CarteEngine.ts": {
-    "mtime": 1789588099.855423,
-    "ast_hash": "19b4eeb88a1acf84b8a6741f4e96650e",
-    "semantic_hash": "19b4eeb88a1acf84b8a6741f4e96650e"
+    "mtime": 1791899881.1911883,
+    "ast_hash": "eaf27c7c7dd0b2f4481e03c5ab1352a3",
+    "semantic_hash": "eaf27c7c7dd0b2f4481e03c5ab1352a3"
   },
   "src/carte/CheminParser.ts": {
-    "mtime": 1789583917.045633,
-    "ast_hash": "9b92609aa06bc179ce6f822b2925af91",
-    "semantic_hash": "9b92609aa06bc179ce6f822b2925af91"
+    "mtime": 1791891870.3183122,
+    "ast_hash": "49d8090d8198ccf5e80cc039a6b3f137",
+    "semantic_hash": "49d8090d8198ccf5e80cc039a6b3f137"
   },
   "src/editor/AdventureTreePanel.ts": {
-    "mtime": 1789240258.7170215,
-    "ast_hash": "966dcc0df802e7aa817de8028638581b",
-    "semantic_hash": "966dcc0df802e7aa817de8028638581b"
+    "mtime": 1791898933.922434,
+    "ast_hash": "d985ff776d0ab5bb9e14402de7aad620",
+    "semantic_hash": "d985ff776d0ab5bb9e14402de7aad620"
   },
   "src/editor/CarteEditorBlock.ts": {
-    "mtime": 1789584564.8384068,
-    "ast_hash": "473cef60ea94e3842ed835a4755a38e1",
-    "semantic_hash": "473cef60ea94e3842ed835a4755a38e1"
+    "mtime": 1791891895.5396543,
+    "ast_hash": "d5f9942eeb00df4a3fd541b0a2cd002e",
+    "semantic_hash": "d5f9942eeb00df4a3fd541b0a2cd002e"
   },
   "src/editor/ChoicePropertyModal.ts": {
-    "mtime": 1789363227.5350184,
-    "ast_hash": "7652c27343fbf2a2e4e3e99084926188",
-    "semantic_hash": "7652c27343fbf2a2e4e3e99084926188"
+    "mtime": 1791895246.6448157,
+    "ast_hash": "38f266d5910a8c12c0ca10b10e055bea",
+    "semantic_hash": "38f266d5910a8c12c0ca10b10e055bea"
   },
   "src/editor/ChoicesEditor.ts": {
     "mtime": 1789312875.832542,
@@ -2845,9 +2520,9 @@
     "semantic_hash": "f6a05489f4251d2d4f73ffa41bdd9947"
   },
   "src/editor/CombatEditor.ts": {
-    "mtime": 1789417105.5996294,
-    "ast_hash": "81750cc4d893ba714eb526f353e84ee6",
-    "semantic_hash": "81750cc4d893ba714eb526f353e84ee6"
+    "mtime": 1791826760.7499928,
+    "ast_hash": "b7dc24a19640a2a4c14cc5e86db1cfdf",
+    "semantic_hash": "b7dc24a19640a2a4c14cc5e86db1cfdf"
   },
   "src/editor/ConditionEditor.ts": {
     "mtime": 1789309074.112843,
@@ -2860,9 +2535,9 @@
     "semantic_hash": "48e70feb2ab6ce0e922d25f9dcfdd09f"
   },
   "src/editor/EditorApp.ts": {
-    "mtime": 1789592062.7798345,
-    "ast_hash": "5d2d8441782bbf7211b0cfcbedad7d36",
-    "semantic_hash": "5d2d8441782bbf7211b0cfcbedad7d36"
+    "mtime": 1791790970.3574252,
+    "ast_hash": "193c6f7d48244c57b28ce1d579df49c3",
+    "semantic_hash": "193c6f7d48244c57b28ce1d579df49c3"
   },
   "src/editor/EffetsEditor.ts": {
     "mtime": 1789299422.6433048,
@@ -2885,14 +2560,14 @@
     "semantic_hash": "c82d955632aac335138a17ebf1eb8b43"
   },
   "src/editor/SectionEditor.ts": {
-    "mtime": 1789330057.3694477,
-    "ast_hash": "00417c16f63d6b7578a5a9e8090d09ab",
-    "semantic_hash": "00417c16f63d6b7578a5a9e8090d09ab"
+    "mtime": 1791897695.65301,
+    "ast_hash": "113c0d57b4386d55a8f061c9501ce785",
+    "semantic_hash": "113c0d57b4386d55a8f061c9501ce785"
   },
   "src/editor/SectionTargetExtractor.ts": {
-    "mtime": 1789235839.604503,
-    "ast_hash": "9cb0a6d3612a370d1747443f0528743d",
-    "semantic_hash": "9cb0a6d3612a370d1747443f0528743d"
+    "mtime": 1791822345.280439,
+    "ast_hash": "b49eb8251eaad87601ca1e5f9690dc72",
+    "semantic_hash": "b49eb8251eaad87601ca1e5f9690dc72"
   },
   "src/editor/WysiwygEditor.ts": {
     "mtime": 1789294813.8390229,
@@ -2900,18 +2575,28 @@
     "semantic_hash": "a11cfa6f284ba8a43e6cd510c3b89bce"
   },
   "src/editor/main.ts": {
-    "mtime": 1789235739.5999174,
-    "ast_hash": "77f483ac8f6f8b41415f8b07700fbf08",
-    "semantic_hash": "77f483ac8f6f8b41415f8b07700fbf08"
+    "mtime": 1791230508.0075016,
+    "ast_hash": "1f43ccc7ccef3e707a0f7d732ad615cd",
+    "semantic_hash": "1f43ccc7ccef3e707a0f7d732ad615cd"
   },
   "src/ui/CarteView.ts": {
-    "mtime": 1789579247.5889244,
-    "ast_hash": "a1fa2f4a1b2d51fb68f4e9b19799a7c0",
-    "semantic_hash": "a1fa2f4a1b2d51fb68f4e9b19799a7c0"
+    "mtime": 1791900973.0879874,
+    "ast_hash": "b0f07c1723304126655b5045d4cc8f33",
+    "semantic_hash": "b0f07c1723304126655b5045d4cc8f33"
   },
   "src/ui/adventureTree.ts": {
     "mtime": 1788981643.6329355,
     "ast_hash": "21d76bd5db75bee5327219ad3921795a",
     "semantic_hash": "21d76bd5db75bee5327219ad3921795a"
+  },
+  "src/editor/CarteFixeEditor.ts": {
+    "mtime": 1791891906.5886245,
+    "ast_hash": "b3a7710a31259d8bcf8f58600f618448",
+    "semantic_hash": "b3a7710a31259d8bcf8f58600f618448"
+  },
+  "tests/CarteEngine.test.ts": {
+    "mtime": 1791138570.2182996,
+    "ast_hash": "e7d3a77f98a81fbfad2d436031cebe6c",
+    "semantic_hash": "e7d3a77f98a81fbfad2d436031cebe6c"
   }
 }
