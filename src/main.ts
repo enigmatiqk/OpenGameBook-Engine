@@ -113,8 +113,8 @@ function showIntroScreen(container: HTMLElement, engine: GameEngine, onContinue:
     <div class="intro-screen">
       <div class="intro-content">
         ${imageHtml}
-        <h2 class="intro-title">${intro.titre.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h2>
-        <div class="intro-text">${intro.texte.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
+        <h2 class="intro-title">${intro.titre}</h2>
+        <div class="intro-text">${intro.texte}</div>
         <button class="btn btn-primary btn-start-adventure" type="button">Commencer l'aventure</button>
       </div>
     </div>
