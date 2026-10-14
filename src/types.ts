@@ -397,6 +397,7 @@ export interface EffetItem {
   description?: string
   bonus?: Record<string, number>
   effets?: Effet[]         // effets appliqués quand l'item est porté
+  usage?: string           // action liée à l'item (ex: "manger_repas", "potion_vigueur")
 }
 
 export interface EffetMonstreStat {

@@ -113,9 +113,10 @@ export function applyItemEffect(
 
   const delta = resolveItemDelta(item, context)
 
-  // ── Cas "item riche" : possède type, remplace, effets, bonus, image… ──────
+  // ── Cas "item riche" : possède type, remplace, effets, bonus, image, usage… ──────
   const isRichItem = !!(item.type || item.remplace || item.effets || item.bonus ||
-                        item.image || item.image_ia || item.description || item.poids)
+                        item.image || item.image_ia || item.description || item.poids ||
+                        item.usage)
 
   if (isRichItem) {
     // Résout la quantité de l'item créé (quantite prioritaire sur delta pour la création)
@@ -133,6 +134,7 @@ export function applyItemEffect(
     if (item.description) newItem.description = item.description
     if (item.bonus)       newItem.bonus = item.bonus
     if (item.effets)      newItem.effets = item.effets
+    if (item.usage)       newItem.usage = item.usage
     if (item.item_dropable === false) newItem.item_dropable = false
     if (item.item_unequip === false) newItem.item_unequip = false
 
