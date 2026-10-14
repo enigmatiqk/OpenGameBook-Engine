@@ -294,9 +294,6 @@ export class GameEngine {
       }
     }
 
-    // Normalise choix au cas où il est absent du JSON
-    if (!section.choix) section.choix = []
-
     // Réinitialise le tracking des actions pour cette nouvelle section
     this.navigation.resetSectionActions()
 

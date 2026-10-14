@@ -82,6 +82,7 @@ export class LibraryManager {
           // Tente cartefix.json même pour un full.json
           const adv = data as Adventure
           adv.cartefix = await this._loadCartefix(dir)
+          this._normalizeAdventure(adv)
           return adv
         }
       }
@@ -129,7 +130,19 @@ export class LibraryManager {
 
     const adventure = data as unknown as Adventure
     adventure.cartefix = await this._loadCartefix(dir)
+    this._normalizeAdventure(adventure)
     return adventure
+  }
+
+  /**
+   * Normalise les données d'une aventure après chargement.
+   * Garantit que toutes les sections ont un tableau `choix` initialisé,
+   * évitant les accès à `section.choix.length` qui crashent si la propriété est absente.
+   */
+  private _normalizeAdventure(adventure: Adventure): void {
+    for (const section of adventure.sections) {
+      if (!section.choix) section.choix = []
+    }
   }
 
   /**

@@ -319,11 +319,12 @@ export class GameView {
     text.innerHTML = section.texte
     wrap.appendChild(text)
 
-    if (section.choix.length > 0) {
+    const choix = section.choix ?? []
+    if (choix.length > 0) {
       const ul = document.createElement('ul')
       ul.className = 'choices-list'
-      for (let choixIndex = 0; choixIndex < section.choix.length; choixIndex++) {
-        const choice = section.choix[choixIndex]
+      for (let choixIndex = 0; choixIndex < choix.length; choixIndex++) {
+        const choice = choix[choixIndex]
         const li = document.createElement('li')
         const btn = document.createElement('button')
         btn.className = 'choice-btn'
