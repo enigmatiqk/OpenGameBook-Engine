@@ -270,6 +270,28 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .leaderboard-table .name { font-weight: 500; }
 .leaderboard-table .time { color: var(--text-secondary); }
 .leaderboard-table .saves { color: var(--text-secondary); }
+.leaderboard-table .sections { color: var(--text-secondary); }
+.leaderboard-table .carte { color: var(--text-secondary); }
+.leaderboard-table .section-mort { color: var(--text-secondary); font-style: italic; }
+
+/* Lignes victoire / défaite */
+.lb-row--victoire { border-left: 3px solid #4caf50; }
+.lb-row--defaite  { border-left: 3px solid #f44336; }
+.lb-badge { font-size: 1rem; }
+.lb-badge--victoire { filter: drop-shadow(0 0 4px #4caf50); }
+.lb-badge--defaite  { filter: drop-shadow(0 0 4px #f44336); }
+
+/* Boutons filtre leaderboard */
+.leaderboard-filters { display: flex; gap: 0.5rem; justify-content: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.btn-filter { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.35rem 0.9rem; font-size: 0.85rem; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.btn-filter:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.btn-filter.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+
+/* Conteneur interne de la modale leaderboard */
+.leaderboard-content { display: flex; flex-direction: column; }
+.leaderboard-modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); max-width: 900px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+.leaderboard-modal h2 { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 1.5rem; margin: 0; }
+.leaderboard-modal .btn { margin: 1rem auto 0; display: block; }
 .empty-message { text-align: center; padding: 2rem; color: var(--text-secondary); }
 .leaderboard-modal-content .btn { margin-top: 1rem; align-self: center; }
 
