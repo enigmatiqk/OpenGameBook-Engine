@@ -178,7 +178,7 @@ export class GameView {
     const toolbar = document.createElement('div')
     toolbar.className = 'game-toolbar'
 
-    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<pre class="modal-text">${this._escHtml(adventure.mode_emploi)}</pre>`))
+    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<div class="modal-text">${adventure.mode_emploi}</div>`))
     const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => this._showHeroModal())
     const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => this._showImagesModal(adventure))
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
