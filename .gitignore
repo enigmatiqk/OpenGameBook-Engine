@@ -44,4 +44,5 @@ scannerPDF
 scripts/
 !scripts/dev-save-plugin.ts
 !scripts/post-build.ps1
+!scripts/post-build.mjs
 scripts
