@@ -4,7 +4,7 @@ import { devSavePlugin } from './scripts/dev-save-plugin'
 
 export default defineConfig({
   plugins: [devSavePlugin()],
-  base: '/opengamebooks/',
+  base: '/',
   build: {
     rollupOptions: {
       input: {
