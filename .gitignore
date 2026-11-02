@@ -39,4 +39,9 @@ graphify-out/cache
 ia
 old
 scannerPDF
+
+# Scripts utilitaires (ignorés sauf ceux nécessaires au build)
+scripts/
+!scripts/dev-save-plugin.ts
+!scripts/post-build.ps1
 scripts
