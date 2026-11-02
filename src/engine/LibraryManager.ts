@@ -1,4 +1,5 @@
 import type { Adventure, AdventureMetadata, CarteFixe, ValidationResult } from '../types'
+import { isRemoteUrl } from '../utils/imageUtils'
 
 const REQUIRED_FIELDS: (keyof Adventure)[] = [
   'titre',
@@ -164,11 +165,19 @@ export class LibraryManager {
   }
 
   /**
-   * Scanne le manifest et charge uniquement couverture.json pour la bibliothèque.
+   * Scanne le manifest local (`adventures/`) et charge uniquement couverture.json
+   * pour chaque aventure listée.
+   *
+   * Prend également en charge :
+   * - Les entrées dont `path` est une URL absolue (http/https) : l'aventure est
+   *   hébergée à distance, le chemin n'est pas préfixé par la base locale.
+   * - Un champ `remoteLibraries` dans le manifest : tableau d'URLs pointant vers
+   *   des manifests distants supplémentaires. Ces bibliothèques sont chargées
+   *   récursivement via `scanRemoteManifest()`.
    */
   async scanDirectory(path: string): Promise<AdventureMetadata[]> {
     const manifestUrl = path.replace(/\/?$/, '/') + 'manifest.json'
-    let manifest: { adventures?: unknown[] }
+    let manifest: { adventures?: unknown[]; remoteLibraries?: unknown[] }
 
     try {
       const response = await fetch(manifestUrl)
@@ -183,46 +192,121 @@ export class LibraryManager {
       return []
     }
 
-    if (!Array.isArray(manifest.adventures) || manifest.adventures.length === 0) {
+    const base = path.replace(/\/?$/, '/')
+    const results: AdventureMetadata[] = []
+
+    // ── Aventures locales / distantes déclarées dans ce manifest ─────────────
+    if (Array.isArray(manifest.adventures) && manifest.adventures.length > 0) {
+      for (const entry of manifest.adventures) {
+        if (typeof entry !== 'object' || entry === null) continue
+        const e = entry as Record<string, unknown>
+        if (typeof e.path !== 'string') continue
+
+        // Si le path est une URL absolue, on l'utilise directement ;
+        // sinon on le préfixe par la base locale.
+        const adventureDir = isRemoteUrl(e.path) ? e.path : base + e.path
+
+        const meta = await this._loadAdventureMeta(adventureDir)
+        if (meta) results.push(meta)
+      }
+    } else {
       console.warn(`LibraryManager: le manifest "${manifestUrl}" ne contient aucune aventure.`)
+    }
+
+    // ── Bibliothèques distantes supplémentaires ───────────────────────────────
+    if (Array.isArray(manifest.remoteLibraries)) {
+      for (const remoteUrl of manifest.remoteLibraries) {
+        if (typeof remoteUrl !== 'string' || !isRemoteUrl(remoteUrl)) {
+          console.warn(`LibraryManager: remoteLibraries entrée ignorée (URL invalide) : "${remoteUrl}"`)
+          continue
+        }
+        const remote = await this.scanRemoteManifest(remoteUrl)
+        results.push(...remote)
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * Charge un manifest distant (URL absolue pointant vers un `manifest.json`)
+   * et retourne les métadonnées de toutes les aventures qu'il contient.
+   *
+   * Toutes les entrées d'un manifest distant dont `path` est relatif sont
+   * résolues par rapport à la base de l'URL du manifest.
+   */
+  async scanRemoteManifest(manifestUrl: string): Promise<AdventureMetadata[]> {
+    let manifest: { adventures?: unknown[] }
+
+    try {
+      const response = await fetch(manifestUrl)
+      if (!response.ok) {
+        console.warn(`LibraryManager: manifest distant introuvable "${manifestUrl}" (HTTP ${response.status}).`)
+        return []
+      }
+      manifest = await response.json()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.warn(`LibraryManager: impossible de lire le manifest distant "${manifestUrl}" : ${message}.`)
       return []
     }
 
-    const base = path.replace(/\/?$/, '/')
+    if (!Array.isArray(manifest.adventures) || manifest.adventures.length === 0) {
+      console.warn(`LibraryManager: le manifest distant "${manifestUrl}" ne contient aucune aventure.`)
+      return []
+    }
+
+    // Base = dossier contenant le manifest distant
+    const base = manifestUrl.replace(/\/[^/]*$/, '/').replace(/\/?$/, '/')
     const results: AdventureMetadata[] = []
 
     for (const entry of manifest.adventures) {
       if (typeof entry !== 'object' || entry === null) continue
       const e = entry as Record<string, unknown>
-      const adventureDir = typeof e.path === 'string' ? base + e.path : null
-      if (!adventureDir) continue
+      if (typeof e.path !== 'string') continue
 
-      try {
-        const coverPath = adventureDir.replace(/\/?$/, '/') + 'couverture.json'
-        const response = await fetch(coverPath)
-        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
-        const cover = await response.json() as Record<string, unknown>
+      // path absolu → utilisé tel quel ; path relatif → résolu depuis la base distante
+      const adventureDir = isRemoteUrl(e.path) ? e.path : base + e.path
 
-        if (!cover.titre || !cover.repertoire_images || !cover.image_de_garde) {
-          console.error(`LibraryManager: couverture.json invalide dans "${adventureDir}" (champs manquants)`)
-          continue
-        }
-
-        results.push({
-          titre:             cover.titre as string,
-          collection:        cover.collection as string | undefined,
-          image_de_garde:    cover.image_de_garde as string,
-          image_de_garde_ia: cover.image_de_garde_ia as string | undefined,
-          repertoire_images: cover.repertoire_images as string,
-          tags:              Array.isArray(cover.tags) ? cover.tags as string[] : [],
-          path:              adventureDir.replace(/\/?$/, '/'),
-        })
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        console.error(`LibraryManager: échec du chargement de "${adventureDir}/couverture.json" : ${message}`)
-      }
+      const meta = await this._loadAdventureMeta(adventureDir)
+      if (meta) results.push(meta)
     }
 
     return results
+  }
+
+  /**
+   * Charge `couverture.json` depuis un répertoire d'aventure (local ou distant)
+   * et retourne les métadonnées de la carte bibliothèque.
+   * Retourne `null` en cas d'erreur (erreur loggée).
+   */
+  private async _loadAdventureMeta(adventureDir: string): Promise<AdventureMetadata | null> {
+    const dir = adventureDir.replace(/\/?$/, '/')
+    const coverPath = dir + 'couverture.json'
+
+    try {
+      const response = await fetch(coverPath)
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
+      const cover = await response.json() as Record<string, unknown>
+
+      if (!cover.titre || !cover.repertoire_images || !cover.image_de_garde) {
+        console.error(`LibraryManager: couverture.json invalide dans "${adventureDir}" (champs manquants)`)
+        return null
+      }
+
+      return {
+        titre:             cover.titre as string,
+        collection:        cover.collection as string | undefined,
+        image_de_garde:    cover.image_de_garde as string,
+        image_de_garde_ia: cover.image_de_garde_ia as string | undefined,
+        repertoire_images: cover.repertoire_images as string,
+        tags:              Array.isArray(cover.tags) ? cover.tags as string[] : [],
+        path:              dir,
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`LibraryManager: échec du chargement de "${coverPath}" : ${message}`)
+      return null
+    }
   }
 }

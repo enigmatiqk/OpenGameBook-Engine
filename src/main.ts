@@ -37,10 +37,21 @@ function initLibrary(): void {
   const container = document.getElementById('view-library')
   if (!container) return
 
+  // Bibliothèques distantes optionnelles configurées dans index.html :
+  //   <body data-remote-libraries="https://dom1/manifest.json https://dom2/manifest.json">
+  const rawRemote = document.body.dataset.remoteLibraries ?? ''
+  const remoteSources = rawRemote
+    .split(/[\s,]+/)
+    .map(s => s.trim())
+    .filter(s => s.startsWith('http://') || s.startsWith('https://'))
+
   libraryView = new LibraryView({
-    onStartNewGame: (adventure: AdventureMetadata) => { void startGame(adventure, false) },
-    onContinueGame: (adventure: AdventureMetadata) => { void startGame(adventure, true) },
-    onShowLeaderboard: (adventure: AdventureMetadata) => { showLeaderboardModal(adventure) },
+    callbacks: {
+      onStartNewGame: (adventure: AdventureMetadata) => { void startGame(adventure, false) },
+      onContinueGame: (adventure: AdventureMetadata) => { void startGame(adventure, true) },
+      onShowLeaderboard: (adventure: AdventureMetadata) => { showLeaderboardModal(adventure) },
+    },
+    remoteSources,
   })
 
   libraryView.render(container).catch((err: unknown) => {

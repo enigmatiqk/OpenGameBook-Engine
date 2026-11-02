@@ -28,3 +28,22 @@ export function resolveImages(normal: string[] | undefined, ia: string[] | undef
   }
   return result
 }
+
+/**
+ * Détermine si une chaîne est une URL absolue (http:// ou https://).
+ */
+export function isRemoteUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value)
+}
+
+/**
+ * Résout un chemin de fichier relatif à une base (locale ou distante).
+ *
+ * - Si `base` est une URL distante (http/https), retourne `base + file`
+ * - Sinon retourne `base + file` (chemin local relatif)
+ *
+ * Dans les deux cas, s'assure qu'il n'y a qu'un seul séparateur `/`.
+ */
+export function resolveAdventureFile(base: string, file: string): string {
+  return base.replace(/\/?$/, '/') + file
+}

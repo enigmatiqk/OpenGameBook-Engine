@@ -9,6 +9,19 @@ export interface LibraryCallbacks {
   onShowLeaderboard?: (adventure: AdventureMetadata) => void
 }
 
+export interface LibraryOptions {
+  callbacks: LibraryCallbacks
+  /** Instances injectables pour les tests */
+  libraryManager?: LibraryManager
+  saveStore?: SaveStore
+  /**
+   * URLs supplémentaires de manifests distants à charger en plus de la
+   * bibliothèque locale `adventures/`. Chaque URL doit pointer vers un
+   * `manifest.json` distant (ex: `https://mondomaine/livre1/manifest.json`).
+   */
+  remoteSources?: string[]
+}
+
 type FilterState = {
   collection: string   // '' = toutes
   status: 'all' | 'in_progress' | 'finished' | 'new'
@@ -19,14 +32,25 @@ export class LibraryView {
   private libraryManager: LibraryManager
   private saveStore: SaveStore
   private callbacks: LibraryCallbacks
+  private remoteSources: string[]
   private adventures: AdventureMetadata[] = []
   private filters: FilterState = { collection: '', status: 'all', search: '' }
   private listEl: HTMLElement | null = null
 
-  constructor(callbacks: LibraryCallbacks, libraryManager?: LibraryManager, saveStore?: SaveStore) {
-    this.callbacks = callbacks
-    this.libraryManager = libraryManager ?? new LibraryManager()
-    this.saveStore = saveStore ?? new SaveStore()
+  constructor(callbacksOrOptions: LibraryCallbacks | LibraryOptions, libraryManager?: LibraryManager, saveStore?: SaveStore) {
+    // Support des deux signatures : ancienne (callbacks seul) et nouvelle (LibraryOptions)
+    if ('callbacks' in callbacksOrOptions) {
+      const opts = callbacksOrOptions as LibraryOptions
+      this.callbacks = opts.callbacks
+      this.libraryManager = opts.libraryManager ?? new LibraryManager()
+      this.saveStore = opts.saveStore ?? new SaveStore()
+      this.remoteSources = opts.remoteSources ?? []
+    } else {
+      this.callbacks = callbacksOrOptions as LibraryCallbacks
+      this.libraryManager = libraryManager ?? new LibraryManager()
+      this.saveStore = saveStore ?? new SaveStore()
+      this.remoteSources = []
+    }
   }
 
   async render(container: HTMLElement): Promise<void> {
@@ -40,7 +64,20 @@ export class LibraryView {
     this.listEl = container.querySelector<HTMLElement>('#adventure-list')
 
     try {
-      this.adventures = await this.libraryManager.scanDirectory('adventures')
+      // Charge la bibliothèque locale et les manifests distants en parallèle
+      const [local, ...remoteResults] = await Promise.allSettled([
+        this.libraryManager.scanDirectory('adventures'),
+        ...this.remoteSources.map(url => this.libraryManager.scanRemoteManifest(url)),
+      ])
+
+      if (local.status === 'fulfilled') {
+        this.adventures.push(...local.value)
+      }
+      for (const result of remoteResults) {
+        if (result.status === 'fulfilled') {
+          this.adventures.push(...result.value)
+        }
+      }
     } catch { /* handled below */ }
 
     if (!this.listEl) return

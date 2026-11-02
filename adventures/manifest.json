@@ -3,5 +3,27 @@
     {
       "path": "Defis_Fantastiques_01_-_Le_Sorcier_de_la_Montagne_de_feu"
     }
+  ],
+
+  "_doc_path": [
+    "Le champ 'path' accepte deux formes :",
+    "  - Nom de dossier relatif  : 'Nom_Du_Livre'",
+    "    → résolu comme adventures/Nom_Du_Livre/",
+    "  - URL absolue             : 'https://mondomaine/livre1'",
+    "    → couverture.json, sections.json… sont chargés depuis cette URL"
+  ],
+
+  "_doc_remoteLibraries": [
+    "Le champ 'remoteLibraries' est un tableau d'URLs pointant vers des",
+    "manifest.json distants supplémentaires. Chaque manifest distant est",
+    "chargé en plus des aventures déclarées ci-dessus.",
+    "",
+    "Exemple :",
+    "  \"remoteLibraries\": [",
+    "    \"https://mondomaine/ma-bibliotheque/manifest.json\"",
+    "  ]",
+    "",
+    "Dans un manifest distant, les entrées 'path' relatives sont résolues",
+    "par rapport à l'URL du manifest (même base que le fichier manifest.json)."
   ]
 }
