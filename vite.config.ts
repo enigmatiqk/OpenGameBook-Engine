@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import { devSavePlugin } from './scripts/dev-save-plugin'
+import { devSavePlugin } from './scripts/dev-save-plugin.ts'
 
 /**
  * Content-Security-Policy appliquée en développement.
@@ -40,8 +40,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        app:    resolve(__dirname, 'index.html'),
-        editor: resolve(__dirname, 'editor.html'),
+        app:    resolve(import.meta.dirname, 'index.html'),
+        editor: resolve(import.meta.dirname, 'editor.html'),
       },
     },
   },
