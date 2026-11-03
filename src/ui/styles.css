@@ -714,3 +714,32 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 }
+
+/* ── Bibliothèques distantes ─────────────────────────────────────────────── */
+.remote-sources-panel { margin-bottom: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); overflow: hidden; }
+
+.remote-sources-header { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; cursor: default; user-select: none; }
+.remote-sources-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+
+.btn-remote-toggle { background: none; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-secondary); font-size: 1rem; font-weight: bold; width: 1.75rem; height: 1.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+.btn-remote-toggle:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+.remote-sources-body { padding: 0.75rem 1rem 1rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.75rem; }
+
+.remote-sources-add-row { display: flex; gap: 0.5rem; align-items: stretch; }
+.remote-sources-input { flex: 1; padding: 0.4rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-family: var(--font-ui); font-size: 0.875rem; min-width: 0; }
+.remote-sources-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.remote-sources-input::placeholder { color: var(--text-muted); }
+
+.btn.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+
+.remote-sources-error { font-size: 0.8rem; color: var(--accent); min-height: 1.2em; }
+
+.remote-sources-empty { font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin: 0; }
+
+.remote-sources-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.remote-sources-item { display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.35rem 0.5rem 0.35rem 0.75rem; }
+.remote-sources-url { flex: 1; font-size: 0.8rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+
+.btn-remote-del { background: none; border: 1px solid transparent; border-radius: var(--radius); color: var(--text-muted); font-size: 0.85rem; padding: 0.15rem 0.4rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.btn-remote-del:hover { background: rgba(233,69,96,0.15); border-color: var(--accent); color: var(--accent); }
