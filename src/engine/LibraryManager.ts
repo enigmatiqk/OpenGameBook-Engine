@@ -75,71 +75,90 @@ export class LibraryManager {
       ? new URL('../', dir).href
       : undefined
 
-    // Tente full.json en premier
+    // ── Stratégie de chargement ──────────────────────────────────────────────
+    // 1. Tente couverture.json : si présent → fusion des 5 fichiers découpés
+    // 2. Sinon tente full.json : si présent → utilise le fichier monolithique
+    // 3. Sinon → erreur
+
+    const couvertureResp = await fetch(dir + 'couverture.json').catch(() => null)
+    const hasCouverture = couvertureResp?.ok ?? false
+
+    if (hasCouverture) {
+      // ── Mode fichiers découpés ─────────────────────────────────────────────
+      const fileNames = ['couverture.json', 'livre.json', 'personnage.json', 'regles.json', 'sections.json']
+      const parts: Record<string, unknown>[] = []
+
+      // couverture.json est déjà fetchée, on réutilise la réponse
+      try {
+        parts.push(await couvertureResp!.json() as Record<string, unknown>)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        throw new Error(`JSON invalide dans "${dir}couverture.json" : ${message}`)
+      }
+
+      for (const file of fileNames.slice(1)) {
+        const url = dir + file
+        let resp: Response
+        try {
+          resp = await fetch(url)
+          if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`)
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          throw new Error(`Impossible de charger "${url}" : ${message}`)
+        }
+        try {
+          parts.push(await resp.json() as Record<string, unknown>)
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          throw new Error(`JSON invalide dans "${url}" : ${message}`)
+        }
+      }
+
+      const [couverture, livre, personnage, regles, sectionsFile] = parts
+      const data: Record<string, unknown> = {
+        ...couverture,
+        ...livre,
+        personnage,
+        regles,
+        sections: Array.isArray(sectionsFile['sections']) ? sectionsFile['sections'] : sectionsFile,
+      }
+
+      const result = this.validateAdventure(data)
+      if (!result.valid) {
+        throw new Error(`L'aventure "${dir}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
+      }
+
+      const adventure = data as unknown as Adventure
+      adventure.cartefix = await this._loadCartefix(dir)
+      this._normalizeAdventure(adventure, dir, manifestBase)
+      return adventure
+    }
+
+    // ── Mode full.json ───────────────────────────────────────────────────────
     const fullPath = dir + 'full.json'
     try {
       const fullResponse = await fetch(fullPath)
-      if (fullResponse.ok) {
-        const contentType = fullResponse.headers.get('content-type') ?? ''
-        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
-          const data = await fullResponse.json()
-          const result = this.validateAdventure(data)
-          if (!result.valid) {
-            throw new Error(`L'aventure "${fullPath}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
-          }
-          // Tente cartefix.json même pour un full.json
-          const adv = data as Adventure
-          adv.cartefix = await this._loadCartefix(dir)
-          this._normalizeAdventure(adv, dir, manifestBase)
-          return adv
-        }
+      if (!fullResponse.ok) {
+        throw new Error(`HTTP ${fullResponse.status} — ni couverture.json ni full.json trouvés dans "${dir}"`)
       }
+      const contentType = fullResponse.headers.get('content-type') ?? ''
+      if (!contentType.includes('application/json') && !contentType.includes('text/plain')) {
+        throw new Error(`Type de contenu inattendu pour "${fullPath}" : ${contentType}`)
+      }
+      const data = await fullResponse.json()
+      const result = this.validateAdventure(data)
+      if (!result.valid) {
+        throw new Error(`L'aventure "${fullPath}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
+      }
+      const adv = data as Adventure
+      adv.cartefix = await this._loadCartefix(dir)
+      this._normalizeAdventure(adv, dir, manifestBase)
+      return adv
     } catch (err) {
-      // Si c'est une erreur de validation, on la propage
-      if (err instanceof Error && err.message.includes('invalide')) throw err
-      // Sinon (404, JSON parse error sur HTML de fallback…) on continue vers la fusion
+      if (err instanceof Error && (err.message.includes('invalide') || err.message.includes('couverture.json'))) throw err
+      const message = err instanceof Error ? err.message : String(err)
+      throw new Error(`Impossible de charger l'aventure "${dir}" : ${message}`)
     }
-
-    // Fusion des fichiers découpés
-    const fileNames = ['couverture.json', 'livre.json', 'personnage.json', 'regles.json', 'sections.json']
-    const parts: Record<string, unknown>[] = []
-
-    for (const file of fileNames) {
-      const url = dir + file
-      let resp: Response
-      try {
-        resp = await fetch(url)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`)
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        throw new Error(`Impossible de charger "${url}" : ${message}`)
-      }
-      try {
-        parts.push(await resp.json() as Record<string, unknown>)
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        throw new Error(`JSON invalide dans "${url}" : ${message}`)
-      }
-    }
-
-    const [couverture, livre, personnage, regles, sectionsFile] = parts
-    const data: Record<string, unknown> = {
-      ...couverture,
-      ...livre,
-      personnage,
-      regles,
-      sections: Array.isArray(sectionsFile['sections']) ? sectionsFile['sections'] : sectionsFile,
-    }
-
-    const result = this.validateAdventure(data)
-    if (!result.valid) {
-      throw new Error(`L'aventure "${dir}" est invalide :\n${result.errors.map(e => `  - ${e}`).join('\n')}`)
-    }
-
-    const adventure = data as unknown as Adventure
-    adventure.cartefix = await this._loadCartefix(dir)
-    this._normalizeAdventure(adventure, dir, manifestBase)
-    return adventure
   }
 
   /**
@@ -337,10 +356,10 @@ export class LibraryManager {
    * Charge un manifest distant (URL absolue pointant vers un `manifest.json`)
    * et retourne les métadonnées de toutes les aventures qu'il contient.
    *
-   * Toutes les entrées d'un manifest distant dont `path` est relatif sont
-   * résolues par rapport à la base de l'URL du manifest.
+   * @param manifestUrl  URL absolue du manifest distant
+   * @param sourceColor  Couleur CSS associée à cette source (ex: '#4fc3f7')
    */
-  async scanRemoteManifest(manifestUrl: string): Promise<AdventureMetadata[]> {
+  async scanRemoteManifest(manifestUrl: string, sourceColor?: string): Promise<AdventureMetadata[]> {
     let manifest: { adventures?: unknown[] }
 
     try {
@@ -373,7 +392,7 @@ export class LibraryManager {
       // path absolu → utilisé tel quel ; path relatif → résolu depuis la base distante
       const adventureDir = isRemoteUrl(e.path) ? e.path : base + e.path
 
-      const meta = await this._loadAdventureMeta(adventureDir)
+      const meta = await this._loadAdventureMeta(adventureDir, sourceColor)
       if (meta) results.push(meta)
     }
 
@@ -384,8 +403,11 @@ export class LibraryManager {
    * Charge `couverture.json` depuis un répertoire d'aventure (local ou distant)
    * et retourne les métadonnées de la carte bibliothèque.
    * Retourne `null` en cas d'erreur (erreur loggée).
+   *
+   * @param adventureDir  Répertoire de l'aventure (URL ou chemin local)
+   * @param sourceColor   Couleur CSS de la source distante (optionnel)
    */
-  private async _loadAdventureMeta(adventureDir: string): Promise<AdventureMetadata | null> {
+  private async _loadAdventureMeta(adventureDir: string, sourceColor?: string): Promise<AdventureMetadata | null> {
     const dir = adventureDir.replace(/\/?$/, '/')
     const coverPath = dir + 'couverture.json'
 
@@ -442,6 +464,7 @@ export class LibraryManager {
         repertoire_images: resolvedRepertoire,
         tags:              Array.isArray(cover.tags) ? cover.tags as string[] : [],
         path:              dir,
+        sourceColor,
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)

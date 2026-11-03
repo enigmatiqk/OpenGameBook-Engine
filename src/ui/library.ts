@@ -61,28 +61,42 @@ export class LibraryView {
   async render(container: HTMLElement): Promise<void> {
     this.container = container
     container.innerHTML = `
-      <h1>Bibliothèque d'aventures</h1>
-      <p class="subtitle">Choisissez votre aventure</p>
-      <div id="remote-sources-panel"></div>
+      <div class="library-header">
+        <div>
+          <h1>Bibliothèque d'aventures</h1>
+          <p class="subtitle">Choisissez votre aventure</p>
+        </div>
+        <button id="btn-remote-sources" class="btn-remote-sources-icon" type="button"
+          title="Gérer les bibliothèques distantes" aria-label="Gérer les bibliothèques distantes">
+          🌐
+        </button>
+      </div>
       <div id="library-filters"></div>
       <div id="adventure-list" class="loading">Chargement des aventures…</div>
     `
 
     this.listEl = container.querySelector<HTMLElement>('#adventure-list')
 
-    // ── Panneau bibliothèques distantes ──────────────────────────────────────
-    const remotePanelEl = container.querySelector<HTMLElement>('#remote-sources-panel')
-    if (remotePanelEl) this._buildRemotePanel(remotePanelEl)
+    // ── Bouton d'ouverture de la modale sources distantes ────────────────────
+    const remoteBtn = container.querySelector<HTMLButtonElement>('#btn-remote-sources')
+    if (remoteBtn) {
+      const hasRemote = this.remoteStore.getAll().length > 0
+      if (hasRemote) remoteBtn.classList.add('btn-remote-sources-icon--active')
+      remoteBtn.addEventListener('click', () => this._openRemoteModal())
+    }
 
     // ── Toutes les sources : statiques (options) + persistées (localStorage) ─
-    const storedUrls = this.remoteStore.getAll()
-    const allRemote = [...new Set([...this.remoteSources, ...storedUrls])]
+    const storedEntries = this.remoteStore.getAll()
+    const allRemote = [
+      ...this.remoteSources.map(url => ({ url, color: undefined as string | undefined })),
+      ...storedEntries.map(e => ({ url: e.url, color: e.color })),
+    ].filter((e, i, arr) => arr.findIndex(x => x.url === e.url) === i) // dédupe
 
     try {
       // Charge la bibliothèque locale et les manifests distants en parallèle
       const [local, ...remoteResults] = await Promise.allSettled([
         this.libraryManager.scanDirectory('adventures'),
-        ...allRemote.map(url => this.libraryManager.scanRemoteManifest(url)),
+        ...allRemote.map(e => this.libraryManager.scanRemoteManifest(e.url, e.color)),
       ])
 
       if (local.status === 'fulfilled') {
@@ -115,51 +129,55 @@ export class LibraryView {
     this._renderList()
   }
 
-  // ── Panneau sources distantes ─────────────────────────────────────────────
+  // ── Modale sources distantes ──────────────────────────────────────────────
 
-  private _buildRemotePanel(el: HTMLElement): void {
-    el.className = 'remote-sources-panel'
+  private _openRemoteModal(): void {
+    // Si une modale est déjà ouverte, on la ferme
+    document.getElementById('remote-modal')?.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'remote-modal'
+    overlay.className = 'modal-overlay remote-modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', 'Bibliothèques distantes')
+
+    const box = document.createElement('div')
+    box.className = 'modal-box remote-modal-box'
 
     const header = document.createElement('div')
-    header.className = 'remote-sources-header'
+    header.className = 'modal-header'
+    header.innerHTML = `<h2 class="modal-title">🌐 Bibliothèques distantes</h2>`
 
-    const title = document.createElement('span')
-    title.className = 'remote-sources-title'
-    title.textContent = '🌐 Bibliothèques distantes'
-
-    const toggleBtn = document.createElement('button')
-    toggleBtn.type = 'button'
-    toggleBtn.className = 'btn-remote-toggle'
-    toggleBtn.setAttribute('aria-expanded', 'false')
-    toggleBtn.setAttribute('aria-controls', 'remote-sources-body')
-    toggleBtn.textContent = '+'
-    toggleBtn.title = 'Ajouter une bibliothèque distante'
-
-    header.appendChild(title)
-    header.appendChild(toggleBtn)
-    el.appendChild(header)
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'modal-close'
+    closeBtn.setAttribute('aria-label', 'Fermer')
+    closeBtn.textContent = '✕'
+    header.appendChild(closeBtn)
 
     const body = document.createElement('div')
-    body.id = 'remote-sources-body'
-    body.className = 'remote-sources-body'
-    body.hidden = true
-    el.appendChild(body)
+    body.className = 'modal-body remote-modal-body'
 
-    toggleBtn.addEventListener('click', () => {
-      const expanded = body.hidden
-      body.hidden = !expanded
-      toggleBtn.setAttribute('aria-expanded', String(expanded))
-      toggleBtn.textContent = expanded ? '−' : '+'
-      if (expanded) this._renderRemoteBody(body)
-    })
+    box.appendChild(header)
+    box.appendChild(body)
+    overlay.appendChild(box)
+    document.body.appendChild(overlay)
 
-    // Si des sources existent déjà, ouvrir le panneau automatiquement
-    if (this.remoteStore.getAll().length > 0) {
-      body.hidden = false
-      toggleBtn.setAttribute('aria-expanded', 'true')
-      toggleBtn.textContent = '−'
-      this._renderRemoteBody(body)
+    this._renderRemoteBody(body)
+
+    const close = () => {
+      overlay.remove()
+      // Met à jour l'indicateur du bouton
+      const remoteBtn = this.container?.querySelector<HTMLButtonElement>('#btn-remote-sources')
+      if (remoteBtn) {
+        remoteBtn.classList.toggle('btn-remote-sources-icon--active', this.remoteStore.getAll().length > 0)
+      }
     }
+    closeBtn.addEventListener('click', close)
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+    document.addEventListener('keydown', function onKey(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
+    }, { once: true })
   }
 
   private _renderRemoteBody(body: HTMLElement): void {
@@ -211,8 +229,7 @@ export class LibraryView {
       input.value = ''
       this._renderRemoteBody(body)
       // Recharge toute la bibliothèque avec la nouvelle source
-      this._reloadWithRemotes()
-    }
+      this._reloadWithRemotes()    }
 
     addBtn.addEventListener('click', doAdd)
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd() })
@@ -230,27 +247,40 @@ export class LibraryView {
     const list = document.createElement('ul')
     list.className = 'remote-sources-list'
 
-    for (const url of stored) {
+    for (const entry of stored) {
       const li = document.createElement('li')
       li.className = 'remote-sources-item'
 
+      // Swatch de couleur — clique dessus pour ouvrir le color picker
+      const colorSwatch = document.createElement('input')
+      colorSwatch.type = 'color'
+      colorSwatch.className = 'remote-sources-color'
+      colorSwatch.value = entry.color
+      colorSwatch.title = 'Changer la couleur de cette source'
+      colorSwatch.setAttribute('aria-label', `Couleur de la source ${entry.url}`)
+      colorSwatch.addEventListener('change', () => {
+        this.remoteStore.updateColor(entry.url, colorSwatch.value)
+        this._reloadWithRemotes()
+      })
+
       const urlSpan = document.createElement('span')
       urlSpan.className = 'remote-sources-url'
-      urlSpan.textContent = url
-      urlSpan.title = url
+      urlSpan.textContent = entry.url
+      urlSpan.title = entry.url
 
       const delBtn = document.createElement('button')
       delBtn.type = 'button'
       delBtn.className = 'btn-remote-del'
       delBtn.textContent = '✕'
-      delBtn.title = `Supprimer ${url}`
-      delBtn.setAttribute('aria-label', `Supprimer la source ${url}`)
+      delBtn.title = `Supprimer ${entry.url}`
+      delBtn.setAttribute('aria-label', `Supprimer la source ${entry.url}`)
       delBtn.addEventListener('click', () => {
-        this.remoteStore.remove(url)
+        this.remoteStore.remove(entry.url)
         this._renderRemoteBody(body)
         this._reloadWithRemotes()
       })
 
+      li.appendChild(colorSwatch)
       li.appendChild(urlSpan)
       li.appendChild(delBtn)
       list.appendChild(li)
@@ -271,12 +301,15 @@ export class LibraryView {
       this.listEl.innerHTML = 'Chargement des aventures…'
     }
 
-    const storedUrls = this.remoteStore.getAll()
-    const allRemote = [...new Set([...this.remoteSources, ...storedUrls])]
+    const storedEntries = this.remoteStore.getAll()
+    const allRemote = [
+      ...this.remoteSources.map(url => ({ url, color: undefined as string | undefined })),
+      ...storedEntries.map(e => ({ url: e.url, color: e.color })),
+    ].filter((e, i, arr) => arr.findIndex(x => x.url === e.url) === i)
 
     Promise.allSettled([
       this.libraryManager.scanDirectory('adventures'),
-      ...allRemote.map(url => this.libraryManager.scanRemoteManifest(url)),
+      ...allRemote.map(e => this.libraryManager.scanRemoteManifest(e.url, e.color)),
     ]).then(([local, ...remoteResults]) => {
       if (local.status === 'fulfilled') this.adventures.push(...local.value)
       for (const r of remoteResults) {
@@ -407,6 +440,12 @@ export class LibraryView {
     const hasLeaderboard = this.saveStore.getLeaderboard(adventure.titre).length > 0
     const card = document.createElement('div')
     card.className = 'adventure-card'
+
+    // Indicateur visuel pour les aventures distantes : fine bordure colorée en haut
+    if (adventure.sourceColor) {
+      card.style.setProperty('--source-color', adventure.sourceColor)
+      card.classList.add('adventure-card--remote')
+    }
 
     const base = adventure.repertoire_images.replace(/\/?$/, '/')
     const coverFile = resolveImage(adventure.image_de_garde, adventure.image_de_garde_ia)

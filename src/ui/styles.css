@@ -743,3 +743,63 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 
 .btn-remote-del { background: none; border: 1px solid transparent; border-radius: var(--radius); color: var(--text-muted); font-size: 0.85rem; padding: 0.15rem 0.4rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s, color 0.15s, border-color 0.15s; }
 .btn-remote-del:hover { background: rgba(233,69,96,0.15); border-color: var(--accent); color: var(--accent); }
+
+/* ── Adventure card distante (indicateur de source) ─────────────────────── */
+.adventure-card--remote {
+  border-top: 3px solid var(--source-color, #4fc3f7);
+}
+.adventure-card--remote::after {
+  content: '🌐';
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  pointer-events: none;
+}
+/* La card a besoin de position relative pour le ::after */
+.adventure-card { position: relative; }
+
+/* ── Sélecteur de couleur dans la liste des sources ─────────────────────── */
+.remote-sources-color {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: none;
+  overflow: hidden;
+}
+.remote-sources-color::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+.remote-sources-color::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 50%; }
+.remote-sources-color::-moz-color-swatch { border: 2px solid var(--border); border-radius: 50%; }
+
+/* ── Bibliothèque header avec icône sources distantes ───────────────────── */
+.library-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0; }
+.library-header h1 { margin-bottom: 0.25rem; }
+.library-header .subtitle { margin-bottom: 1.5rem; }
+
+.btn-remote-sources-icon {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-remote-sources-icon:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.btn-remote-sources-icon--active { border-color: #4fc3f7; color: #4fc3f7; }
+
+/* ── Modale sources distantes ────────────────────────────────────────────── */
+.remote-modal-box { max-width: 560px; }
+.remote-modal-body { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 1.5rem 1.5rem; }
