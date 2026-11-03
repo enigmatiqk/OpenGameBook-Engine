@@ -55,6 +55,7 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .badge { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 20px; }
 .badge-in-progress { background: #2a4a7f; color: #90c0ff; }
 .badge-finished    { background: #2a5a2a; color: #90e090; }
+.badge-defeat      { background: #4a2a2a; color: #e09090; }
 
 #adventure-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
 

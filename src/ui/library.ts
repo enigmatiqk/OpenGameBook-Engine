@@ -400,7 +400,7 @@ export class LibraryView {
 
       if (status === 'new'         && (this.saveStore.hasSave(a.titre) || this.saveStore.getLeaderboard(a.titre).length > 0)) return false
       if (status === 'in_progress' && !this.saveStore.hasSave(a.titre)) return false
-      if (status === 'finished'    && this.saveStore.getLeaderboard(a.titre).length === 0) return false
+      if (status === 'finished' && !this.saveStore.getLeaderboard(a.titre).some(e => (e.resultat ?? 'victoire') === 'victoire')) return false
 
       if (needle) {
         const haystack = [a.titre, a.collection ?? '', ...a.tags].join(' ').toLowerCase()
@@ -437,7 +437,9 @@ export class LibraryView {
 
   private _createAdventureCard(adventure: AdventureMetadata): HTMLElement {
     const hasSave = this.saveStore.hasSave(adventure.titre)
-    const hasLeaderboard = this.saveStore.getLeaderboard(adventure.titre).length > 0
+    const leaderboard = this.saveStore.getLeaderboard(adventure.titre)
+    const hasLeaderboard = leaderboard.length > 0
+    const hasVictory = leaderboard.some(e => (e.resultat ?? 'victoire') === 'victoire')
     const card = document.createElement('div')
     card.className = 'adventure-card'
 
@@ -461,8 +463,9 @@ export class LibraryView {
     const tagsHtml = adventure.tags.map(t => `<span class="tag">${this.escHtml(t)}</span>`).join('')
 
     const badgesHtml = [
-      hasSave        ? `<span class="badge badge-in-progress">En cours</span>` : '',
-      hasLeaderboard ? `<span class="badge badge-finished">Terminé</span>`     : '',
+      hasSave        ? `<span class="badge badge-in-progress">En cours</span>`  : '',
+      hasLeaderboard && hasVictory  ? `<span class="badge badge-finished">Terminé</span>`   : '',
+      hasLeaderboard && !hasVictory ? `<span class="badge badge-defeat">Mort</span>`        : '',
     ].join('')
 
     card.innerHTML = `
