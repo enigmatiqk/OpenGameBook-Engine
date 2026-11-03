@@ -1,4 +1,6 @@
 import { LibraryManager } from '../engine/LibraryManager'
+import { RemoteLibraryStore } from '../engine/RemoteLibraryStore'
+import { isRemoteUrl } from '../utils/imageUtils'
 import type { Adventure, AdventureMetadata, Section, PersonnageTemplate, CarteFixe } from '../types'
 import { SectionEditor } from './SectionEditor'
 import { AdventureTreePanel, collectSectionRefs } from './AdventureTreePanel'
@@ -39,6 +41,7 @@ const TABS: Tab[] = [
 export class EditorApp {
   private root: HTMLElement
   private libraryManager = new LibraryManager()
+  private remoteStore = new RemoteLibraryStore()
 
   private adventures: AdventureMetadata[] = []
   private adventure: Adventure | null = null
@@ -46,6 +49,9 @@ export class EditorApp {
   private currentIndex = 0
   private prevSectionNum: number | undefined = undefined
   private activeTab: TabId = 'sections'
+
+  /** true si l'aventure courante est hébergée à distance — désactive la sauvegarde */
+  private readOnly = false
 
   // ── Dirty state ────────────────────────────────────────────────────────────
   // dirtyState : modifications en cours non encore enregistrées (sections)
@@ -281,11 +287,24 @@ export class EditorApp {
     } catch {
       this.adventures = []
     }
+
+    // Charge aussi les aventures distantes persistées dans RemoteLibraryStore
+    const remoteEntries = this.remoteStore.getAll()
+    for (const entry of remoteEntries) {
+      try {
+        const remoteAdventures = await this.libraryManager.scanRemoteManifest(entry.url, entry.color)
+        this.adventures.push(...remoteAdventures)
+      } catch {
+        console.warn(`EditorApp: impossible de charger les aventures distantes depuis "${entry.url}"`)
+      }
+    }
+
     const sel = this.root.querySelector<HTMLSelectElement>('#adventure-select')!
     for (const meta of this.adventures) {
       const opt = document.createElement('option')
       opt.value = meta.path
-      opt.textContent = meta.titre + (meta.collection ? ` (${meta.collection})` : '')
+      const remote = isRemoteUrl(meta.path) ? ' 🌐' : ''
+      opt.textContent = meta.titre + (meta.collection ? ` (${meta.collection})` : '') + remote
       sel.appendChild(opt)
     }
   }
@@ -301,6 +320,7 @@ export class EditorApp {
     try {
       this.adventure = await this.libraryManager.loadAdventure(path)
       this.adventurePath = path
+      this.readOnly = isRemoteUrl(path)
       this.sortedSections = [...this.adventure.sections].sort((a, b) => a.numero - b.numero)
 
       // Reset tous les états
@@ -339,6 +359,18 @@ export class EditorApp {
       splash.style.display = 'none'
       this.tabContentEl.style.display = 'flex'
       this.sidebarWrapEl.style.display = 'flex'
+
+      // Badge lecture seule si aventure distante
+      const existingBadge = this.root.querySelector('#editor-readonly-badge')
+      existingBadge?.remove()
+      if (this.readOnly) {
+        const badge = document.createElement('span')
+        badge.id = 'editor-readonly-badge'
+        badge.className = 'editor-readonly-badge'
+        badge.textContent = '🌐 Lecture seule'
+        badge.title = 'Cette aventure est hébergée à distance. Les modifications ne peuvent pas être sauvegardées.'
+        this.btnExport.insertAdjacentElement('beforebegin', badge)
+      }
 
       // Active l'onglet Livre par défaut
       this.activeTab = 'livre'
@@ -711,6 +743,14 @@ export class EditorApp {
   }
 
   private _updateExportButton(): void {
+    // En lecture seule (aventure distante), la sauvegarde est toujours désactivée
+    if (this.readOnly) {
+      this.btnExport.disabled = true
+      this.btnExport.title = 'Lecture seule — aventure distante, sauvegarde impossible'
+      this.btnExport.textContent = '🔒 Lecture seule'
+      return
+    }
+
     const hasChanges = this.dirtySections || this.dirtyCouverture || this.dirtyLivre
       || this.dirtyPersonnage || this.dirtyRegles || this.dirtyCartefix
 
@@ -1058,6 +1098,10 @@ export class EditorApp {
   /** Sauvegarde directe sur disque via le plugin Vite dev-save (mode dev uniquement) */
   private async _saveAll(): Promise<void> {
     if (!this.adventure) return
+    if (this.readOnly) {
+      this._showToast('Lecture seule — aventure distante, sauvegarde impossible', 'error')
+      return
+    }
 
     if (!this.adventurePath) {
       this._showToast("Chemin de l\u2019aventure introuvable \u2014 export en t\u00e9l\u00e9chargement", 'error')
@@ -1161,9 +1205,12 @@ export class EditorApp {
     }
   }
 
-  /** Export classique par téléchargement navigateur */
   private _exportAllDownload(): void {
     if (!this.adventure) return
+    if (this.readOnly) {
+      this._showToast('Lecture seule — aventure distante, export impossible', 'error')
+      return
+    }
 
     const exported: string[] = []
 
