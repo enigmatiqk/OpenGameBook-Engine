@@ -117,8 +117,13 @@ export class LeaderboardView {
       : '<span class="lb-badge lb-badge--defaite" title="Défaite">💀</span>'
     const rowClass = resultat === 'victoire' ? 'lb-row--victoire' : 'lb-row--defaite'
     const statsHtml = statsKeys.map(key => {
-      const value = entry.statistiques?.[key] ?? '-'
-      return `<td>${value}</td>`
+      const value = entry.statistiques?.[key]
+      const initial = entry.statistiques_initiales?.[key]
+      if (value === undefined) return `<td>-</td>`
+      const display = initial !== undefined && initial !== value
+        ? `${value}<span class="stat-initial">/${initial}</span>`
+        : `${value}<span class="stat-initial">/${initial ?? value}</span>`
+      return `<td>${display}</td>`
     }).join('')
     const sectionMortHtml = showSectionMort
       ? `<td class="section-mort">${entry.sectionMort !== undefined ? `§${entry.sectionMort}` : '-'}</td>`

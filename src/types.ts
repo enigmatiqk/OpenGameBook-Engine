@@ -742,6 +742,8 @@ export interface LeaderboardEntry {
   nombreOuverturesCarte?: number
   sectionMort?: number
   statistiques?: Record<string, number>
+  /** Valeurs de départ des statistiques (plafonds initiaux). */
+  statistiques_initiales?: Record<string, number>
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────

@@ -252,6 +252,7 @@ function initVictoryView(engine: GameEngine): void {
     const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
     const statistiques = engine.getHero()?.statistiques || {}
+    const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
     saveStore.addLeaderboardEntry(adventure.titre, { 
       nom, 
       resultat: 'victoire',
@@ -259,7 +260,8 @@ function initVictoryView(engine: GameEngine): void {
       date: new Date().toISOString(),
       nombreSectionsParcourues,
       nombreOuverturesCarte,
-      statistiques
+      statistiques,
+      statistiques_initiales,
     })
     saveStore.deleteSave(adventure.titre)
     renderLeaderboard()
@@ -305,6 +307,7 @@ function initDefeatView(engine: GameEngine): void {
     const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
     const statistiques = engine.getHero()?.statistiques || {}
+    const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
     saveStore.addLeaderboardEntry(adventure.titre, {
       nom,
       resultat: 'defaite',
@@ -313,7 +316,8 @@ function initDefeatView(engine: GameEngine): void {
       nombreSectionsParcourues,
       nombreOuverturesCarte,
       sectionMort,
-      statistiques
+      statistiques,
+      statistiques_initiales,
     })
     saveStore.deleteSave(adventure.titre)
     const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
