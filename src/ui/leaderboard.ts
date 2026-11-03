@@ -120,9 +120,10 @@ export class LeaderboardView {
       const value = entry.statistiques?.[key]
       const initial = entry.statistiques_initiales?.[key]
       if (value === undefined) return `<td>-</td>`
-      const display = initial !== undefined && initial !== value
+      // Affiche "valeur/départ" seulement si le départ est connu et différent de la valeur finale
+      const display = (initial !== undefined && initial !== value)
         ? `${value}<span class="stat-initial">/${initial}</span>`
-        : `${value}<span class="stat-initial">/${initial ?? value}</span>`
+        : `${value}`
       return `<td>${display}</td>`
     }).join('')
     const sectionMortHtml = showSectionMort
