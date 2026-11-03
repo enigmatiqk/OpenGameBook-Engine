@@ -1,0 +1,55 @@
+
+User-agent: *
+Disallow: /
+
+# Moteurs de recherche
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+# Robots d'intelligence artificielle
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+# Internet Archive
+User-agent: ia_archiver
+Disallow: /
+
+# Autres robots d'archivage
+User-agent: archive.org_bot
+Disallow: /
+
+User-agent: archive-it
+Disallow: /
+
+User-agent: *
+Disallow: /
