@@ -84,7 +84,7 @@ export class LibraryManager {
           // Tente cartefix.json même pour un full.json
           const adv = data as Adventure
           adv.cartefix = await this._loadCartefix(dir)
-          this._normalizeAdventure(adv)
+          this._normalizeAdventure(adv, dir)
           return adv
         }
       }
@@ -132,7 +132,7 @@ export class LibraryManager {
 
     const adventure = data as unknown as Adventure
     adventure.cartefix = await this._loadCartefix(dir)
-    this._normalizeAdventure(adventure)
+    this._normalizeAdventure(adventure, dir)
     return adventure
   }
 
@@ -143,10 +143,20 @@ export class LibraryManager {
    * - Filtre les noms de fichiers images invalides (path traversal, extension
    *   non autorisée, protocoles) dans tous les champs image des sections
    * - Valide l'URL de `repertoire_images` si elle est distante
+   * - Si l'aventure est distante et que `repertoire_images` est un chemin
+   *   relatif, le résout automatiquement depuis la base de l'aventure :
+   *   seul le dernier segment du chemin (le nom du dossier d'images) est
+   *   conservé et attaché à la base distante.
+   *   Ex: base="https://cdn.test/Livre1/", repertoire_images="adventures/Livre1/images/"
+   *   → "https://cdn.test/Livre1/images/"
+   *
+   * @param adventure  L'objet aventure à normaliser (modifié en place)
+   * @param adventureDir  Répertoire de l'aventure (URL ou chemin local, avec slash final)
    */
-  private _normalizeAdventure(adventure: Adventure): void {
-    // ── Validation du répertoire d'images ────────────────────────────────────
+  private _normalizeAdventure(adventure: Adventure, adventureDir: string): void {
+    // ── Validation / résolution du répertoire d'images ───────────────────────
     if (isRemoteUrl(adventure.repertoire_images)) {
+      // Cas 1 : repertoire_images est déjà une URL absolue → on valide
       const safe = sanitizeRemoteUrl(adventure.repertoire_images)
       if (!safe) {
         console.warn(`LibraryManager: repertoire_images distant invalide "${adventure.repertoire_images}" — répertoire supprimé`)
@@ -154,7 +164,37 @@ export class LibraryManager {
       } else {
         adventure.repertoire_images = safe
       }
+    } else if (isRemoteUrl(adventureDir)) {
+      // Cas 2 : aventure distante mais repertoire_images est un chemin relatif
+      // → on extrait uniquement le(s) dernier(s) segment(s) après le nom du
+      //   dossier de l'aventure, et on les colle à la base distante.
+      //
+      // Stratégie : trouver le segment "images" (ou dernier segment non vide)
+      // dans le chemin relatif et l'attacher à adventureDir.
+      const segments = adventure.repertoire_images
+        .replace(/\\/g, '/')
+        .split('/')
+        .filter(s => s.length > 0)
+
+      // On cherche le segment "images" en premier, sinon on prend le dernier
+      const imageSegment = segments.find(s => s.toLowerCase() === 'images') ?? segments[segments.length - 1]
+
+      if (imageSegment) {
+        const resolved = adventureDir.replace(/\/?$/, '/') + imageSegment + '/'
+        const safe = sanitizeRemoteUrl(resolved)
+        if (safe) {
+          adventure.repertoire_images = safe
+          console.info(`LibraryManager: repertoire_images relatif résolu → "${safe}"`)
+        } else {
+          console.warn(`LibraryManager: impossible de résoudre repertoire_images "${adventure.repertoire_images}" depuis "${adventureDir}"`)
+          adventure.repertoire_images = ''
+        }
+      } else {
+        // Pas de segment utilisable → on pointe directement sur adventureDir
+        adventure.repertoire_images = adventureDir
+      }
     }
+    // Cas 3 : aventure locale et repertoire_images relatif → on ne touche pas
 
     // ── Assainissement des noms de fichiers images ───────────────────────────
     const sanitizeField = (name: string | undefined): string | undefined => {
