@@ -1,5 +1,6 @@
 import type { Adventure, AdventureMetadata, CarteFixe, ValidationResult } from '../types'
 import { isRemoteUrl } from '../utils/imageUtils'
+import { sanitizeImageName, sanitizeRemoteUrl, validateRemoteImage } from '../utils/sanitize'
 
 const REQUIRED_FIELDS: (keyof Adventure)[] = [
   'titre',
@@ -136,13 +137,71 @@ export class LibraryManager {
   }
 
   /**
-   * Normalise les données d'une aventure après chargement.
-   * Garantit que toutes les sections ont un tableau `choix` initialisé,
-   * évitant les accès à `section.choix.length` qui crashent si la propriété est absente.
+   * Normalise et assainit les données d'une aventure après chargement.
+   *
+   * - Garantit que toutes les sections ont un tableau `choix` initialisé
+   * - Filtre les noms de fichiers images invalides (path traversal, extension
+   *   non autorisée, protocoles) dans tous les champs image des sections
+   * - Valide l'URL de `repertoire_images` si elle est distante
    */
   private _normalizeAdventure(adventure: Adventure): void {
+    // ── Validation du répertoire d'images ────────────────────────────────────
+    if (isRemoteUrl(adventure.repertoire_images)) {
+      const safe = sanitizeRemoteUrl(adventure.repertoire_images)
+      if (!safe) {
+        console.warn(`LibraryManager: repertoire_images distant invalide "${adventure.repertoire_images}" — répertoire supprimé`)
+        adventure.repertoire_images = ''
+      } else {
+        adventure.repertoire_images = safe
+      }
+    }
+
+    // ── Assainissement des noms de fichiers images ───────────────────────────
+    const sanitizeField = (name: string | undefined): string | undefined => {
+      if (!name) return name
+      if (isRemoteUrl(name)) {
+        // Nom de fichier qui serait une URL absolue : refusé
+        // (les images doivent être relatives à repertoire_images)
+        console.warn(`LibraryManager: nom d'image rejeté (URL absolue non autorisée) : "${name}"`)
+        return undefined
+      }
+      const safe = sanitizeImageName(name)
+      if (!safe) {
+        console.warn(`LibraryManager: nom d'image rejeté (invalide) : "${name}"`)
+        return undefined
+      }
+      return safe
+    }
+
+    const sanitizeArray = (arr: string[] | undefined): string[] | undefined => {
+      if (!arr) return arr
+      const filtered = arr.map(sanitizeField).filter((s): s is string => s !== undefined)
+      return filtered
+    }
+
+    // Champs image de l'aventure (couverture)
+    adventure.image_de_garde    = sanitizeField(adventure.image_de_garde)    ?? adventure.image_de_garde
+    adventure.image_de_garde_ia = sanitizeField(adventure.image_de_garde_ia)
+
+    // Champs image de l'intro
+    if (adventure.intro) {
+      adventure.intro.image    = sanitizeField(adventure.intro.image)
+      adventure.intro.image_ia = sanitizeField(adventure.intro.image_ia)
+    }
+
+    // Listes d'images (victoire, défaite, annexes)
+    adventure.images_victoire     = sanitizeArray(adventure.images_victoire)
+    adventure.images_victoire_ia  = sanitizeArray(adventure.images_victoire_ia  as string[] | undefined) as typeof adventure.images_victoire_ia
+    adventure.images_defaite      = sanitizeArray(adventure.images_defaite)
+    adventure.images_defaite_ia   = sanitizeArray(adventure.images_defaite_ia   as string[] | undefined) as typeof adventure.images_defaite_ia
+    adventure.images_annexes      = sanitizeArray(adventure.images_annexes)
+    adventure.images_annexes_ia   = sanitizeArray(adventure.images_annexes_ia   as string[] | undefined) as typeof adventure.images_annexes_ia
+
+    // ── Sections ─────────────────────────────────────────────────────────────
     for (const section of adventure.sections) {
       if (!section.choix) section.choix = []
+      section.image    = sanitizeField(section.image)
+      section.image_ia = sanitizeField(section.image_ia)
     }
   }
 
@@ -284,6 +343,15 @@ export class LibraryManager {
     const dir = adventureDir.replace(/\/?$/, '/')
     const coverPath = dir + 'couverture.json'
 
+    // Valide l'URL distante avant de fetcher
+    if (isRemoteUrl(dir)) {
+      const safeDir = sanitizeRemoteUrl(dir)
+      if (!safeDir) {
+        console.error(`LibraryManager: URL d'aventure distante rejetée : "${dir}"`)
+        return null
+      }
+    }
+
     try {
       const response = await fetch(coverPath)
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
@@ -294,12 +362,40 @@ export class LibraryManager {
         return null
       }
 
+      const repertoireImages = cover.repertoire_images as string
+      const imageDeGarde     = cover.image_de_garde as string
+
+      // Valide le nom du fichier de couverture
+      const safeImageName = isRemoteUrl(imageDeGarde)
+        ? null                                       // URL absolue refusée dans image_de_garde
+        : sanitizeImageName(imageDeGarde)
+      if (!safeImageName) {
+        console.error(`LibraryManager: image_de_garde invalide dans "${adventureDir}" : "${imageDeGarde}"`)
+        return null
+      }
+
+      // Pour les aventures distantes, valide l'URL de repertoire_images
+      // et vérifie les magic bytes de l'image de couverture
+      if (isRemoteUrl(dir)) {
+        const safeRepertoire = sanitizeRemoteUrl(repertoireImages)
+        if (!safeRepertoire) {
+          console.error(`LibraryManager: repertoire_images distant invalide dans "${adventureDir}" : "${repertoireImages}"`)
+          return null
+        }
+        const coverImageUrl = safeRepertoire.replace(/\/?$/, '/') + safeImageName
+        const imageValid = await validateRemoteImage(coverImageUrl)
+        if (!imageValid) {
+          console.error(`LibraryManager: image de couverture distante rejetée (magic bytes invalides) : "${coverImageUrl}"`)
+          return null
+        }
+      }
+
       return {
         titre:             cover.titre as string,
         collection:        cover.collection as string | undefined,
-        image_de_garde:    cover.image_de_garde as string,
-        image_de_garde_ia: cover.image_de_garde_ia as string | undefined,
-        repertoire_images: cover.repertoire_images as string,
+        image_de_garde:    safeImageName,
+        image_de_garde_ia: sanitizeImageName(cover.image_de_garde_ia as string | undefined ?? '') ?? undefined,
+        repertoire_images: repertoireImages,
         tags:              Array.isArray(cover.tags) ? cover.tags as string[] : [],
         path:              dir,
       }

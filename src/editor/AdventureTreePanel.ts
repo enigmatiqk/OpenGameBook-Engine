@@ -20,6 +20,7 @@
 
 import type { Adventure, Section, Choice, Effet, EffetItem } from '../types'
 import { buildCarte } from '../carte/CarteEngine'
+import { sanitizeText } from '../utils/sanitize'
 
 // ─── Définition des filtres ────────────────────────────────────────────────
 
@@ -908,7 +909,7 @@ export class AdventureTreePanel {
     bar.className = 'tree-panel-bar'
     bar.innerHTML = `
       <span class="tree-panel-title">
-        🗺 Arbre — ${this.adventure.titre}
+        🗺 Arbre — ${sanitizeText(this.adventure.titre)}
         <span class="tree-panel-notice">⚠️ Basé sur le JSON d'origine — les modifications non exportées ne sont pas reflétées</span>
       </span>`
 

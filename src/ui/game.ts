@@ -4,6 +4,7 @@ import { CombatView } from './combat'
 import { InventaireView } from './inventaire'
 import { EquipementView } from './equipement'
 import { parseDiceFormula, rollDice, rollDiceAdversaire } from '../engine/CombatResolver'
+import { sanitizeHtml, sanitizeText } from '../utils/sanitize'
 import { resolveImage, resolveImages } from '../utils/imageUtils'
 import { updateSectionNotes } from './sectionNotes'
 import { GameEngineActions } from '../engine/GameEngineActions'
@@ -178,7 +179,7 @@ export class GameView {
     const toolbar = document.createElement('div')
     toolbar.className = 'game-toolbar'
 
-    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<div class="modal-text">${adventure.mode_emploi}</div>`))
+    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<div class="modal-text">${sanitizeHtml(adventure.mode_emploi)}</div>`))
     const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => this._showHeroModal())
     const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => this._showImagesModal(adventure))
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
@@ -217,7 +218,7 @@ export class GameView {
     // Barre titre
     const bar = document.createElement('div')
     bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;background:#1a1a2e;border-bottom:2px solid #e94560;flex-shrink:0;'
-    bar.innerHTML = `<span style="font-weight:700;color:#e94560;font-size:0.9rem">🗺 Carte — ${adventure.titre}</span>`
+    bar.innerHTML = `<span style="font-weight:700;color:#e94560;font-size:0.9rem">🗺 Carte — ${sanitizeText(adventure.titre)}</span>`
     const closeBtn = document.createElement('button')
     closeBtn.textContent = '✕ Fermer'
     closeBtn.style.cssText = 'background:transparent;color:#a0a0b0;border:1px solid #2a2a4a;border-radius:6px;padding:0.25rem 0.75rem;cursor:pointer;font-size:0.8rem;'
@@ -316,7 +317,7 @@ export class GameView {
 
     const text = document.createElement('div')
     text.className = 'section-text'
-    text.innerHTML = section.texte
+    text.innerHTML = sanitizeHtml(section.texte)
     wrap.appendChild(text)
 
     const choix = section.choix ?? []

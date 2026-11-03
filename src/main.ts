@@ -12,6 +12,7 @@ import { initDebugButton, setAdventureProvider } from './ui/debugPanel'
 import { initSectionNotesButton } from './ui/sectionNotes'
 import type { AdventureMetadata } from './types'
 import { resolveImage } from './utils/imageUtils'
+import { sanitizeHtml, sanitizeText } from './utils/sanitize'
 import { setDiceProvider } from './engine/CombatResolver'
 
 // ── Debug : injecte le provider de dés uniquement en mode développement ───────
@@ -116,16 +117,17 @@ function showIntroScreen(container: HTMLElement, engine: GameEngine, onContinue:
 
   const intro = adventure.intro
   const introImg = resolveImage(intro.image, intro.image_ia)
+  // escAttr pour l'attribut src : empêche l'injection d'attributs supplémentaires
   const imageHtml = introImg
-    ? `<img class="intro-image" src="${introImg}" alt="Illustration de l'intro" loading="lazy">`
+    ? `<img class="intro-image" src="${sanitizeText(introImg)}" alt="Illustration de l'intro" loading="lazy">`
     : ''
 
   container.innerHTML = `
     <div class="intro-screen">
       <div class="intro-content">
         ${imageHtml}
-        <h2 class="intro-title">${intro.titre}</h2>
-        <div class="intro-text">${intro.texte}</div>
+        <h2 class="intro-title">${sanitizeText(intro.titre)}</h2>
+        <div class="intro-text">${sanitizeHtml(intro.texte)}</div>
         <button class="btn btn-primary btn-start-adventure" type="button">Commencer l'aventure</button>
       </div>
     </div>
