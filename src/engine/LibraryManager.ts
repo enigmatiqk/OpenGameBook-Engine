@@ -143,6 +143,43 @@ export class LibraryManager {
   }
 
   /**
+   * Résout `repertoire_images` pour qu'il soit utilisable dans le contexte
+   * de l'aventure (locale ou distante).
+   *
+   * Règles :
+   * - URL absolue distante → validée via sanitizeRemoteUrl, retournée telle quelle
+   * - Chemin relatif + aventure distante → le préfixe local "adventures/" est
+   *   remplacé par manifestBase (base du manifest distant)
+   * - Chemin relatif + aventure locale → retourné sans modification
+   *
+   * @param raw           Valeur brute de repertoire_images dans le JSON
+   * @param adventureDir  Répertoire de l'aventure (URL ou chemin local)
+   * @param manifestBase  Base de l'URL du manifest distant (ex: "https://cdn.test/")
+   */
+  private _resolveRepertoireImages(raw: string, adventureDir: string, manifestBase?: string): string {
+    if (isRemoteUrl(raw)) {
+      // Cas 1 : déjà une URL absolue → valider
+      return sanitizeRemoteUrl(raw) ?? ''
+    }
+
+    if (isRemoteUrl(adventureDir) && manifestBase) {
+      // Cas 2 : aventure distante, chemin relatif local
+      // → remplacer le préfixe "adventures/" par la base du manifest distant
+      const LOCAL_PREFIX = 'adventures/'
+      const normalized = raw.replace(/\\/g, '/')
+      const withoutPrefix = normalized.startsWith(LOCAL_PREFIX)
+        ? normalized.slice(LOCAL_PREFIX.length)
+        : normalized
+      const resolved = manifestBase.replace(/\/?$/, '/') + withoutPrefix
+      console.info(`LibraryManager: repertoire_images résolu → "${resolved}"`)
+      return resolved
+    }
+
+    // Cas 3 : aventure locale, chemin relatif → on ne touche pas
+    return raw
+  }
+
+  /**
    * Normalise et assainit les données d'une aventure après chargement.
    *
    * - Garantit que toutes les sections ont un tableau `choix` initialisé
@@ -161,31 +198,9 @@ export class LibraryManager {
    */
   private _normalizeAdventure(adventure: Adventure, adventureDir: string, manifestBase?: string): void {
     // ── Validation / résolution du répertoire d'images ───────────────────────
-    if (isRemoteUrl(adventure.repertoire_images)) {
-      // Cas 1 : repertoire_images est déjà une URL absolue → on valide
-      const safe = sanitizeRemoteUrl(adventure.repertoire_images)
-      if (!safe) {
-        console.warn(`LibraryManager: repertoire_images distant invalide "${adventure.repertoire_images}" — répertoire supprimé`)
-        adventure.repertoire_images = ''
-      } else {
-        adventure.repertoire_images = safe
-      }
-    } else if (isRemoteUrl(adventureDir) && manifestBase) {
-      // Cas 2 : aventure distante, repertoire_images est un chemin relatif local.
-      // On remplace le préfixe local "adventures/" par la base du manifest distant.
-      // Ex: "adventures/Defis_.../images/" + base "https://cdn.test/"
-      //   → "https://cdn.test/Defis_.../images/"
-      const LOCAL_PREFIX = 'adventures/'
-      const rel = adventure.repertoire_images.replace(/\\/g, '/')
-      const withoutPrefix = rel.startsWith(LOCAL_PREFIX)
-        ? rel.slice(LOCAL_PREFIX.length)   // "Defis_.../images/"
-        : rel                              // chemin non standard → on garde tel quel
-      const resolved = manifestBase.replace(/\/?$/, '/') + withoutPrefix
-      adventure.repertoire_images = resolved
-      console.info(`LibraryManager: repertoire_images résolu → "${resolved}"`)
-      console.info(`LibraryManager: repertoire_images relatif résolu automatiquement → "${resolved}"`)
-    }
-    // Cas 3 : aventure locale et repertoire_images relatif → on ne touche pas
+    adventure.repertoire_images = this._resolveRepertoireImages(
+      adventure.repertoire_images, adventureDir, manifestBase
+    )
 
     // ── Assainissement des noms de fichiers images ───────────────────────────
     const sanitizeField = (name: string | undefined): string | undefined => {
@@ -398,22 +413,20 @@ export class LibraryManager {
 
       // Valide le nom du fichier de couverture
       const safeImageName = isRemoteUrl(imageDeGarde)
-        ? null                                       // URL absolue refusée dans image_de_garde
+        ? null
         : sanitizeImageName(imageDeGarde)
       if (!safeImageName) {
         console.error(`LibraryManager: image_de_garde invalide dans "${adventureDir}" : "${imageDeGarde}"`)
         return null
       }
 
-      // Pour les aventures distantes, valide l'URL de repertoire_images
-      // et vérifie les magic bytes de l'image de couverture
+      // Résolution centralisée de repertoire_images (même logique que _normalizeAdventure)
+      const manifestBase = isRemoteUrl(dir) ? new URL('../', dir).href : undefined
+      const resolvedRepertoire = this._resolveRepertoireImages(repertoireImages, dir, manifestBase)
+
+      // Pour les aventures distantes : vérifie les magic bytes de l'image de couverture
       if (isRemoteUrl(dir)) {
-        const safeRepertoire = sanitizeRemoteUrl(repertoireImages)
-        if (!safeRepertoire) {
-          console.error(`LibraryManager: repertoire_images distant invalide dans "${adventureDir}" : "${repertoireImages}"`)
-          return null
-        }
-        const coverImageUrl = safeRepertoire.replace(/\/?$/, '/') + safeImageName
+        const coverImageUrl = resolvedRepertoire.replace(/\/?$/, '/') + safeImageName
         const imageValid = await validateRemoteImage(coverImageUrl)
         if (!imageValid) {
           console.error(`LibraryManager: image de couverture distante rejetée (magic bytes invalides) : "${coverImageUrl}"`)
@@ -426,7 +439,7 @@ export class LibraryManager {
         collection:        cover.collection as string | undefined,
         image_de_garde:    safeImageName,
         image_de_garde_ia: sanitizeImageName(cover.image_de_garde_ia as string | undefined ?? '') ?? undefined,
-        repertoire_images: repertoireImages,
+        repertoire_images: resolvedRepertoire,
         tags:              Array.isArray(cover.tags) ? cover.tags as string[] : [],
         path:              dir,
       }
