@@ -165,34 +165,13 @@ export class LibraryManager {
         adventure.repertoire_images = safe
       }
     } else if (isRemoteUrl(adventureDir)) {
-      // Cas 2 : aventure distante mais repertoire_images est un chemin relatif
-      // → on extrait uniquement le(s) dernier(s) segment(s) après le nom du
-      //   dossier de l'aventure, et on les colle à la base distante.
-      //
-      // Stratégie : trouver le segment "images" (ou dernier segment non vide)
-      // dans le chemin relatif et l'attacher à adventureDir.
-      const segments = adventure.repertoire_images
-        .replace(/\\/g, '/')
-        .split('/')
-        .filter(s => s.length > 0)
-
-      // On cherche le segment "images" en premier, sinon on prend le dernier
-      const imageSegment = segments.find(s => s.toLowerCase() === 'images') ?? segments[segments.length - 1]
-
-      if (imageSegment) {
-        const resolved = adventureDir.replace(/\/?$/, '/') + imageSegment + '/'
-        const safe = sanitizeRemoteUrl(resolved)
-        if (safe) {
-          adventure.repertoire_images = safe
-          console.info(`LibraryManager: repertoire_images relatif résolu → "${safe}"`)
-        } else {
-          console.warn(`LibraryManager: impossible de résoudre repertoire_images "${adventure.repertoire_images}" depuis "${adventureDir}"`)
-          adventure.repertoire_images = ''
-        }
-      } else {
-        // Pas de segment utilisable → on pointe directement sur adventureDir
-        adventure.repertoire_images = adventureDir
-      }
+      // Cas 2 : aventure distante mais repertoire_images est un chemin relatif.
+      // On ignore complètement la valeur locale et on pointe directement sur
+      // adventureDir + "images/" — le dossier d'images est toujours "images/"
+      // dans la convention du projet, et c'est la même structure à distance.
+      const resolved = adventureDir.replace(/\/?$/, '/') + 'images/'
+      adventure.repertoire_images = resolved
+      console.info(`LibraryManager: repertoire_images relatif résolu automatiquement → "${resolved}"`)
     }
     // Cas 3 : aventure locale et repertoire_images relatif → on ne touche pas
 
