@@ -69,6 +69,12 @@ export class LibraryManager {
   async loadAdventure(path: string): Promise<Adventure> {
     const dir = path.replace(/\/[^/]+\.json$/, '').replace(/\/?$/, '/')
 
+    // Pour une aventure distante, calcule la base du manifest (un niveau au-dessus du dir)
+    // Ex: dir = "https://cdn.test/Defis_.../" → manifestBase = "https://cdn.test/"
+    const manifestBase = isRemoteUrl(dir)
+      ? new URL('../', dir).href
+      : undefined
+
     // Tente full.json en premier
     const fullPath = dir + 'full.json'
     try {
@@ -84,7 +90,7 @@ export class LibraryManager {
           // Tente cartefix.json même pour un full.json
           const adv = data as Adventure
           adv.cartefix = await this._loadCartefix(dir)
-          this._normalizeAdventure(adv, dir)
+          this._normalizeAdventure(adv, dir, manifestBase)
           return adv
         }
       }
@@ -132,7 +138,7 @@ export class LibraryManager {
 
     const adventure = data as unknown as Adventure
     adventure.cartefix = await this._loadCartefix(dir)
-    this._normalizeAdventure(adventure, dir)
+    this._normalizeAdventure(adventure, dir, manifestBase)
     return adventure
   }
 
@@ -144,16 +150,16 @@ export class LibraryManager {
    *   non autorisée, protocoles) dans tous les champs image des sections
    * - Valide l'URL de `repertoire_images` si elle est distante
    * - Si l'aventure est distante et que `repertoire_images` est un chemin
-   *   relatif, le résout automatiquement depuis la base de l'aventure :
-   *   seul le dernier segment du chemin (le nom du dossier d'images) est
-   *   conservé et attaché à la base distante.
-   *   Ex: base="https://cdn.test/Livre1/", repertoire_images="adventures/Livre1/images/"
+   *   relatif commençant par le préfixe local (`adventures/`), ce préfixe est
+   *   remplacé par la base de l'URL du manifest distant.
+   *   Ex: manifestBase="https://cdn.test/", repertoire_images="adventures/Livre1/images/"
    *   → "https://cdn.test/Livre1/images/"
    *
-   * @param adventure  L'objet aventure à normaliser (modifié en place)
-   * @param adventureDir  Répertoire de l'aventure (URL ou chemin local, avec slash final)
+   * @param adventure      L'objet aventure à normaliser (modifié en place)
+   * @param adventureDir   Répertoire de l'aventure (URL ou chemin local, avec slash final)
+   * @param manifestBase   Base de l'URL du manifest distant (optionnel, uniquement pour les aventures distantes)
    */
-  private _normalizeAdventure(adventure: Adventure, adventureDir: string): void {
+  private _normalizeAdventure(adventure: Adventure, adventureDir: string, manifestBase?: string): void {
     // ── Validation / résolution du répertoire d'images ───────────────────────
     if (isRemoteUrl(adventure.repertoire_images)) {
       // Cas 1 : repertoire_images est déjà une URL absolue → on valide
@@ -164,13 +170,19 @@ export class LibraryManager {
       } else {
         adventure.repertoire_images = safe
       }
-    } else if (isRemoteUrl(adventureDir)) {
-      // Cas 2 : aventure distante mais repertoire_images est un chemin relatif.
-      // On ignore complètement la valeur locale et on pointe directement sur
-      // adventureDir + "images/" — le dossier d'images est toujours "images/"
-      // dans la convention du projet, et c'est la même structure à distance.
-      const resolved = adventureDir.replace(/\/?$/, '/') + 'images/'
+    } else if (isRemoteUrl(adventureDir) && manifestBase) {
+      // Cas 2 : aventure distante, repertoire_images est un chemin relatif local.
+      // On remplace le préfixe local "adventures/" par la base du manifest distant.
+      // Ex: "adventures/Defis_.../images/" + base "https://cdn.test/"
+      //   → "https://cdn.test/Defis_.../images/"
+      const LOCAL_PREFIX = 'adventures/'
+      const rel = adventure.repertoire_images.replace(/\\/g, '/')
+      const withoutPrefix = rel.startsWith(LOCAL_PREFIX)
+        ? rel.slice(LOCAL_PREFIX.length)   // "Defis_.../images/"
+        : rel                              // chemin non standard → on garde tel quel
+      const resolved = manifestBase.replace(/\/?$/, '/') + withoutPrefix
       adventure.repertoire_images = resolved
+      console.info(`LibraryManager: repertoire_images résolu → "${resolved}"`)
       console.info(`LibraryManager: repertoire_images relatif résolu automatiquement → "${resolved}"`)
     }
     // Cas 3 : aventure locale et repertoire_images relatif → on ne touche pas
