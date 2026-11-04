@@ -47,13 +47,10 @@ export default defineConfig({
   },
   server: {
     headers: {
-      'Content-Security-Policy': CSP,
-      // Empêche le navigateur de dévier du Content-Type déclaré
+      // CSP retiré en dev : Vite HMR injecte des scripts inline qui seraient bloqués.
+      // Le CSP est appliqué en preview (build de prod) ci-dessous.
       'X-Content-Type-Options': 'nosniff',
-      // Protège contre le clickjacking
       'X-Frame-Options': 'SAMEORIGIN',
-      // Force HTTPS en production (ignoré par le navigateur sur http://localhost)
-      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
     },
   },
   preview: {
