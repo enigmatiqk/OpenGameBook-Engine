@@ -161,9 +161,9 @@ function launchGameView(engine: GameEngine): void {
   }
 
   const gameView = new GameView(engine, {
-    onVictory:       () => { stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
-    onDefeat:        () => { stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
-    onBackToLibrary: () => { stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh() },
+    onVictory:       () => { gameView.destroy(); stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
+    onDefeat:        () => { gameView.destroy(); stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
+    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh() },
   })
   showView('game')
   gameView.render(gameContainer)

@@ -41,6 +41,13 @@ export class GameView {
     window.addEventListener('imagePrefsChanged', this._onImagePrefsChanged)
   }
 
+  destroy(): void {
+    if (this._onImagePrefsChanged) {
+      window.removeEventListener('imagePrefsChanged', this._onImagePrefsChanged)
+      this._onImagePrefsChanged = null
+    }
+  }
+
   private _refreshSectionImage(): void {
     const container = this.container
     if (!container) return
@@ -54,21 +61,28 @@ export class GameView {
     if (!section) return
 
     // Remplace uniquement l'image de la section courante sans re-render complet
+    const sectionContent = container.querySelector<HTMLElement>('.section-content')
     const existing = container.querySelector<HTMLImageElement>('.section-image')
     const newSrc = resolveImage(section.image, section.image_ia)
     const base = adventure.repertoire_images.replace(/\/?$/, '/')
 
     if (newSrc) {
       if (existing) {
+        // L'image existait déjà : changer juste le src
         existing.src = base + newSrc
-      } else {
-        // L'image n'existait pas (mode original sans image), re-render complet
-        this._render()
+      } else if (sectionContent) {
+        // L'image n'existait pas : l'insérer avant le texte, sans re-render
+        const img = document.createElement('img')
+        img.className = 'section-image'
+        img.src = base + newSrc
+        img.alt = `Illustration section ${section.numero}`
+        img.addEventListener('click', () => this._showLightbox(img.src, img.alt))
+        sectionContent.insertBefore(img, sectionContent.firstChild)
       }
     } else {
       if (existing) {
-        // Plus d'image dans ce mode, re-render complet
-        this._render()
+        // Plus d'image dans ce mode : retirer l'élément du DOM, sans re-render
+        existing.remove()
       }
       // Sinon rien à faire
     }
