@@ -145,7 +145,6 @@ export class ItemsEditor {
     // ── Zone sticky (header + filtres) ───────────────────────────────────────
     const sticky = document.createElement('div')
     sticky.className = 'items-editor-sticky'
-
     // Titre
     const header = document.createElement('div')
     header.className = 'items-editor-header'
@@ -191,6 +190,17 @@ export class ItemsEditor {
     table.appendChild(tbody)
     tableWrap.appendChild(table)
     this.container.appendChild(tableWrap)
+
+    // Met à jour --items-sticky-height quand la zone sticky change de taille
+    // (ex : filtres qui wrappent sur plusieurs lignes)
+    const updateStickyHeight = (): void => {
+      const h = sticky.getBoundingClientRect().height
+      this.container.style.setProperty('--items-sticky-height', `${h}px`)
+    }
+    const ro = new ResizeObserver(updateStickyHeight)
+    ro.observe(sticky)
+    // Première mesure après le prochain rendu
+    requestAnimationFrame(updateStickyHeight)
 
     this._rebuildTable()
   }

@@ -2746,7 +2746,10 @@ html, body {
 
 /* Tableau et son contenu scrollable */
 .items-table-wrap {
-  overflow-x: auto;
+  /* overflow-x: clip préserve le comportement sticky vertical du thead
+     tout en masquant les débordements horizontaux sans créer un nouveau
+     contexte de scroll qui casserait position:sticky */
+  overflow-x: clip;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin: 0 1.5rem 1.5rem;
@@ -2761,9 +2764,16 @@ html, body {
 /* L'en-tête du tableau reste sticky dans son conteneur de scroll horizontal */
 .items-table thead {
   background: var(--bg-card);
+}
+
+/* sticky sur les th, pas le thead — meilleure compatibilité navigateur */
+.items-table thead th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
+  background: var(--bg-card);
+  /* Compense la hauteur de la zone sticky (header + filtres) via une var JS */
+  top: var(--items-sticky-height, 0px);
 }
 
 .items-table th {
