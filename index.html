@@ -8,17 +8,30 @@
     <link rel="stylesheet" href="/src/ui/styles.css" />
   </head>
   <body>
-    <div id="global-btns" class="global-btns-group">
+    <!-- Région de live pour les lecteurs d'écran — invisible visuellement -->
+    <div
+      id="sr-live"
+      aria-live="assertive"
+      aria-atomic="true"
+      aria-relevant="additions text"
+      class="sr-only"
+    ></div>
+
+    <nav id="global-btns" class="global-btns-group" aria-label="Outils de jeu">
       <button id="btn-section-notes" class="btn-a11y-global" type="button" title="Questions &amp; Notes de la section" aria-label="Questions et notes de la section">🔍</button>
       <button id="btn-debug" class="btn-a11y-global" type="button" title="Panneau de debug (dev uniquement)" aria-label="Panneau de debug" style="display:none">🐛</button>
       <button id="btn-image-prefs" class="btn-a11y-global" type="button" title="Mode d'images : Original" aria-label="Changer le mode d'affichage des images">🖼️</button>
       <button id="btn-a11y" class="btn-a11y-global" type="button" title="Préférences d'affichage" aria-label="Préférences d'affichage">Aa</button>
-    </div>
-    <div id="view-library" class="view active"></div>
-    <div id="view-game" class="view"></div>
-    <div id="view-combat" class="view"></div>
-    <div id="view-victory" class="view"></div>
-    <div id="view-defeat" class="view"></div>
+    </nav>
+
+    <main id="app-main" aria-label="Contenu principal">
+      <div id="view-library" class="view active" role="region" aria-label="Bibliothèque d'aventures"></div>
+      <div id="view-game"    class="view"        role="region" aria-label="Jeu en cours"></div>
+      <div id="view-combat"  class="view"        role="region" aria-label="Combat"></div>
+      <div id="view-victory" class="view"        role="region" aria-label="Victoire"></div>
+      <div id="view-defeat"  class="view"        role="region" aria-label="Défaite"></div>
+    </main>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

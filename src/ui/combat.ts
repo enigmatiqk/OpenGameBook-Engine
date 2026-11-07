@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { CombatState, CombatRound } from '../types'
 import { parseDiceFormula, rollDice, parseAttackFormula, resolveLancerDeFormule, resolveResultatDe } from '../engine/CombatResolver'
+import { srAnnounce } from './srAnnounce'
 
 export class CombatView {
   private engine: GameEngine
@@ -23,6 +24,14 @@ export class CombatView {
 
     const state = this.engine.getCombatState()
     if (!state) { this.onCombatEnd(); return }
+
+    // Annonce la fin du combat si l'état est terminé
+    if (state.phase.type === 'termine') {
+      const msg = state.phase.victoire
+        ? `Combat terminé. Victoire ! Vous avez vaincu ${state.enemy.nom}.`
+        : `Combat terminé. Défaite. Vous avez été vaincu par ${state.enemy.nom}.`
+      srAnnounce(msg)
+    }
 
     window.scrollTo({ top: 0, behavior: 'instant' })
     container.innerHTML = ''
@@ -74,6 +83,10 @@ export class CombatView {
     const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habilete'
     const heroAttaque = this.engine.getHero()?.statistiques[statName] ?? '?'
 
+    // Description accessible pour les lecteurs d'écran
+    const statsDesc = `Héros : ${state.heroVie} points de vie, ${statName} ${heroAttaque}. ${_esc(state.enemy.nom)} : ${state.enemyVie} points de vie.`
+    el.setAttribute('aria-label', statsDesc)
+
     let secondairesHtml = ''
     if (state.monstresSecondaires && state.monstresSecondaires.length > 0) {
       secondairesHtml = state.monstresSecondaires.map(s =>
@@ -85,12 +98,12 @@ export class CombatView {
     }
 
     el.innerHTML = `
-      <div class="combat-stat combat-stat-heros">
+      <div class="combat-stat combat-stat-heros" aria-hidden="true">
         <span class="combat-stat-label">Héros</span>
         <span class="combat-stat-value">${state.heroVie} ❤️</span>
         <span class="combat-stat-sub">${_esc(statName)} ${heroAttaque}</span>
       </div>
-      <div class="combat-stat combat-stat-enemy">
+      <div class="combat-stat combat-stat-enemy" aria-hidden="true">
         <span class="combat-stat-label">${_esc(state.enemy.nom)}</span>
         <span class="combat-stat-value">${state.enemyVie} ❤️</span>
         <span class="combat-stat-sub">habileté ${state.enemy.habilete}</span>
@@ -651,6 +664,18 @@ export class CombatView {
     }
 
     if (!roundToShow) { this._render(); return }
+
+    // Annonce le résultat du round pour les lecteurs d'écran
+    const r = roundToShow
+    let roundAnnounce = ''
+    if (r.cible === 'ennemi') {
+      roundAnnounce = `Vous touchez ${_esc(state.enemy.nom)} : −${r.degats} point${r.degats > 1 ? 's' : ''} de vie. ${_esc(state.enemy.nom)} : ${state.enemyVie} restant${state.enemyVie > 1 ? 's' : ''}.`
+    } else if (r.cible === 'hero') {
+      roundAnnounce = `${_esc(state.enemy.nom)} vous touche : −${r.degats} point${r.degats > 1 ? 's' : ''} de vie. Héros : ${state.heroVie} restant${state.heroVie > 1 ? 's' : ''}.`
+    } else {
+      roundAnnounce = 'Égalité. Aucun dégât ce round.'
+    }
+    srAnnounce(roundAnnounce)
 
     container.innerHTML = ''
     const wrap = document.createElement('div')

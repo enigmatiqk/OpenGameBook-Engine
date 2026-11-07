@@ -10,6 +10,8 @@ import { updateSectionNotes } from './sectionNotes'
 import { GameEngineActions } from '../engine/GameEngineActions'
 import { CarteView } from './CarteView'
 import { buildCarte } from '../carte/CarteEngine'
+import { srAnnounce } from './srAnnounce'
+import { openModal } from './focusTrap'
 
 export interface GameViewCallbacks {
   onVictory: () => void
@@ -117,6 +119,8 @@ export class GameView {
       }
       updateSectionNotes(null)
       
+      srAnnounce('Victoire ! Félicitations, vous avez terminé l\'aventure.')
+
       // Ajoute un bouton pour continuer vers les images de fin
       const btnVictory = document.createElement('button')
       btnVictory.className = 'btn btn-primary victory-next-btn'
@@ -145,6 +149,8 @@ export class GameView {
         container.appendChild(this._buildSectionContent(adventure, section))
       }
       updateSectionNotes(null)
+
+      srAnnounce('Défaite. Votre aventure se termine ici.')
 
       if (defeatFromSection) {
         // La section elle-même déclare la défaite : afficher un bouton comme pour la victoire
@@ -185,8 +191,17 @@ export class GameView {
     container.innerHTML = ''
     container.appendChild(this._buildToolbar(adventure))
     container.appendChild(this._buildHeroPanel(adventure, hero))
-    container.appendChild(this._buildSectionContent(adventure, section))
+    const sectionEl = this._buildSectionContent(adventure, section)
+    container.appendChild(sectionEl)
     updateSectionNotes(section)
+
+    // Accessibilité : annonce la nouvelle section et déplace le focus sur son titre
+    const sectionTitle = sectionEl.querySelector<HTMLElement>('h1, h2, h3, .section-text')
+    if (sectionTitle) {
+      sectionTitle.tabIndex = -1
+      requestAnimationFrame(() => sectionTitle.focus())
+    }
+    srAnnounce(`Section ${section.numero}`)
   }
 
   private _buildToolbar(adventure: Adventure): HTMLElement {
@@ -733,6 +748,7 @@ export class GameView {
     
     content += '</div>'
     
+    const trigger = document.activeElement as HTMLElement | null
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
     overlay.setAttribute('role', 'dialog')
@@ -747,8 +763,12 @@ export class GameView {
         <div class="modal-body">${content}</div>
       </div>
     `
-    
-    const close = () => overlay.remove()
+
+    // Focus trap + restauration du focus au déclencheur
+    document.body.appendChild(overlay)
+    const restoreFocus = openModal(overlay, trigger)
+
+    const close = () => { overlay.remove(); restoreFocus() }
     overlay.querySelector<HTMLButtonElement>('.modal-close')!.addEventListener('click', close)
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
     document.addEventListener('keydown', function onKey(e) {
@@ -767,7 +787,7 @@ export class GameView {
       this._showHeroModal() // Rouvrir la modal rafraîchie
       this._render() // Rafraîchir la page principale
     })
-    
+
     EquipementView.attachUnequipmentListeners(overlay, this.engine, () => {
       close()
       this._showHeroModal() // Rouvrir la modal rafraîchie
@@ -778,8 +798,6 @@ export class GameView {
       this._showHeroModal() // Rouvrir la modal rafraîchie
       this._render() // Rafraîchir la page principale
     })
-
-    document.body.appendChild(overlay)
   }
 
   private _showImagesModal(adventure: Adventure): void {
@@ -791,6 +809,7 @@ export class GameView {
   }
 
   private _showModal(title: string, htmlContent: string): void {
+    const trigger = document.activeElement as HTMLElement | null
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
     overlay.setAttribute('role', 'dialog')
@@ -805,13 +824,17 @@ export class GameView {
         <div class="modal-body">${htmlContent}</div>
       </div>
     `
-    const close = () => overlay.remove()
+    document.body.appendChild(overlay)
+
+    // Focus trap + restore au déclencheur
+    const restoreFocus = openModal(overlay, trigger)
+
+    const close = () => { overlay.remove(); restoreFocus() }
     overlay.querySelector<HTMLButtonElement>('.modal-close')!.addEventListener('click', close)
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
     document.addEventListener('keydown', function onKey(e) {
       if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
     })
-    document.body.appendChild(overlay)
   }
 
   private _btn(label: string, className: string, onClick: () => void): HTMLButtonElement {
@@ -824,18 +847,25 @@ export class GameView {
   }
 
   private _showLightbox(src: string, alt: string): void {
+    const trigger = document.activeElement as HTMLElement | null
     const overlay = document.createElement('div')
     overlay.className = 'image-lightbox'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', alt || 'Image agrandie')
+    overlay.tabIndex = -1
     const img = document.createElement('img')
     img.src = src
     img.alt = alt
     overlay.appendChild(img)
-    const close = () => overlay.remove()
+
+    const close = () => { overlay.remove(); trigger?.focus() }
     overlay.addEventListener('click', close)
     document.addEventListener('keydown', function onKey(e) {
       if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
     }, { once: true })
     document.body.appendChild(overlay)
+    requestAnimationFrame(() => overlay.focus())
   }
 
   private _showDuelAdversaireRoll(
@@ -848,6 +878,9 @@ export class GameView {
 
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', this._escHtml(pending.label))
 
     overlay.innerHTML = `
       <div class="modal-box action-roll-box">
@@ -857,13 +890,17 @@ export class GameView {
         <div class="modal-body">
           <p class="action-roll-condition">Votre total : <strong>${totalHeros}</strong></p>
           <div class="action-roll-dice"></div>
-          <button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button>
+          <button class="btn btn-primary action-roll-btn" type="button">Lancer les dés</button>
         </div>
       </div>
     `
 
     const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
     const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+
+    // Focus sur le bouton à l'ouverture
+    document.body.appendChild(overlay)
+    requestAnimationFrame(() => btn.focus())
 
     btn.addEventListener('click', () => {
       btn.disabled = true
@@ -872,6 +909,7 @@ export class GameView {
 
       diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
         `<span class="action-roll-total">= ${totalAdv}</span>`
+      srAnnounce(`Adversaire : dés ${rolls.join(', ')} — total ${totalAdv}. Vous : ${totalHeros}`)
 
       setTimeout(() => {
         const succes = duelState
@@ -885,6 +923,7 @@ export class GameView {
         resultEl.className = `action-roll-result action-roll-result--${succes ? 'succes' : 'echec'}`
         resultEl.textContent = libelle
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
+        srAnnounce(libelle)
 
         setTimeout(() => {
           overlay.remove()
@@ -892,8 +931,6 @@ export class GameView {
         }, 2000)
       }, 800)
     })
-
-    document.body.appendChild(overlay)
   }
 
   private _showDuelMiseInput(
@@ -1014,6 +1051,9 @@ export class GameView {
 
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', this._escHtml(pending.label))
 
     const conditionHtml = info
       ? `<p class="action-roll-condition">${this._escHtml(info.jet)} ${this._escHtml(info.condition)} ${this._escHtml(info.stat)} (${info.statValeur})</p>`
@@ -1023,10 +1063,14 @@ export class GameView {
       ? `<p class="multi-roll-progress">Tentative ${progression.tentativeCourante}/${progression.tentativesTotal} - Réussites ${progression.reussitesObtenues}/${progression.reussitesRequises}</p>`
       : ''
 
-    overlay.innerHTML = `<div class="modal-box action-roll-box"><div class="modal-header"><h2 class="modal-title">${this._escHtml(pending.label)}</h2></div><div class="modal-body">${conditionHtml}${progressionHtml}<div class="action-roll-dice"></div><button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button></div></div>`
+    overlay.innerHTML = `<div class="modal-box action-roll-box"><div class="modal-header"><h2 class="modal-title">${this._escHtml(pending.label)}</h2></div><div class="modal-body">${conditionHtml}${progressionHtml}<div class="action-roll-dice"></div><button class="btn btn-primary action-roll-btn" type="button">Lancer les dés</button></div></div>`
 
     const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
     const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+
+    // Focus sur le bouton à l'ouverture
+    document.body.appendChild(overlay)
+    requestAnimationFrame(() => btn.focus())
 
     btn.addEventListener('click', () => {
       btn.disabled = true
@@ -1036,6 +1080,8 @@ export class GameView {
       // Phase 1 : affiche les dés
       diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
         `<span class="action-roll-total">= ${total}</span>`
+      // Annonce immédiate des valeurs
+      srAnnounce(`Dés : ${rolls.join(', ')} — total ${total}`)
 
       // Phase 2 : affiche le résultat après 800ms
       setTimeout(() => {
@@ -1049,16 +1095,19 @@ export class GameView {
             default:   succes = false
           }
           const motResultat = succes ? info.resultats['succes'] : info.resultats['echec']
+          const motAnnonce = motResultat ?? (succes ? 'Succès' : 'Échec')
           const resultEl = document.createElement('div')
           resultEl.className = `action-roll-result action-roll-result--${succes ? 'succes' : 'echec'}`
-          resultEl.textContent = motResultat ?? (succes ? 'Succès' : 'Échec')
+          resultEl.textContent = motAnnonce
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
+          srAnnounce(motAnnonce)
         } else if (isLancerDe) {
           // Pour lancer_de, affiche juste le résultat
           const resultEl = document.createElement('div')
           resultEl.className = 'action-roll-result action-roll-result--lancer-de'
           resultEl.textContent = `Résultat : ${total}`
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
+          srAnnounce(`Résultat : ${total}`)
         }
 
         // Phase 3 : navigue après 2s
@@ -1068,8 +1117,6 @@ export class GameView {
         }, 2000)
       }, 800)
     })
-
-    document.body.appendChild(overlay)
   }
 
   private _showGainRoll(pending: import('../types').PendingGainRoll, onDone: () => void): void {
@@ -1077,6 +1124,9 @@ export class GameView {
 
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', this._escHtml(pending.label))
 
     overlay.innerHTML = `
       <div class="modal-box action-roll-box">
@@ -1086,13 +1136,17 @@ export class GameView {
         <div class="modal-body">
           <p class="action-roll-formula">${this._escHtml(pending.formula)}</p>
           <div class="action-roll-dice"></div>
-          <button class="btn btn-primary action-roll-btn" type="button">🎲 Lancer</button>
+          <button class="btn btn-primary action-roll-btn" type="button">Lancer les dés</button>
         </div>
       </div>
     `
 
     const diceEl = overlay.querySelector<HTMLElement>('.action-roll-dice')!
     const btn = overlay.querySelector<HTMLButtonElement>('.action-roll-btn')!
+
+    // Focus sur le bouton à l'ouverture
+    document.body.appendChild(overlay)
+    requestAnimationFrame(() => btn.focus())
 
     btn.addEventListener('click', () => {
       btn.disabled = true
@@ -1103,13 +1157,16 @@ export class GameView {
       // Affiche les dés
       diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
         `<span class="action-roll-total">= ${total}</span>`
+      srAnnounce(`Dés : ${rolls.join(', ')} — total ${rawTotal}`)
 
       // Affiche le gain/perte après 800ms
       setTimeout(() => {
+        const signed = `${total >= 0 ? '+' : ''}${total}`
         const resultEl = document.createElement('div')
         resultEl.className = `action-roll-result ${total >= 0 ? 'action-roll-result--gain' : 'action-roll-result--perte'}`
-        resultEl.textContent = `${total >= 0 ? '+' : ''}${total} ${this._escHtml(pending.itemLabel)}`
+        resultEl.textContent = `${signed} ${this._escHtml(pending.itemLabel)}`
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
+        srAnnounce(`${signed} ${pending.itemLabel}`)
 
         // Applique le gain et navigue après 2s (0 = rester sur la section courante)
         setTimeout(() => {
@@ -1119,8 +1176,6 @@ export class GameView {
         }, 2000)
       }, 800)
     })
-
-    document.body.appendChild(overlay)
   }
 
   /**
