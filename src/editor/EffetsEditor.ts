@@ -18,12 +18,15 @@
  */
 
 import type { Effet, EffetStatCombat } from '../types'
+import { buildItemImageSlot } from './ItemImageSlot'
 
 export interface EffetsEditorOptions {
   effets:   Effet[]
   onChange: (effets: Effet[]) => void
   /** Label du bouton d'ajout (défaut : "+ Ajouter un effet") */
   addLabel?: string
+  /** Base URL du répertoire images pour les aperçus des items */
+  imageBaseUrl?: string
 }
 
 // ─── Types d'effets supportés ─────────────────────────────────────────────────
@@ -172,6 +175,26 @@ export class EffetsEditor {
           v => { it.delta = v || 1; this._notify() })
         deltaIn.title = 'Quantité (négatif = retirer)'
         fields.appendChild(this._fieldWithLabel('Δ', deltaIn))
+
+        // Slots image (si imageBaseUrl disponible)
+        const baseUrl = this.options.imageBaseUrl ?? ''
+        const imagesRow = document.createElement('div')
+        imagesRow.className = 'part-item-images-row'
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image',
+          label: '🖼️ Originale',
+          filename: it.image,
+          imageBaseUrl: baseUrl,
+          onChange: (filename) => { it.image = filename || undefined; this._notify() },
+        }))
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image_ia',
+          label: '🤖 IA',
+          filename: it.image_ia,
+          imageBaseUrl: baseUrl,
+          onChange: (filename) => { it.image_ia = filename || undefined; this._notify() },
+        }))
+        fields.appendChild(imagesRow)
       }
 
       if (t === 'equiper') {

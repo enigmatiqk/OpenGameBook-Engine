@@ -23,6 +23,7 @@ export class SectionEditor {
   private container: HTMLElement
   private options:   SectionEditorOptions
   private imageDataUrls: { image?: string; image_ia?: string } = {}
+  private imageBaseUrl: string = ''
   private choicesEditor: ChoicesEditor | null = null
   private wysiwyg: WysiwygEditor | null = null
   private carteBlock: CarteEditorBlock | null = null
@@ -36,6 +37,7 @@ export class SectionEditor {
 
   render(section: Section, imageBaseUrl: string, adventure?: Adventure, prevSection?: number): void {
     this.imageDataUrls = {}
+    this.imageBaseUrl = imageBaseUrl
     this.container.innerHTML = ''
     this.container.className = 'section-editor'
 
@@ -63,6 +65,7 @@ export class SectionEditor {
     this.choicesEditor = new ChoicesEditor(choicesEl, {
       onChoicesChange: (choix) => this.options.onChoicesChange(choix),
       onNavigateTo:    (num)  => this.options.onNavigateTo(num),
+      imageBaseUrl: this.imageBaseUrl,
     })
     this.choicesEditor.render(section)
     leftCol.appendChild(choicesEl)
@@ -87,6 +90,7 @@ export class SectionEditor {
       effets:    section.effets ?? [],
       onChange:  (effets) => this.options.onEffetsChange(effets),
       addLabel:  '+ Ajouter un effet d\'entrée',
+      imageBaseUrl: this.imageBaseUrl,
     })
 
     leftCol.appendChild(effetsWrap)

@@ -25,6 +25,8 @@ import { CarteEditorBlock } from './CarteEditorBlock'
 
 export interface ChoicePropertyModalOptions {
   onSave: (updated: Choice) => void
+  /** Base URL du répertoire images (pour les aperçus d'items dans les effets) */
+  imageBaseUrl?: string
 }
 
 // ─── Valeurs par défaut à la création d'une propriété ─────────────────────────
@@ -818,6 +820,7 @@ export class ChoicePropertyModal {
         if (!outcome.effets) outcome.effets = []
         new EffetsEditor(effetsEl, {
           effets: outcome.effets,
+          imageBaseUrl: this.options.imageBaseUrl,
           onChange: (updated) => {
             outcome.effets = updated.length ? updated : undefined
             effetsToggle.textContent = updated.length
@@ -1127,6 +1130,7 @@ export class ChoicePropertyModal {
     this.working.effets = effets
     new EffetsEditor(wrap, {
       effets,
+      imageBaseUrl: this.options.imageBaseUrl,
       onChange: (updated) => { this.working.effets = updated },
     })
     return wrap

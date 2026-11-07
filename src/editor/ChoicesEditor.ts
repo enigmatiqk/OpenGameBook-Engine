@@ -19,6 +19,8 @@ import { ChoicePropertyModal, MODAL_PROPS } from './ChoicePropertyModal'
 export interface ChoicesEditorOptions {
   onChoicesChange: (choix: Choice[]) => void
   onNavigateTo: (numero: number) => void | Promise<void>
+  /** Base URL du répertoire images (pour les aperçus d'items dans les effets) */
+  imageBaseUrl?: string
 }
 
 // Compte les propriétés avancées non-nulles d'un choix
@@ -264,6 +266,7 @@ export class ChoicesEditor {
       : 'Propriétés avancées'
     advBtn.addEventListener('click', () => {
       const modal = new ChoicePropertyModal(this.choix[idx], {
+        imageBaseUrl: this.options.imageBaseUrl,
         onSave: (updated) => {
           this.choix[idx] = updated
           const newRow = this._buildChoiceRow(updated, idx, list)

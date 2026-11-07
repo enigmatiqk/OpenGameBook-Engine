@@ -1,5 +1,27 @@
 import type { GameEngine } from '../engine/GameEngine'
-import type { Adventure, Hero } from '../types'
+import type { Adventure, Hero, InventaireItem } from '../types'
+import { resolveImage } from '../utils/imageUtils'
+
+/**
+ * Construit le contenu HTML d'un item dans un slot ou une liste.
+ * - Si l'item a une image résolue : affiche une vignette carrée avec le label en title
+ * - Sinon : affiche le texte du label + console.warn pour faciliter l'identification
+ */
+export function buildItemContent(
+  item: InventaireItem,
+  adventure: Adventure,
+  escHtml: (s: string) => string,
+  escAttr: (s: string) => string
+): string {
+  const imageFile = resolveImage(item.image, item.image_ia)
+  if (imageFile) {
+    const src = adventure.repertoire_images.replace(/\/?$/, '/') + imageFile
+    return `<img src="${escAttr(src)}" alt="${escAttr(item.label)}" title="${escAttr(item.label)}" class="item-thumbnail">`
+  }
+  // Pas d'image : fallback texte avec warning
+  console.warn(`[Item] Pas d'image pour l'item "${item.id}" (${item.label})`)
+  return escHtml(item.label)
+}
 
 /**
  * Gère l'affichage et l'interaction avec l'équipement du héros
@@ -34,9 +56,10 @@ export class EquipementView {
         ? `<button class="btn-drop-equip-modal" data-slot="${escAttr(slotName)}" title="Jeter ${escAttr(item.label)}">🗑️</button>`
         : ''
       const unequipBtn = (item && item.item_unequip !== false) ? `<button class="btn-unequip-modal" data-slot="${escAttr(slotName)}">✕</button>` : ''
+      const slotContent = item ? buildItemContent(item, adventure, escHtml, escAttr) : '(vide)'
       return `<div class="equipment-slot-rpg ${cssClass}">
         <div class="slot-label">${escHtml(slotLabel)}</div>
-        <div class="slot-item"${item ? ` id="${escAttr(item.id)}"` : ''}>${item ? escHtml(item.label) : '(vide)'}</div>
+        <div class="slot-item"${item ? ` id="${escAttr(item.id)}"` : ''}>${slotContent}</div>
         ${unequipBtn}${dropBtn}
       </div>`
     }
@@ -54,9 +77,9 @@ export class EquipementView {
 
     // Personnage au centre
     content += '<div class="equipment-heros">'
-    const heroImage = adventure.personnage.image || adventure.personnage.image_ia
-    if (heroImage) {
-      const imagePath = adventure.repertoire_images.replace(/\/?$/, '/') + heroImage
+    const heroImageFile = resolveImage(adventure.personnage.image, adventure.personnage.image_ia)
+    if (heroImageFile) {
+      const imagePath = adventure.repertoire_images.replace(/\/?$/, '/') + heroImageFile
       content += `<img src="${escAttr(imagePath)}" alt="Personnage" class="hero-image">`
     } else {
       content += '👤'

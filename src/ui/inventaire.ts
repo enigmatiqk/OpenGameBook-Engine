@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { Adventure, Hero } from '../types'
+import { buildItemContent } from './equipement'
 
 /**
  * Convertit un texte en slug utilisable comme id DOM
@@ -220,11 +221,12 @@ export class InventaireView {
         if (typeof item === 'string') {
           content += `<li>${escHtml(item)}</li>`
         } else {
+          const itemVisual = buildItemContent(item, adventure, escHtml, escAttr)
           const qty = item.quantite !== undefined ? ` <em>(${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})</em>` : ''
           const equipBtn = item.type ? `<button class="btn-equip-modal" data-item-id="${escAttr(item.id)}">⚔️</button>` : ''
           const showDrop = (dropAllowed || (equipDropAllowed && !!item.type)) && item.item_dropable !== false
           const dropBtn = showDrop ? `<button class="btn-drop-modal" data-item-id="${escAttr(item.id)}">🗑️ Jeter</button>` : ''
-          content += `<li>${escHtml(item.label)}${qty} ${equipBtn}${dropBtn}</li>`
+          content += `<li class="inventory-list-item">${itemVisual}${qty} ${equipBtn}${dropBtn}</li>`
         }
       }
       content += '</ul>'

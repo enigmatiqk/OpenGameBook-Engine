@@ -807,3 +807,37 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 
 /* ── Leaderboard : stat initiale ─────────────────────────────────────────── */
 .stat-initial { color: var(--text-muted); font-size: 0.85em; font-weight: normal; }
+
+
+/* ─── Item thumbnails (vignettes carrées dans équipement + inventaire) ─────── */
+
+/* Vignette carrée affichée dans les slots équipement et la liste inventaire */
+.item-thumbnail {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* Dans un slot équipement : l'image remplace le texte, centrée */
+.slot-item .item-thumbnail {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius) - 2px);
+  object-fit: cover;
+}
+
+/* Dans la liste inventaire : image à gauche, alignée avec le texte */
+.inventory-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.inventory-list-item .item-thumbnail {
+  flex-shrink: 0;
+}

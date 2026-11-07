@@ -12,6 +12,7 @@ import { PersonnageEditor } from './PersonnageEditor'
 import { ReglesEditor } from './ReglesEditor'
 import type { Regles } from '../types'
 import { CarteFixeEditor } from './CarteFixeEditor'
+import { ItemsEditor } from './ItemsEditor'
 import { buildCarte, sectionHasConflict, getSectionConflictPositions } from '../carte/CarteEngine'
 import type { CarteState } from '../carte/CarteEngine'
 import { extractTargets } from './SectionTargetExtractor'
@@ -19,7 +20,7 @@ import type { SectionTarget } from './SectionTargetExtractor'
 
 // ─── Onglets disponibles ──────────────────────────────────────────────────────
 
-type TabId = 'sections' | 'couverture' | 'livre' | 'personnage' | 'regles' | 'cartefix'
+type TabId = 'sections' | 'couverture' | 'livre' | 'personnage' | 'regles' | 'cartefix' | 'items'
 
 interface Tab {
   id:    TabId
@@ -33,6 +34,7 @@ const TABS: Tab[] = [
   { id: 'personnage', label: 'Personnage',  icon: '🧙' },
   { id: 'regles',     label: 'Règles',      icon: '⚙️' },
   { id: 'cartefix',   label: 'Carte Fix',   icon: '🔧' },
+  { id: 'items',      label: 'Items',       icon: '🎒' },
   { id: 'sections',   label: 'Sections',    icon: '📖' },
 ]
 
@@ -84,6 +86,7 @@ export class EditorApp {
   private personnageEditor!: PersonnageEditor
   private reglesEditor!:     ReglesEditor
   private carteFixeEditor!:  CarteFixeEditor
+  private itemsEditor!:      ItemsEditor
 
   private sectionInput!:      HTMLInputElement
   private sectionTotal!:      HTMLElement
@@ -246,12 +249,28 @@ export class EditorApp {
       onChange: () => { this._editorDirtyFlags.cartefix = true; this._updateDirtyButtons() },
     })
 
+    const itemsEl = document.createElement('div')
+    itemsEl.style.cssText = 'display:none;flex:1;overflow-y:auto;'
+    this.itemsEditor = new ItemsEditor(itemsEl, {
+      onPersonnageChange: () => {
+        this._editorDirtyFlags.personnage = true
+        this._updateDirtyButtons()
+      },
+      onSectionChange: (sectionNum) => {
+        this.modifiedSectionNums.add(sectionNum)
+        this.dirtySections = true
+        this._updateDirtyButtons()
+      },
+    })
+    this.itemsEditor.setNavigateCallback((num) => { void this._navigateToNum(num) })
+
     // Tous les panneaux dans tabContent — ordre identique à TABS
     this.tabContentEl.appendChild(livreEl)
     this.tabContentEl.appendChild(couvertureEl)
     this.tabContentEl.appendChild(personnageEl)
     this.tabContentEl.appendChild(reglesEl)
     this.tabContentEl.appendChild(carteFixeEl)
+    this.tabContentEl.appendChild(itemsEl)
     this.tabContentEl.appendChild(this.sectionEditorEl)
 
     // Écouteurs toolbar
@@ -352,6 +371,7 @@ export class EditorApp {
       this.personnageEditor.render(this.adventure)
       this.reglesEditor.render(this.adventure)
       this.carteFixeEditor.render(this.adventure)
+      this.itemsEditor.render(this.adventure)
 
       // Construit la carte pour la sidebar
       this.carteState = buildCarte(this.adventure.sections, undefined, this.adventure.cartefix)
@@ -409,7 +429,7 @@ export class EditorApp {
 
     // Affiche/cache chaque panneau via les enfants de tabContentEl (ordre = TABS)
     const panels = this.tabContentEl.children
-    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'regles', 'cartefix', 'sections']
+    const panelIds: TabId[] = ['livre', 'couverture', 'personnage', 'regles', 'cartefix', 'items', 'sections']
     panelIds.forEach((id, i) => {
       (panels[i] as HTMLElement).style.display = id === this.activeTab ? 'block' : 'none'
     })
@@ -510,6 +530,7 @@ export class EditorApp {
       case 'personnage': return this._personnageHasChanges()
       case 'regles':     return this._reglesHasChanges()
       case 'cartefix':   return this._cartefixHasChanges()
+      case 'items':      return this._personnageHasChanges() || this.dirtySections
     }
   }
 
@@ -582,6 +603,15 @@ export class EditorApp {
         this._editorDirtyFlags.cartefix = false
         if (this.adventure) this.carteFixeEditor.render(this.adventure)
         break
+      case 'items':
+        // Annuler : recharge l'aventure depuis la source (abandon des modifications par référence)
+        this._editorDirtyFlags.personnage = false
+        this.dirtySections = false
+        if (this.adventure) {
+          this.personnageEditor.render(this.adventure)
+          this.itemsEditor.render(this.adventure)
+        }
+        break
     }
     this._updateDirtyButtons()
   }
@@ -614,6 +644,19 @@ export class EditorApp {
         break
       case 'cartefix':
         this._commitCartefix()
+        break
+      case 'items':
+        // Les modifications items touchent personnage et/ou sections — on sauvegarde les deux si dirty
+        if (this._personnageHasChanges()) this._commitPersonnage()
+        if (this.dirtySections) {
+          // Pas de dirtyState sections à merger ici (les effets sont modifiés par référence)
+          // On marque simplement les sections comme sauvegardées
+          this.dirtySections = false
+          this._showToast('Items de section enregistrés', 'success')
+          this._updateExportButton()
+        }
+        // Rafraîchit l'onglet items après sauvegarde
+        if (this.adventure) this.itemsEditor.refresh()
         break
     }
     this._updateDirtyButtons()
@@ -742,6 +785,31 @@ export class EditorApp {
     this._showToast('Carte Fix enregistrée', 'success')
   }
 
+  /** Compte les items (toutes sources) sans aucune image (ni image ni image_ia) */
+  private _countItemsWithoutImage(): number {
+    if (!this.adventure) return 0
+    let count = 0
+    const check = (it: unknown): void => {
+      if (!it || typeof it === 'string') return
+      const item = it as { image?: string; image_ia?: string }
+      if (!item.image && !item.image_ia) count++
+    }
+    ;(this.adventure.personnage.inventaire ?? []).forEach(check)
+    ;(this.adventure.personnage.equipement ?? []).forEach(check)
+    for (const section of this.adventure.sections) {
+      const scanEffets = (effets: import('../types').Effet[] | undefined): void => {
+        for (const e of effets ?? []) {
+          if (e.type === 'item' && e.item) check(e.item)
+        }
+      }
+      scanEffets(section.effets)
+      for (const choix of section.choix ?? []) {
+        scanEffets(choix.effets)
+      }
+    }
+    return count
+  }
+
   private _updateExportButton(): void {
     // En lecture seule (aventure distante), la sauvegarde est toujours désactivée
     if (this.readOnly) {
@@ -773,6 +841,11 @@ export class EditorApp {
   // ── Badges sur les onglets ─────────────────────────────────────────────────
 
   private _updateTabBadges(): void {
+    // Compte les items sans aucune image pour le badge de l'onglet Items
+    const itemsWithoutImage = this.adventure
+      ? this._countItemsWithoutImage()
+      : 0
+
     const badges: Partial<Record<TabId, number>> = {
       sections:   this.modifiedSectionNums.size,
       couverture: this.dirtyCouverture ? 1 : 0,
@@ -780,6 +853,7 @@ export class EditorApp {
       personnage: this.dirtyPersonnage ? 1 : 0,
       regles:     this.dirtyRegles     ? 1 : 0,
       cartefix:   this.dirtyCartefix   ? 1 : 0,
+      items:      itemsWithoutImage,
     }
 
     this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {

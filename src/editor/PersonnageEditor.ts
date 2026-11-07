@@ -6,6 +6,7 @@
  */
 
 import type { Adventure, PersonnageTemplate, StatDefinition, InventaireItem } from '../types'
+import { buildItemImageSlot } from './ItemImageSlot'
 
 // Clés d'emplacements reconnues par l'UI du jeu (hardcodées dans equipement.ts)
 const SLOT_KEYS: string[] = ['tete', 'main', 'armure', 'ceinture', 'pantalon', 'pieds']
@@ -20,6 +21,7 @@ export class PersonnageEditor {
   private container: HTMLElement
   private options: PersonnageEditorOptions
   private data: PersonnageTemplate = { statistiques: {}, inventaire: [] }
+  private imageBaseUrl: string = ''
 
   constructor(container: HTMLElement, options: PersonnageEditorOptions) {
     this.container = container
@@ -29,6 +31,7 @@ export class PersonnageEditor {
   render(adventure: Adventure): void {
     // Deep clone
     this.data = JSON.parse(JSON.stringify(adventure.personnage)) as PersonnageTemplate
+    this.imageBaseUrl = adventure.repertoire_images ?? ''
     this._build()
   }
 
@@ -292,20 +295,43 @@ export class PersonnageEditor {
         }
 
         const it = item as InventaireItem
-        const row = document.createElement('div')
-        row.className = 'part-list-row part-inv-row'
+        const card = document.createElement('div')
+        card.className = 'part-item-card'
 
-        row.appendChild(this._labeled('ID',    this._textInput(it.id ?? '', 'item_id', v => { it.id = v || undefined as unknown as string; this._notify() })))
-        row.appendChild(this._labeled('Label', this._textInput(it.label ?? '', 'nom affiché', v => { it.label = v; this._notify() })))
-        row.appendChild(this._labeled('Qté',   this._numInput(it.quantite ?? 1, 0, v => { it.quantite = v || undefined; this._notify() })))
-        row.appendChild(this._labeled('Usage', this._textInput(it.usage ?? '', 'ex: manger_repas', v => { it.usage = v || undefined; this._notify() })))
+        // Ligne champs texte
+        const fields = document.createElement('div')
+        fields.className = 'part-list-row part-inv-row'
+        fields.appendChild(this._labeled('ID',    this._textInput(it.id ?? '', 'item_id', v => { it.id = v || undefined as unknown as string; this._notify() })))
+        fields.appendChild(this._labeled('Label', this._textInput(it.label ?? '', 'nom affiché', v => { it.label = v; this._notify() })))
+        fields.appendChild(this._labeled('Qté',   this._numInput(it.quantite ?? 1, 0, v => { it.quantite = v || undefined; this._notify() })))
+        fields.appendChild(this._labeled('Usage', this._textInput(it.usage ?? '', 'ex: manger_repas', v => { it.usage = v || undefined; this._notify() })))
 
         const del = document.createElement('button')
         del.type = 'button'; del.className = 'cpm-list-del'; del.innerHTML = '🗑'
         del.addEventListener('click', () => { items.splice(i, 1); rebuild(); this._notify() })
-        row.appendChild(del)
+        fields.appendChild(del)
+        card.appendChild(fields)
 
-        list.appendChild(row)
+        // Ligne images
+        const imagesRow = document.createElement('div')
+        imagesRow.className = 'part-item-images-row'
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image',
+          label: '🖼️ Originale',
+          filename: it.image,
+          imageBaseUrl: this.imageBaseUrl,
+          onChange: (filename) => { it.image = filename || undefined; this._notify() },
+        }))
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image_ia',
+          label: '🤖 IA',
+          filename: it.image_ia,
+          imageBaseUrl: this.imageBaseUrl,
+          onChange: (filename) => { it.image_ia = filename || undefined; this._notify() },
+        }))
+        card.appendChild(imagesRow)
+
+        list.appendChild(card)
       })
     }
 
@@ -339,21 +365,44 @@ export class PersonnageEditor {
       const availableTypes = this._collectAvailableTypes()
 
       items.forEach((it, i) => {
-        const row = document.createElement('div')
-        row.className = 'part-list-row part-inv-row'
+        const card = document.createElement('div')
+        card.className = 'part-item-card'
 
-        row.appendChild(this._labeled('ID',    this._textInput(it.id ?? '',    'item_id', v => { it.id = v; this._notify() })))
-        row.appendChild(this._labeled('Label', this._textInput(it.label ?? '', 'nom',     v => { it.label = v; this._notify() })))
+        // Ligne champs texte
+        const fields = document.createElement('div')
+        fields.className = 'part-list-row part-inv-row'
+        fields.appendChild(this._labeled('ID',    this._textInput(it.id ?? '',    'item_id', v => { it.id = v; this._notify() })))
+        fields.appendChild(this._labeled('Label', this._textInput(it.label ?? '', 'nom',     v => { it.label = v; this._notify() })))
         // Type : select construit depuis les types_acceptes des emplacements
-        row.appendChild(this._labeled('Type',  this._typeSelect(it.type ?? '', availableTypes, v => { it.type = v || undefined; this._notify() })))
-        row.appendChild(this._labeled('Poids', this._numInput(it.poids ?? 1, 0, v => { it.poids = v; this._notify() })))
+        fields.appendChild(this._labeled('Type',  this._typeSelect(it.type ?? '', availableTypes, v => { it.type = v || undefined; this._notify() })))
+        fields.appendChild(this._labeled('Poids', this._numInput(it.poids ?? 1, 0, v => { it.poids = v; this._notify() })))
 
         const del = document.createElement('button')
         del.type = 'button'; del.className = 'cpm-list-del'; del.innerHTML = '🗑'
         del.addEventListener('click', () => { items.splice(i, 1); rebuild(); this._notify() })
-        row.appendChild(del)
+        fields.appendChild(del)
+        card.appendChild(fields)
 
-        list.appendChild(row)
+        // Ligne images
+        const imagesRow = document.createElement('div')
+        imagesRow.className = 'part-item-images-row'
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image',
+          label: '🖼️ Originale',
+          filename: it.image,
+          imageBaseUrl: this.imageBaseUrl,
+          onChange: (filename) => { it.image = filename || undefined; this._notify() },
+        }))
+        imagesRow.appendChild(buildItemImageSlot({
+          field: 'image_ia',
+          label: '🤖 IA',
+          filename: it.image_ia,
+          imageBaseUrl: this.imageBaseUrl,
+          onChange: (filename) => { it.image_ia = filename || undefined; this._notify() },
+        }))
+        card.appendChild(imagesRow)
+
+        list.appendChild(card)
       })
     }
 
