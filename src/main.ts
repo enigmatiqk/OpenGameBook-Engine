@@ -7,6 +7,7 @@ import { LibraryManager } from './engine/LibraryManager'
 import { SaveStore } from './engine/SaveStore'
 import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
+import { initTtsControls } from './ui/tts'
 import { initImagePrefsButton } from './ui/imagePreferences'
 import { initDebugButton, setAdventureProvider } from './ui/debugPanel'
 import { initSectionNotesButton } from './ui/sectionNotes'
@@ -336,6 +337,7 @@ function initDefeatView(engine: GameEngine): void {
 
 document.addEventListener('DOMContentLoaded', () => {
   initA11y()
+  initTtsControls()
 
   showView('library')
   initLibrary()

@@ -2,6 +2,7 @@ import type { GameEngine } from '../engine/GameEngine'
 import type { CombatState, CombatRound } from '../types'
 import { parseDiceFormula, rollDice, parseAttackFormula, resolveLancerDeFormule, resolveResultatDe } from '../engine/CombatResolver'
 import { srAnnounce } from './srAnnounce'
+import { tts } from './tts'
 
 export class CombatView {
   private engine: GameEngine
@@ -31,6 +32,20 @@ export class CombatView {
         ? `Combat terminé. Victoire ! Vous avez vaincu ${state.enemy.nom}.`
         : `Combat terminé. Défaite. Vous avez été vaincu par ${state.enemy.nom}.`
       srAnnounce(msg)
+      tts.speak(msg)
+    }
+
+    // Annonce le début du combat (premier render : aucun round joué)
+    if (state.rounds.length === 0 && state.phase.type !== 'termine') {
+      const rules = this.engine.getAdventure()?.regles.combat
+      const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habileté'
+      const hero = this.engine.getHero()
+      const heroStat = hero?.statistiques[statName] ?? '?'
+      const heroVie = state.heroVie
+      const msg = `Combat contre ${state.enemy.nom}. `
+        + `Ennemi : habileté ${state.enemy.habilete}, endurance ${state.enemy.endurance}. `
+        + `Héros : ${statName} ${heroStat}, endurance ${heroVie}.`
+      tts.speak(msg)
     }
 
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -676,6 +691,7 @@ export class CombatView {
       roundAnnounce = 'Égalité. Aucun dégât ce round.'
     }
     srAnnounce(roundAnnounce)
+    tts.speak(roundAnnounce)
 
     container.innerHTML = ''
     const wrap = document.createElement('div')

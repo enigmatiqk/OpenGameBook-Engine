@@ -12,6 +12,7 @@ import { CarteView } from './CarteView'
 import { buildCarte } from '../carte/CarteEngine'
 import { srAnnounce } from './srAnnounce'
 import { openModal } from './focusTrap'
+import { tts, stripHtml } from './tts'
 
 export interface GameViewCallbacks {
   onVictory: () => void
@@ -120,6 +121,10 @@ export class GameView {
       updateSectionNotes(null)
       
       srAnnounce('Victoire ! Félicitations, vous avez terminé l\'aventure.')
+      if (tts.isEnabled()) {
+        const texteVictoire = section ? stripHtml(section.texte) : ''
+        tts.speak(`Victoire ! Félicitations, vous avez terminé l'aventure. ${texteVictoire}`)
+      }
 
       // Ajoute un bouton pour continuer vers les images de fin
       const btnVictory = document.createElement('button')
@@ -151,6 +156,10 @@ export class GameView {
       updateSectionNotes(null)
 
       srAnnounce('Défaite. Votre aventure se termine ici.')
+      if (tts.isEnabled()) {
+        const texteDefaite = section ? stripHtml(section.texte) : ''
+        tts.speak(`Défaite. Votre aventure se termine ici. ${texteDefaite}`)
+      }
 
       if (defeatFromSection) {
         // La section elle-même déclare la défaite : afficher un bouton comme pour la victoire
@@ -202,6 +211,16 @@ export class GameView {
       requestAnimationFrame(() => sectionTitle.focus())
     }
     srAnnounce(`Section ${section.numero}`)
+
+    // Synthèse vocale : lit le texte de la section puis les choix disponibles
+    if (tts.isEnabled()) {
+      const texte = stripHtml(section.texte)
+      const choixDispos = (section.choix ?? [])
+        .filter((_, i) => this.engine.checkChoiceCondition(section.choix![i]).ok && this.engine.isChoiceAvailable(i))
+        .map((c, i) => `Option ${i + 1} : ${c.texte}`)
+      const choixTexte = choixDispos.length > 0 ? '. ' + choixDispos.join('. ') : ''
+      tts.speak(`Section ${section.numero}. ${texte}${choixTexte}`)
+    }
   }
 
   private _buildToolbar(adventure: Adventure): HTMLElement {
@@ -910,6 +929,7 @@ export class GameView {
       diceEl.innerHTML = rolls.map(d => `<span class="die">${d}</span>`).join('') +
         `<span class="action-roll-total">= ${totalAdv}</span>`
       srAnnounce(`Adversaire : dés ${rolls.join(', ')} — total ${totalAdv}. Vous : ${totalHeros}`)
+      tts.speak(`Adversaire : dés ${rolls.join(', ')}, total ${totalAdv}. Votre total : ${totalHeros}`, true)
 
       setTimeout(() => {
         const succes = duelState
@@ -924,6 +944,7 @@ export class GameView {
         resultEl.textContent = libelle
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
         srAnnounce(libelle)
+        tts.speak(libelle, false)
 
         setTimeout(() => {
           overlay.remove()
@@ -1082,6 +1103,7 @@ export class GameView {
         `<span class="action-roll-total">= ${total}</span>`
       // Annonce immédiate des valeurs
       srAnnounce(`Dés : ${rolls.join(', ')} — total ${total}`)
+      tts.speak(`Dés : ${rolls.join(', ')}. Total : ${total}`, true)
 
       // Phase 2 : affiche le résultat après 800ms
       setTimeout(() => {
@@ -1101,6 +1123,7 @@ export class GameView {
           resultEl.textContent = motAnnonce
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
           srAnnounce(motAnnonce)
+          tts.speak(motAnnonce, false)
         } else if (isLancerDe) {
           // Pour lancer_de, affiche juste le résultat
           const resultEl = document.createElement('div')
@@ -1108,6 +1131,7 @@ export class GameView {
           resultEl.textContent = `Résultat : ${total}`
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
           srAnnounce(`Résultat : ${total}`)
+          tts.speak(`Résultat : ${total}`, false)
         }
 
         // Phase 3 : navigue après 2s
@@ -1167,6 +1191,7 @@ export class GameView {
         resultEl.textContent = `${signed} ${this._escHtml(pending.itemLabel)}`
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
         srAnnounce(`${signed} ${pending.itemLabel}`)
+        tts.speak(`${total >= 0 ? 'Gain de' : 'Perte de'} ${Math.abs(total)} ${pending.itemLabel}`, false)
 
         // Applique le gain et navigue après 2s (0 = rester sur la section courante)
         setTimeout(() => {

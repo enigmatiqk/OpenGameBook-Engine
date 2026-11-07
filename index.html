@@ -24,6 +24,12 @@
       <button id="btn-a11y" class="btn-a11y-global" type="button" title="Préférences d'affichage" aria-label="Préférences d'affichage">Aa</button>
     </nav>
 
+    <!-- Contrôles TTS flottants — masqués par défaut, visibles uniquement quand la synthèse vocale est active -->
+    <div id="tts-controls" class="tts-controls" aria-label="Contrôles de lecture vocale" hidden>
+      <button id="tts-btn-pause" class="tts-btn" type="button" aria-label="Pause / reprendre la lecture">⏸</button>
+      <button id="tts-btn-stop"  class="tts-btn" type="button" aria-label="Arrêter la lecture">⏹</button>
+    </div>
+
     <main id="app-main" aria-label="Contenu principal">
       <div id="view-library" class="view active" role="region" aria-label="Bibliothèque d'aventures"></div>
       <div id="view-game"    class="view"        role="region" aria-label="Jeu en cours"></div>

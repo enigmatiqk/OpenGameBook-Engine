@@ -1,3 +1,5 @@
+import { tts, ttsSupported, TTS_DEFAULTS } from './tts'
+
 const STORAGE_KEY = 'a11y_prefs'
 const STYLE_ID = 'a11y-overrides'
 const PANEL_ID = 'a11y-panel'
@@ -6,9 +8,19 @@ export interface A11yPrefs {
   fontSize: number
   textColor: string
   fontFamily: string
+  ttsEnabled: boolean
+  ttsVoiceURI: string
+  ttsRate: number
 }
 
-const DEFAULTS: A11yPrefs = { fontSize: 1.0, textColor: '', fontFamily: 'default' }
+const DEFAULTS: A11yPrefs = {
+  fontSize: 1.0,
+  textColor: '',
+  fontFamily: 'default',
+  ttsEnabled: TTS_DEFAULTS.enabled,
+  ttsVoiceURI: TTS_DEFAULTS.voiceURI,
+  ttsRate: TTS_DEFAULTS.rate,
+}
 
 const SIZES = [
   { value: 1.15, label: 'A', style: 'font-size:15px', title: 'Grand' },
@@ -67,7 +79,14 @@ export function initA11y(): void {
   root.style.removeProperty('--a11y-font-size')
   root.style.removeProperty('--a11y-text-color')
   root.style.removeProperty('--a11y-font-family')
-  applyPrefs(loadPrefs())
+  const prefs = loadPrefs()
+  applyPrefs(prefs)
+  // Initialise la TTS depuis les prefs sauvegardées (toujours désactivée au démarrage)
+  tts.setConfig({
+    enabled: false, // jamais actif au démarrage, même si sauvegardé
+    voiceURI: prefs.ttsVoiceURI,
+    rate: prefs.ttsRate,
+  })
 }
 
 // ── Styles inline du panel — totalement indépendants du reste ────────────────
@@ -179,12 +198,131 @@ export function showA11yPanel(): void {
     fontSection.append(fontLabel, select)
     panel.appendChild(fontSection)
 
+    // ── Synthèse vocale ───────────────────────────────────────────────────────
+    const ttsSection = document.createElement('div')
+    ttsSection.setAttribute('style', S.section + ';border-top:1px solid #333;padding-top:12px;margin-top:2px')
+
+    const ttsLabelRow = document.createElement('div')
+    ttsLabelRow.setAttribute('style', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px')
+
+    const ttsLabel = document.createElement('span')
+    ttsLabel.setAttribute('style', S.label + ';margin:0')
+    ttsLabel.textContent = 'Lecture vocale'
+    ttsLabelRow.appendChild(ttsLabel)
+
+    if (!ttsSupported()) {
+      // Navigateur non compatible
+      const unsupported = document.createElement('span')
+      unsupported.setAttribute('style', 'font-size:11px;color:#888;font-style:italic')
+      unsupported.textContent = 'Non supporté par ce navigateur'
+      ttsLabelRow.appendChild(unsupported)
+      ttsSection.appendChild(ttsLabelRow)
+    } else {
+      // Toggle ON/OFF
+      const isOn = current.ttsEnabled
+      const toggleBtn = document.createElement('button')
+      toggleBtn.setAttribute('style',
+        `border:2px solid ${isOn ? '#e94560' : '#444'};border-radius:14px;background:${isOn ? '#e94560' : '#0f3460'};` +
+        `color:#fff;cursor:pointer;padding:3px 12px;font-size:12px;font-weight:bold;transition:background .2s`)
+      toggleBtn.textContent = isOn ? 'ON' : 'OFF'
+      toggleBtn.setAttribute('aria-pressed', String(isOn))
+      toggleBtn.setAttribute('aria-label', 'Activer la lecture vocale')
+      toggleBtn.onclick = () => {
+        current.ttsEnabled = !current.ttsEnabled
+        tts.setEnabled(current.ttsEnabled)
+        save()
+        render()
+      }
+      ttsLabelRow.appendChild(toggleBtn)
+      ttsSection.appendChild(ttsLabelRow)
+
+      if (isOn) {
+        // Choix de la voix
+        const voiceLabel = document.createElement('span')
+        voiceLabel.setAttribute('style', S.label)
+        voiceLabel.textContent = 'Voix'
+
+        const voiceSelect = document.createElement('select')
+        voiceSelect.setAttribute('style', S.select + ';margin-bottom:8px')
+        voiceSelect.setAttribute('aria-label', 'Choix de la voix')
+
+        // Option voix par défaut
+        const defaultOpt = document.createElement('option')
+        defaultOpt.value = ''
+        defaultOpt.textContent = 'Voix système par défaut'
+        defaultOpt.selected = current.ttsVoiceURI === ''
+        voiceSelect.appendChild(defaultOpt)
+
+        // Recharge les voix (peut être vide avant voiceschanged)
+        const voices = tts.getVoices()
+        const frVoices = tts.getFrenchVoices()
+        const displayVoices = frVoices.length > 0 ? frVoices : voices
+
+        for (const v of displayVoices) {
+          const opt = document.createElement('option')
+          opt.value = v.voiceURI
+          opt.textContent = `${v.name}${v.localService ? '' : ' (en ligne)'}`
+          opt.selected = current.ttsVoiceURI === v.voiceURI
+          voiceSelect.appendChild(opt)
+        }
+        voiceSelect.onchange = () => {
+          current.ttsVoiceURI = voiceSelect.value
+          tts.setConfig({ voiceURI: current.ttsVoiceURI })
+          save()
+        }
+        ttsSection.append(voiceLabel, voiceSelect)
+
+        // Vitesse de lecture
+        const rateLabel = document.createElement('span')
+        rateLabel.setAttribute('style', S.label)
+        rateLabel.textContent = `Vitesse : ${current.ttsRate.toFixed(1)}×`
+
+        const rateRow = document.createElement('div')
+        rateRow.setAttribute('style', S.row)
+        const RATES = [
+          { value: 0.6, label: '0.6×' },
+          { value: 0.8, label: '0.8×' },
+          { value: 1.0, label: '1×' },
+          { value: 1.3, label: '1.3×' },
+          { value: 1.6, label: '1.6×' },
+        ]
+        for (const r of RATES) {
+          const btn = document.createElement('button')
+          const active = Math.abs(current.ttsRate - r.value) < 0.05
+          btn.setAttribute('style', S.sizeBtn(active) + ';font-size:12px;padding:3px 8px')
+          btn.textContent = r.label
+          btn.setAttribute('aria-pressed', String(active))
+          btn.onclick = () => {
+            current.ttsRate = r.value
+            tts.setConfig({ rate: r.value })
+            save()
+            render()
+          }
+          rateRow.appendChild(btn)
+        }
+        ttsSection.append(rateLabel, rateRow)
+
+        // Bouton test
+        const testBtn = document.createElement('button')
+        testBtn.setAttribute('style', S.resetBtn + ';margin-top:8px')
+        testBtn.textContent = '▶ Tester la voix'
+        testBtn.setAttribute('aria-label', 'Tester la voix de synthèse')
+        testBtn.onclick = () => {
+          tts.speak('Bonjour, voici la voix de synthèse vocale du moteur de livre-jeu.', true)
+        }
+        ttsSection.appendChild(testBtn)
+      }
+    }
+    panel.appendChild(ttsSection)
+
     // Réinitialiser
     const resetBtn = document.createElement('button')
     resetBtn.setAttribute('style', S.resetBtn)
     resetBtn.textContent = 'Réinitialiser'
     resetBtn.onclick = () => {
       Object.assign(current, DEFAULTS)
+      tts.setEnabled(false)
+      tts.setConfig({ voiceURI: DEFAULTS.ttsVoiceURI, rate: DEFAULTS.ttsRate })
       save()
       render()
     }
