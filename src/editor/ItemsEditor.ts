@@ -142,6 +142,10 @@ export class ItemsEditor {
     this.container.innerHTML = ''
     this.container.className = 'items-editor'
 
+    // ── Zone sticky (header + filtres) ───────────────────────────────────────
+    const sticky = document.createElement('div')
+    sticky.className = 'items-editor-sticky'
+
     // Titre
     const header = document.createElement('div')
     header.className = 'items-editor-header'
@@ -155,10 +159,11 @@ export class ItemsEditor {
     counter.className = 'items-editor-counter'
     counter.id = 'items-counter'
     header.appendChild(counter)
-    this.container.appendChild(header)
+    sticky.appendChild(header)
 
     // Filtres
-    this.container.appendChild(this._buildFilters())
+    sticky.appendChild(this._buildFilters())
+    this.container.appendChild(sticky)
 
     // Tableau
     const tableWrap = document.createElement('div')
