@@ -8,6 +8,8 @@ export class CombatView {
   private engine: GameEngine
   private container: HTMLElement | null = null
   private onCombatEnd: () => void
+  /** Vrai dès que l'intro TTS a été lue — évite de la rejouer à chaque re-render */
+  private _introSpoken = false
 
   constructor(engine: GameEngine, onCombatEnd: () => void) {
     this.engine = engine
@@ -35,8 +37,9 @@ export class CombatView {
       tts.speak(msg)
     }
 
-    // Annonce le début du combat (premier render : aucun round joué)
-    if (state.rounds.length === 0 && state.phase.type !== 'termine') {
+    // Annonce le début du combat — une seule fois au premier render
+    if (!this._introSpoken && state.rounds.length === 0 && state.phase.type !== 'termine') {
+      this._introSpoken = true
       const rules = this.engine.getAdventure()?.regles.combat
       const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habileté'
       const hero = this.engine.getHero()
@@ -177,6 +180,10 @@ export class CombatView {
       const { count, sides } = parseDiceFormula(pending.formula)
       el.appendChild(this._rollBtn(`🎲 Lancer les dés — ${_esc(state.enemy.nom)} (${pending.formula})`, () => {
         const rolls = rollDice(count, sides)
+        const fa = state.enemy.habilete + rolls.reduce((a, b) => a + b, 0)
+        const msg = `${state.enemy.nom} lance : ${rolls.join(' et ')}. Force d'attaque : ${fa}.`
+        srAnnounce(msg)
+        tts.speak(msg, false)  // s'enchaîne après l'intro sans l'interrompre
         this.engine.resolveCombatEnnemiRoll(rolls)
         this._render()
       }))
@@ -196,6 +203,13 @@ export class CombatView {
       const { count, sides } = parseDiceFormula(pending.formula)
       el.appendChild(this._rollBtn(`🎲 Lancer mes dés contre ${_esc(state.enemy.nom)} (${pending.formula})`, () => {
         const rolls = rollDice(count, sides)
+        const rules = this.engine.getAdventure()?.regles.combat
+        const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habileté'
+        const heroStat = this.engine.getHero()?.statistiques[statName] ?? 0
+        const fa = (typeof heroStat === 'number' ? heroStat : 0) + rolls.reduce((a, b) => a + b, 0)
+        const msg = `Vous lancez : ${rolls.join(' et ')}. Votre force d'attaque : ${fa}.`
+        srAnnounce(msg)
+        tts.speak(msg)
         this.engine.resolveCombatHeroRoll(rolls)
         const newState = this.engine.getCombatState()
         if (newState) {
@@ -223,6 +237,10 @@ export class CombatView {
       const { count, sides } = parseDiceFormula(pending.formula)
       el.appendChild(this._rollBtn(`🎲 Lancer les dés — ${_esc(secondaire.nom)} (${pending.formula})`, () => {
         const rolls = rollDice(count, sides)
+        const fa = secondaire.habilete + rolls.reduce((a, b) => a + b, 0)
+        const msg = `${secondaire.nom} lance : ${rolls.join(' et ')}. Force d'attaque : ${fa}.`
+        srAnnounce(msg)
+        tts.speak(msg, false)
         this.engine.resolveCombatSecondaireEnnemiRoll(rolls)
         this._render()
       }))
@@ -243,6 +261,13 @@ export class CombatView {
       const { count, sides } = parseDiceFormula(pending.formula)
       el.appendChild(this._rollBtn(`🎲 Lancer mes dés vs ${_esc(secondaire.nom)} (${pending.formula})`, () => {
         const rolls = rollDice(count, sides)
+        const rules = this.engine.getAdventure()?.regles.combat
+        const statName = rules ? parseAttackFormula(rules.formule_attaque).statName : 'habileté'
+        const heroStat = this.engine.getHero()?.statistiques[statName] ?? 0
+        const faHero = (typeof heroStat === 'number' ? heroStat : 0) + rolls.reduce((a, b) => a + b, 0)
+        const msg = `Vous lancez : ${rolls.join(' et ')}. Votre force d'attaque : ${faHero} contre ${secondaire.nom}.`
+        srAnnounce(msg)
+        tts.speak(msg, false)
         this.engine.resolveCombatSecondaireHeroRoll(rolls)
         const newState = this.engine.getCombatState()
         if (newState) {
@@ -691,7 +716,7 @@ export class CombatView {
       roundAnnounce = 'Égalité. Aucun dégât ce round.'
     }
     srAnnounce(roundAnnounce)
-    tts.speak(roundAnnounce)
+    tts.speak(roundAnnounce, false)  // s'enchaîne après le jet du héros sans l'interrompre
 
     container.innerHTML = ''
     const wrap = document.createElement('div')

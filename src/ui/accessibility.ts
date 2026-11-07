@@ -81,9 +81,11 @@ export function initA11y(): void {
   root.style.removeProperty('--a11y-font-family')
   const prefs = loadPrefs()
   applyPrefs(prefs)
-  // Initialise la TTS depuis les prefs sauvegardées (toujours désactivée au démarrage)
+  // Restaure la config TTS depuis les prefs sauvegardées.
+  // Si elle était activée, elle le reste — mais aucune lecture ne se déclenche
+  // automatiquement ici : la prochaine navigation de section l'activera.
   tts.setConfig({
-    enabled: false, // jamais actif au démarrage, même si sauvegardé
+    enabled: prefs.ttsEnabled,
     voiceURI: prefs.ttsVoiceURI,
     rate: prefs.ttsRate,
   })

@@ -210,7 +210,7 @@ export class GameView {
       sectionTitle.tabIndex = -1
       requestAnimationFrame(() => sectionTitle.focus())
     }
-    srAnnounce(`Section ${section.numero}`)
+    srAnnounce('Nouvelle section')
 
     // Synthèse vocale : lit le texte de la section puis les choix disponibles
     if (tts.isEnabled()) {
@@ -219,7 +219,7 @@ export class GameView {
         .filter((_, i) => this.engine.checkChoiceCondition(section.choix![i]).ok && this.engine.isChoiceAvailable(i))
         .map((c, i) => `Option ${i + 1} : ${c.texte}`)
       const choixTexte = choixDispos.length > 0 ? '. ' + choixDispos.join('. ') : ''
-      tts.speak(`Section ${section.numero}. ${texte}${choixTexte}`)
+      tts.speak(`${texte}${choixTexte}`)
     }
   }
 
@@ -944,12 +944,13 @@ export class GameView {
         resultEl.textContent = libelle
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
         srAnnounce(libelle)
-        tts.speak(libelle, false)
+        const ttsPromise = tts.speakAndWait(libelle, false)
 
-        setTimeout(() => {
+        // Navigue quand la voix a fini (ou après 2s min si TTS inactive)
+        Promise.all([ttsPromise, new Promise<void>(r => setTimeout(r, 2000))]).then(() => {
           overlay.remove()
           onRolled(rolls)
-        }, 2000)
+        })
       }, 800)
     })
   }
@@ -1107,6 +1108,7 @@ export class GameView {
 
       // Phase 2 : affiche le résultat après 800ms
       setTimeout(() => {
+        let ttsPromise: Promise<void> = Promise.resolve()
         if (info) {
           let succes: boolean
           switch (info.condition) {
@@ -1123,7 +1125,7 @@ export class GameView {
           resultEl.textContent = motAnnonce
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
           srAnnounce(motAnnonce)
-          tts.speak(motAnnonce, false)
+          ttsPromise = tts.speakAndWait(motAnnonce, false)
         } else if (isLancerDe) {
           // Pour lancer_de, affiche juste le résultat
           const resultEl = document.createElement('div')
@@ -1131,14 +1133,14 @@ export class GameView {
           resultEl.textContent = `Résultat : ${total}`
           overlay.querySelector('.modal-body')!.appendChild(resultEl)
           srAnnounce(`Résultat : ${total}`)
-          tts.speak(`Résultat : ${total}`, false)
+          ttsPromise = tts.speakAndWait(`Résultat : ${total}`, false)
         }
 
-        // Phase 3 : navigue après 2s
-        setTimeout(() => {
+        // Phase 3 : navigue quand la voix a fini (ou après 2s min si TTS inactive)
+        Promise.all([ttsPromise, new Promise<void>(r => setTimeout(r, 2000))]).then(() => {
           overlay.remove()
           onRolled(rolls)
-        }, 2000)
+        })
       }, 800)
     })
   }
@@ -1186,19 +1188,20 @@ export class GameView {
       // Affiche le gain/perte après 800ms
       setTimeout(() => {
         const signed = `${total >= 0 ? '+' : ''}${total}`
+        const gainTexte = `${total >= 0 ? 'Gain de' : 'Perte de'} ${Math.abs(total)} ${pending.itemLabel}`
         const resultEl = document.createElement('div')
         resultEl.className = `action-roll-result ${total >= 0 ? 'action-roll-result--gain' : 'action-roll-result--perte'}`
         resultEl.textContent = `${signed} ${this._escHtml(pending.itemLabel)}`
         overlay.querySelector('.modal-body')!.appendChild(resultEl)
         srAnnounce(`${signed} ${pending.itemLabel}`)
-        tts.speak(`${total >= 0 ? 'Gain de' : 'Perte de'} ${Math.abs(total)} ${pending.itemLabel}`, false)
+        const ttsPromise = tts.speakAndWait(gainTexte, false)
 
-        // Applique le gain et navigue après 2s (0 = rester sur la section courante)
-        setTimeout(() => {
+        // Navigue quand la voix a fini (ou après 2s min si TTS inactive)
+        Promise.all([ttsPromise, new Promise<void>(r => setTimeout(r, 2000))]).then(() => {
           overlay.remove()
           this.engine.resolveGainRoll(pending, rolls)
           onDone()
-        }, 2000)
+        })
       }, 800)
     })
   }

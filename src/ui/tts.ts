@@ -94,6 +94,41 @@ class TtsService {
     this._onStateChange?.()
   }
 
+  /**
+   * Lit un texte et retourne une Promise qui se résout quand la lecture est terminée.
+   * Si la TTS est désactivée ou non supportée, la Promise se résout immédiatement.
+   * Utile pour enchaîner une navigation après la fin de la lecture.
+   *
+   * @param text      Texte à lire
+   * @param interrupt Si true (défaut), interrompt la lecture en cours avant de commencer
+   */
+  speakAndWait(text: string, interrupt = true): Promise<void> {
+    if (!this.isEnabled() || !text.trim()) return Promise.resolve()
+
+    return new Promise((resolve) => {
+      if (interrupt) window.speechSynthesis.cancel()
+
+      const utt = new SpeechSynthesisUtterance(text)
+      utt.rate   = this._config.rate
+      utt.volume = this._config.volume
+      utt.lang   = 'fr-FR'
+
+      if (this._config.voiceURI) {
+        const voices = window.speechSynthesis.getVoices()
+        const voice = voices.find(v => v.voiceURI === this._config.voiceURI)
+        if (voice) utt.voice = voice
+      }
+
+      const done = () => { this._onStateChange?.(); resolve() }
+      utt.onstart = () => this._onStateChange?.()
+      utt.onend   = done
+      utt.onerror = done  // En cas d'erreur on ne bloque pas la navigation
+
+      window.speechSynthesis.speak(utt)
+      this._onStateChange?.()
+    })
+  }
+
   stop(): void {
     if (!ttsSupported()) return
     window.speechSynthesis.cancel()
