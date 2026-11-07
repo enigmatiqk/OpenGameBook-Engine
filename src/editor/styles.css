@@ -1469,48 +1469,27 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ── Onglets de parties ────────────────────────────────────────────────────── */
+/* ── Select de navigation entre les parties ────────────────────────────────── */
 
-.editor-tabs {
+.tab-select-wrap {
   display: flex;
-  gap: 0.2rem;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.editor-tab {
-  padding: 0.3rem 0.7rem;
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid transparent;
+#tab-select {
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-family: var(--font-ui);
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  min-width: 180px;
 }
-.editor-tab:hover:not(:disabled) { background: var(--bg-card); color: var(--text-primary); }
-.editor-tab.active { background: var(--bg-card); color: var(--accent); border-color: var(--accent); font-weight: 600; }
-.editor-tab:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.tab-label { pointer-events: none; }
-
-.tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.1rem;
-  height: 1.1rem;
-  padding: 0 0.25rem;
-  margin-left: 0.3rem;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 99px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
-  pointer-events: none;
-  vertical-align: middle;
-}
+#tab-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+#tab-select:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Formulaires des parties ─────────────────────────────────────────────── */
 
@@ -2892,8 +2871,4 @@ html, body {
   width: 80px;
 }
 
-/* Badge onglet Items avec alerte ⚠️ — couleur warning quand il y a des items sans image */
-.editor-tab[data-tab="items"] .tab-badge {
-  background: var(--warning);
-  color: #000;
-}
+

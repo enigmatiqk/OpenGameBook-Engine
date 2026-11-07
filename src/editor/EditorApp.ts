@@ -146,7 +146,10 @@ export class EditorApp {
           </select>
         </div>
         <div class="toolbar-sep"></div>
-        <nav class="editor-tabs" id="editor-tabs" aria-label="Parties de l'aventure"></nav>
+        <div class="tab-select-wrap">
+          <label for="tab-select" style="font-size:0.8rem;color:var(--text-secondary);white-space:nowrap">Section :</label>
+          <select id="tab-select" disabled></select>
+        </div>
         <div class="toolbar-sep"></div>
         <div class="toolbar-sep" id="sep-section-actions" style="display:none"></div>
         <button id="btn-section-save"   class="btn btn-success" disabled title="Enregistrer les modifications" style="display:none">✔ Enregistrer</button>
@@ -175,19 +178,16 @@ export class EditorApp {
       </div>
     `
 
-    // Onglets
-    const tabsEl = this.root.querySelector<HTMLElement>('#editor-tabs')!
+    // Select de navigation entre les parties
+    const tabsEl = this.root.querySelector<HTMLSelectElement>('#tab-select')!
     TABS.forEach(tab => {
-      const btn = document.createElement('button')
-      btn.type = 'button'
-      btn.className = 'editor-tab'
-      btn.dataset.tab = tab.id
-      btn.disabled = true
-      // Structure interne : label + badge
-      btn.innerHTML = `<span class="tab-label">${tab.icon} ${tab.label}</span><span class="tab-badge" style="display:none"></span>`
-      btn.addEventListener('click', () => { void this._switchTab(tab.id) })
-      tabsEl.appendChild(btn)
+      const opt = document.createElement('option')
+      opt.value = tab.id
+      opt.textContent = `${tab.icon} ${tab.label}`
+      opt.disabled = true
+      tabsEl.appendChild(opt)
     })
+    tabsEl.addEventListener('change', () => { void this._switchTab(tabsEl.value as TabId) })
 
     // Refs
     const sel = this.root.querySelector<HTMLSelectElement>('#adventure-select')!
@@ -362,8 +362,10 @@ export class EditorApp {
       this.sectionTotal.textContent = `/ ${this.sortedSections.length}`
       this.root.querySelector<HTMLButtonElement>('#btn-tree')!.disabled = false
 
-      // Active tous les onglets
-      this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(b => { b.disabled = false })
+      // Active toutes les options du select
+      const tabSel = this.root.querySelector<HTMLSelectElement>('#tab-select')!
+      tabSel.disabled = false
+      tabSel.querySelectorAll('option').forEach(opt => { opt.disabled = false })
 
       // Pré-rendu de tous les éditeurs
       this.couvertureEditor.render(this.adventure)
@@ -437,10 +439,9 @@ export class EditorApp {
     // Sidebar : seulement sur Sections
     this.sidebarWrapEl.style.display = this.activeTab === 'sections' ? 'flex' : 'none'
 
-    // Met à jour l'onglet actif
-    this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === this.activeTab)
-    })
+    // Met à jour le select de navigation
+    const tabSel = this.root.querySelector<HTMLSelectElement>('#tab-select')
+    if (tabSel) tabSel.value = this.activeTab
 
     this._updateDirtyButtons()
   }
@@ -856,17 +857,17 @@ export class EditorApp {
       items:      itemsWithoutImage,
     }
 
-    this.root.querySelectorAll<HTMLButtonElement>('.editor-tab').forEach(btn => {
-      const tab = btn.dataset.tab as TabId
-      const badge = btn.querySelector<HTMLElement>('.tab-badge')
-      if (!badge) return
-      const count = badges[tab] ?? 0
-      if (count > 0) {
-        badge.textContent = String(count)
-        badge.style.display = ''
-      } else {
-        badge.style.display = 'none'
-      }
+    const tabSel = this.root.querySelector<HTMLSelectElement>('#tab-select')
+    if (!tabSel) return
+
+    tabSel.querySelectorAll<HTMLOptionElement>('option').forEach(opt => {
+      const tabId = opt.value as TabId
+      const tab = TABS.find(t => t.id === tabId)
+      if (!tab) return
+      const count = badges[tabId] ?? 0
+      opt.textContent = count > 0
+        ? `${tab.icon} ${tab.label} (${count})`
+        : `${tab.icon} ${tab.label}`
     })
   }
 
