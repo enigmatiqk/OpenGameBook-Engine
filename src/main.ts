@@ -5,6 +5,7 @@ import { LeaderboardView } from './ui/leaderboard'
 import { GameEngine } from './engine/GameEngine'
 import { LibraryManager } from './engine/LibraryManager'
 import { SaveStore } from './engine/SaveStore'
+import { themeManager } from './engine/ThemeManager'
 import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
 import { initTtsControls, tts, stripHtml } from './ui/tts'
@@ -72,6 +73,9 @@ async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void
 
     // Rend l'adventure accessible à la modal de debug
     setAdventureProvider(() => engine.getAdventure())
+
+    // ── Applique le thème de collection si activé ────────────────────────────
+    themeManager.applyForCollection(meta.collection)
 
     if (resume) {
       const save = saveStore.load(adventure.titre)
@@ -167,7 +171,7 @@ function launchGameView(engine: GameEngine): void {
   const gameView = new GameView(engine, {
     onVictory:       () => { gameView.destroy(); stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
     onDefeat:        () => { gameView.destroy(); stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
-    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh() },
+    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh(); themeManager.applyStoredTheme() },
   })
   showView('game')
   gameView.render(gameContainer)
@@ -273,7 +277,7 @@ function initVictoryView(engine: GameEngine): void {
     if (inputGroup) inputGroup.style.display = 'none'
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { showView('library'); libraryView?.refresh() })
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { themeManager.applyStoredTheme(); showView('library'); libraryView?.refresh() })
   renderLeaderboard()
 }
 
@@ -335,10 +339,17 @@ function initDefeatView(engine: GameEngine): void {
     showHeroCreationAndLaunch(newEngine)
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { showView('library'); libraryView?.refresh() })
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { themeManager.applyStoredTheme(); showView('library'); libraryView?.refresh() })
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ── Initialisation du système de thèmes ─────────────────────────────────
+  themeManager.init().then(() => {
+    themeManager.applyStoredTheme()
+  }).catch(err => {
+    console.warn('[main] Impossible de charger les thèmes:', err)
+  })
+
   initA11y()
   initTtsControls()
 

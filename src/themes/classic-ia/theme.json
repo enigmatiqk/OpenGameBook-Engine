@@ -1,0 +1,8 @@
+{
+  "id": "classic-ia",
+  "label": "Classic IA",
+  "author": "OpenGameBook",
+  "description": "Thème sombre navy avec illustrations IA, style bibliothèque classique.",
+  "css": "theme.css",
+  "preview": "images/preview.webp"
+}

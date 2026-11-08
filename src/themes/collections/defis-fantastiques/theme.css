@@ -1,0 +1,22 @@
+/* ── Thème Défis Fantastiques ─────────────────────────────────────────────── */
+/* Ambiance heroic fantasy, tons dorés et parchemin.                          */
+
+:root {
+  --bg-primary: #1c1508;
+  --bg-secondary: #251d0d;
+  --bg-card: #3a2a0e;
+  --bg-card-hover: #4e3a18;
+  --text-primary: #f0e6c8;
+  --text-secondary: #c8a87a;
+  --text-muted: #7a6040;
+  --accent: #c8882a;
+  --accent-hover: #a86e1a;
+  --success: #6aaf50;
+  --border: #5a3e18;
+  --font-narrative: 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-ui: 'Segoe UI', system-ui, sans-serif;
+  --radius: 6px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.6);
+  --bg-image-library: none;
+  --bg-image-opacity: 0;
+}

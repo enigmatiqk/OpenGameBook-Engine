@@ -1,6 +1,7 @@
 import { LibraryManager } from '../engine/LibraryManager'
 import { SaveStore } from '../engine/SaveStore'
 import { RemoteLibraryStore } from '../engine/RemoteLibraryStore'
+import { themeManager } from '../engine/ThemeManager'
 import type { AdventureMetadata } from '../types'
 import { resolveImage } from '../utils/imageUtils'
 import { sanitizeRemoteUrl } from '../utils/sanitize'
@@ -66,10 +67,16 @@ export class LibraryView {
           <h1>Bibliothèque d'aventures</h1>
           <p class="subtitle">Choisissez votre aventure</p>
         </div>
-        <button id="btn-remote-sources" class="btn-remote-sources-icon" type="button"
-          title="Gérer les bibliothèques distantes" aria-label="Gérer les bibliothèques distantes">
-          🌐
-        </button>
+        <div class="library-header-actions">
+          <button id="btn-theme" class="btn-remote-sources-icon" type="button"
+            title="Choisir le thème" aria-label="Choisir le thème">
+            🎨
+          </button>
+          <button id="btn-remote-sources" class="btn-remote-sources-icon" type="button"
+            title="Gérer les bibliothèques distantes" aria-label="Gérer les bibliothèques distantes">
+            🌐
+          </button>
+        </div>
       </div>
       <div id="library-filters"></div>
       <div id="adventure-list" class="loading">Chargement des aventures…</div>
@@ -83,6 +90,12 @@ export class LibraryView {
       const hasRemote = this.remoteStore.getAll().length > 0
       if (hasRemote) remoteBtn.classList.add('btn-remote-sources-icon--active')
       remoteBtn.addEventListener('click', () => this._openRemoteModal())
+    }
+
+    // ── Bouton d'ouverture de la modale thème ────────────────────────────────
+    const themeBtn = container.querySelector<HTMLButtonElement>('#btn-theme')
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => this._openThemeModal())
     }
 
     // ── Toutes les sources : statiques (options) + persistées (localStorage) ─
@@ -127,6 +140,142 @@ export class LibraryView {
     if (filtersEl) this._buildFilters(filtersEl)
 
     this._renderList()
+  }
+
+  // ── Modale thème ──────────────────────────────────────────────────────────
+
+  private _openThemeModal(): void {
+    document.getElementById('theme-modal')?.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'theme-modal'
+    overlay.className = 'modal-overlay theme-modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', 'Choisir le thème')
+
+    const box = document.createElement('div')
+    box.className = 'modal-box theme-modal-box'
+
+    const header = document.createElement('div')
+    header.className = 'modal-header'
+    header.innerHTML = `<h2 class="modal-title">🎨 Thème de la bibliothèque</h2>`
+
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'modal-close'
+    closeBtn.setAttribute('aria-label', 'Fermer')
+    closeBtn.textContent = '✕'
+    header.appendChild(closeBtn)
+
+    const body = document.createElement('div')
+    body.className = 'modal-body theme-modal-body'
+
+    box.appendChild(header)
+    box.appendChild(body)
+    overlay.appendChild(box)
+    document.body.appendChild(overlay)
+
+    this._renderThemeBody(body)
+
+    const close = () => overlay.remove()
+    closeBtn.addEventListener('click', close)
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+    document.addEventListener('keydown', function onKey(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
+    }, { once: true })
+  }
+
+  private _renderThemeBody(body: HTMLElement): void {
+    const prefs = themeManager.loadPreferences()
+    const genericThemes = themeManager.genericThemes
+    const collectionThemes = themeManager.collectionThemes
+
+    body.innerHTML = ''
+
+    // ── Section : thèmes génériques ──────────────────────────────────────────
+    const themeSection = document.createElement('div')
+    themeSection.className = 'theme-section'
+    themeSection.innerHTML = `<h3 class="theme-section-title">Thèmes</h3>`
+
+    const themeGrid = document.createElement('div')
+    themeGrid.className = 'theme-grid'
+
+    for (const theme of genericThemes) {
+      const card = this._createThemeCard(theme, prefs.selectedTheme === theme.id)
+      card.addEventListener('click', () => {
+        themeManager.applyTheme(theme.id)
+        themeManager.savePreferences({ selectedTheme: theme.id })
+        // Rafraîchit la sélection visuelle
+        body.querySelectorAll<HTMLElement>('.theme-card').forEach(c => {
+          c.classList.toggle('theme-card--active', c.dataset.themeId === theme.id)
+        })
+      })
+      themeGrid.appendChild(card)
+    }
+    themeSection.appendChild(themeGrid)
+    body.appendChild(themeSection)
+
+    // ── Section : thèmes de collection ───────────────────────────────────────
+    if (collectionThemes.length > 0) {
+      const collSection = document.createElement('div')
+      collSection.className = 'theme-section'
+      collSection.innerHTML = `<h3 class="theme-section-title">Thèmes par collection</h3>`
+
+      const collGrid = document.createElement('div')
+      collGrid.className = 'theme-grid'
+
+      for (const theme of collectionThemes) {
+        const card = this._createThemeCard(theme, false, true)
+        collGrid.appendChild(card)
+      }
+      collSection.appendChild(collGrid)
+      body.appendChild(collSection)
+    }
+
+    // ── Toggle : suivre la collection ────────────────────────────────────────
+    const toggleRow = document.createElement('label')
+    toggleRow.className = 'theme-toggle-row'
+    toggleRow.innerHTML = `
+      <input type="checkbox" id="theme-follow-collection" class="theme-toggle-checkbox"
+        ${prefs.followCollection ? 'checked' : ''}>
+      <span class="theme-toggle-label">Changer de thème selon la collection de l'aventure</span>
+    `
+    const checkbox = toggleRow.querySelector<HTMLInputElement>('#theme-follow-collection')!
+    checkbox.addEventListener('change', () => {
+      themeManager.savePreferences({ followCollection: checkbox.checked })
+    })
+    body.appendChild(toggleRow)
+  }
+
+  private _createThemeCard(
+    theme: import('../engine/ThemeManager').ThemeMeta,
+    isActive: boolean,
+    isCollectionOnly = false,
+  ): HTMLElement {
+    const card = document.createElement('div')
+    card.className = `theme-card${isActive ? ' theme-card--active' : ''}${isCollectionOnly ? ' theme-card--collection' : ''}`
+    card.dataset.themeId = theme.id
+    card.setAttribute('role', 'button')
+    card.setAttribute('tabindex', '0')
+    card.setAttribute('aria-label', `Thème ${theme.label}`)
+    card.setAttribute('aria-pressed', String(isActive))
+    card.title = theme.description ?? theme.label
+
+    const preview = theme.previewUrl
+      ? `<img class="theme-preview-img" src="${this.esc(theme.previewUrl)}" alt="" aria-hidden="true" loading="lazy">`
+      : `<div class="theme-preview-placeholder" aria-hidden="true">🎨</div>`
+
+    card.innerHTML = `
+      ${preview}
+      <div class="theme-card-label">${this.escHtml(theme.label)}</div>
+      ${theme.author ? `<div class="theme-card-author">${this.escHtml(theme.author)}</div>` : ''}
+    `
+
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click() }
+    })
+
+    return card
   }
 
   // ── Modale sources distantes ──────────────────────────────────────────────
