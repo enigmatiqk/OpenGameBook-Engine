@@ -295,12 +295,13 @@ function _renderChoix(
   subtitle.textContent = `Choisissez ${current.quantite === 1 ? 'une option' : `${current.quantite} options`} :`
   wrap.appendChild(subtitle)
 
-  // Annonce TTS : titre du choix + liste des options disponibles
+  // Annonce TTS : titre du choix + liste des options avec description
   const optionsList = current.options.map((o, i) => {
     const qty = o.quantite !== undefined
       ? ` (${o.quantite}${o.quantite_label ? ' ' + o.quantite_label : ''})`
       : ''
-    return `Option ${i + 1} : ${o.label}${qty}`
+    const desc = o.description ? ` : ${o.description}` : ''
+    return `Option ${i + 1} : ${o.label}${qty}${desc}`
   }).join('. ')
   tts.speak(`${current.label}. Choisissez ${current.quantite === 1 ? 'une option' : current.quantite + ' options'}. ${optionsList}.`)
 
@@ -319,8 +320,9 @@ function _renderChoix(
       btn.title = option.description
     }
     btn.addEventListener('click', () => {
-      const choixMsg = `${option.label}${qty} choisi.`
-      srAnnounce(choixMsg)
+      const desc = option.description ? `. ${option.description}` : ''
+      const choixMsg = `${option.label}${qty} choisi${desc}`
+      srAnnounce(`${option.label}${qty} choisi.`)
       tts.speak(choixMsg)
       engine.applyChoixInitial(option)
       _renderChoix(container, engine, choix, index + 1, onComplete)
