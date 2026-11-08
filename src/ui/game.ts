@@ -236,20 +236,40 @@ export class GameView {
       setTimeout(() => tts.speak(stripHtml(adventure.mode_emploi), false), 300)
     })
     const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => {
-      tts.speak('Fiche héros.')
+      tts.speak('Ouverture de la fiche héros.')
       this._showHeroModal()
+      // Lecture des stats après ouverture de la modale
+      setTimeout(() => {
+        const { hero, adventure: adv } = this.engine.getGameState()
+        if (!hero || !adv) return
+        const statsMsg = Object.entries(hero.statistiques)
+          .map(([key, val]) => {
+            const label = adv.personnage.statistiques[key]?.label ?? key
+            const init = hero.statistiques_initiales?.[key] ?? val
+            return `${label} : ${val} sur ${init}`
+          }).join('. ')
+        tts.speak(statsMsg, false)
+      }, 300)
     })
     const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => {
       tts.speak('Images annexes.')
       this._showImagesModal(adventure)
     })
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
+      tts.speak('Retour à la bibliothèque.')
       this.callbacks.onBackToLibrary()
     })
 
     if (resolveImages(adventure.images_annexes, adventure.images_annexes_ia).length === 0) imagesBtn.disabled = true
 
-    const carteBtn = this._btn('🗺 Carte', 'btn btn-secondary btn-carte', () => this._toggleCarte(adventure))
+    const carteBtn = this._btn('🗺 Carte', 'btn btn-secondary btn-carte', () => {
+      if (this._carteOverlay) {
+        tts.speak('Fermeture de la carte.')
+      } else {
+        tts.speak('Ouverture de la carte.')
+      }
+      this._toggleCarte(adventure)
+    })
 
     toolbar.append(manualBtn, heroBtn, imagesBtn, carteBtn, backBtn)
     return toolbar
