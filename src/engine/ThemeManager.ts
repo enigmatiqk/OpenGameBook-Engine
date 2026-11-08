@@ -1,12 +1,19 @@
 /**
- * ThemeManager — gestion des thèmes de la bibliothèque
+ * ThemeManager — gestion des thèmes de l'application
+ *
+ * Deux CSS distincts par thème :
+ *  - library.css  → appliqué sur la vue bibliothèque
+ *  - game.css     → appliqué pendant une aventure, retiré au retour
  *
  * Flux :
  *  1. `init()` — fetch themes.json, puis tous les theme.json en parallèle
- *  2. `applyTheme(id)` — injecte le <link> CSS du thème dans le <head>
- *  3. `applyForCollection(collectionLabel)` — si followCollection=true, cherche
- *     un thème de collection dont le label slugifié correspond et l'applique
- *  4. Préférences persistées en localStorage (selectedTheme + followCollection)
+ *               (idempotent, retourne toujours la même Promise)
+ *  2. `applyLibraryTheme(id)` — injecte library.css du thème choisi
+ *  3. `applyGameTheme(collectionLabel)` — si followCollection=true, cherche
+ *     un thème de collection et injecte son game.css ; sinon game.css du
+ *     thème sélectionné par l'utilisateur
+ *  4. `removeGameTheme()` — retire le <link> game au retour à la bibliothèque
+ *  5. Préférences persistées en localStorage
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -16,11 +23,12 @@ export interface ThemeMeta {
   label: string
   author?: string
   description?: string
-  css: string           // chemin relatif au dossier du thème
-  preview?: string      // chemin relatif au dossier du thème
-  /** URL absolue résolue du CSS (calculée après chargement) */
-  cssUrl: string
-  /** URL absolue résolue de la preview (calculée après chargement, peut être undefined) */
+  library: string       // chemin relatif → library.css
+  game: string          // chemin relatif → game.css
+  preview?: string      // chemin relatif → image de prévisualisation
+  /** URLs absolues résolues (calculées après chargement) */
+  libraryUrl: string
+  gameUrl: string
   previewUrl?: string
   /** true si thème de collection */
   isCollection: boolean
@@ -42,7 +50,8 @@ export interface ThemePreferences {
 const THEMES_INDEX_URL = '/themes/themes.json'
 const THEMES_BASE_URL  = '/themes'
 const STORAGE_KEY      = 'theme-preferences'
-const LINK_ID          = 'active-theme-css'
+const LINK_LIBRARY_ID  = 'active-theme-library-css'
+const LINK_GAME_ID     = 'active-theme-game-css'
 
 const DEFAULT_PREFS: ThemePreferences = {
   selectedTheme: 'classic-ia',
@@ -58,7 +67,7 @@ const DEFAULT_PREFS: ThemePreferences = {
 export function slugify(str: string): string {
   return str
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // supprime les diacritiques
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -69,14 +78,12 @@ export function slugify(str: string): string {
 export class ThemeManager {
   private themes: ThemeMeta[] = []
   private index: ThemesIndex | null = null
-  private _initialized = false
   private _initPromise: Promise<void> | null = null
 
   // ── Initialisation ──────────────────────────────────────────────────────────
 
   /**
    * Charge themes.json puis tous les theme.json référencés.
-   * À appeler une seule fois au démarrage de l'app.
    * Idempotent : les appels suivants retournent la même Promise.
    */
   init(): Promise<void> {
@@ -86,8 +93,6 @@ export class ThemeManager {
   }
 
   private async _doInit(): Promise<void> {
-    if (this._initialized) return
-
     const res = await fetch(THEMES_INDEX_URL)
     if (!res.ok) throw new Error(`[ThemeManager] Impossible de charger ${THEMES_INDEX_URL}`)
     this.index = await res.json() as ThemesIndex
@@ -101,8 +106,6 @@ export class ThemeManager {
     this.themes = results
       .filter((r): r is PromiseFulfilledResult<ThemeMeta> => r.status === 'fulfilled' && r.value !== null)
       .map(r => r.value)
-
-    this._initialized = true
   }
 
   private async _loadThemeMeta(id: string, isCollection: boolean): Promise<ThemeMeta | null> {
@@ -117,10 +120,11 @@ export class ThemeManager {
         console.warn(`[ThemeManager] theme.json introuvable pour "${id}" (${url})`)
         return null
       }
-      const meta = await res.json() as Omit<ThemeMeta, 'cssUrl' | 'previewUrl' | 'isCollection'>
+      const meta = await res.json() as Omit<ThemeMeta, 'libraryUrl' | 'gameUrl' | 'previewUrl' | 'isCollection'>
       return {
         ...meta,
-        cssUrl: `${dir}/${meta.css}`,
+        libraryUrl: `${dir}/${meta.library}`,
+        gameUrl:    `${dir}/${meta.game}`,
         previewUrl: meta.preview ? `${dir}/${meta.preview}` : undefined,
         isCollection,
       }
@@ -132,29 +136,20 @@ export class ThemeManager {
 
   // ── Accesseurs ──────────────────────────────────────────────────────────────
 
-  /** Liste des thèmes génériques disponibles */
   get genericThemes(): ThemeMeta[] {
     return this.themes.filter(t => !t.isCollection)
   }
 
-  /** Liste des thèmes de collection disponibles */
   get collectionThemes(): ThemeMeta[] {
     return this.themes.filter(t => t.isCollection)
   }
 
-  /** Tous les thèmes (génériques + collections) */
   get allThemes(): ThemeMeta[] {
     return [...this.themes]
   }
 
-  /** ID du thème par défaut (défini dans themes.json) */
   get defaultThemeId(): string {
     return this.index?.defaultTheme ?? DEFAULT_PREFS.selectedTheme
-  }
-
-  /** Thème actuellement actif (d'après le <link> dans le DOM) */
-  get activeThemeId(): string {
-    return document.getElementById(LINK_ID)?.dataset.themeId ?? ''
   }
 
   // ── Préférences ─────────────────────────────────────────────────────────────
@@ -184,64 +179,76 @@ export class ThemeManager {
   // ── Application ─────────────────────────────────────────────────────────────
 
   /**
-   * Applique un thème par son id en injectant (ou remplaçant) un <link> CSS.
-   * Ne fait rien si le thème est déjà actif.
+   * Injecte (ou remplace) le <link> library.css du thème sélectionné.
+   * À appeler à l'affichage de la bibliothèque.
    */
-  applyTheme(id: string): void {
-    const theme = this.themes.find(t => t.id === id)
+  async applyLibraryTheme(id?: string): Promise<void> {
+    await this.init()
+    const prefs = this.loadPreferences()
+    const themeId = id ?? (this.themes.some(t => t.id === prefs.selectedTheme)
+      ? prefs.selectedTheme
+      : this.defaultThemeId)
+
+    const theme = this.themes.find(t => t.id === themeId)
     if (!theme) {
-      console.warn(`[ThemeManager] Thème "${id}" introuvable.`)
+      console.warn(`[ThemeManager] Thème library "${themeId}" introuvable.`)
       return
     }
-    if (this.activeThemeId === id) return
+    this._setLink(LINK_LIBRARY_ID, theme.libraryUrl)
+  }
 
-    let link = document.getElementById(LINK_ID) as HTMLLinkElement | null
+  /**
+   * Injecte le <link> game.css adapté à la collection de l'aventure.
+   * Si followCollection=true et qu'un thème de collection correspond,
+   * utilise son game.css. Sinon, game.css du thème sélectionné.
+   */
+  async applyGameTheme(collectionLabel: string | undefined): Promise<void> {
+    await this.init()
+    const prefs = this.loadPreferences()
+
+    let gameUrl: string | null = null
+
+    if (prefs.followCollection && collectionLabel) {
+      const slug = slugify(collectionLabel)
+      const match = this.collectionThemes.find(t => slugify(t.label) === slug)
+      if (match) {
+        gameUrl = match.gameUrl
+      }
+    }
+
+    if (!gameUrl) {
+      // Fallback : game.css du thème sélectionné par l'utilisateur
+      const fallbackId = this.themes.some(t => t.id === prefs.selectedTheme)
+        ? prefs.selectedTheme
+        : this.defaultThemeId
+      const fallback = this.themes.find(t => t.id === fallbackId)
+      gameUrl = fallback?.gameUrl ?? null
+    }
+
+    if (gameUrl) {
+      this._setLink(LINK_GAME_ID, gameUrl)
+    }
+  }
+
+  /**
+   * Retire le <link> game.css. À appeler au retour à la bibliothèque.
+   */
+  removeGameTheme(): void {
+    document.getElementById(LINK_GAME_ID)?.remove()
+  }
+
+  // ── Interne ─────────────────────────────────────────────────────────────────
+
+  private _setLink(id: string, href: string): void {
+    let link = document.getElementById(id) as HTMLLinkElement | null
     if (!link) {
       link = document.createElement('link')
-      link.id = LINK_ID
+      link.id = id
       link.rel = 'stylesheet'
       document.head.appendChild(link)
     }
-    link.href = theme.cssUrl
-    link.dataset.themeId = id
-  }
-
-  /**
-   * Applique le thème sauvegardé en préférences (ou le thème par défaut).
-   * À appeler au démarrage, après `init()`.
-   */
-  async applyStoredTheme(): Promise<void> {
-    await this.init()
-    const prefs = this.loadPreferences()
-    const id = this.themes.some(t => t.id === prefs.selectedTheme)
-      ? prefs.selectedTheme
-      : this.defaultThemeId
-    this.applyTheme(id)
-  }
-
-  /**
-   * Si followCollection=true, cherche un thème de collection dont le label
-   * slugifié correspond au label de la collection passée en paramètre.
-   * Applique ce thème si trouvé, sinon revient au thème sélectionné par l'utilisateur.
-   *
-   * @param collectionLabel  Valeur du champ `collection` de la couverture de l'aventure
-   */
-  async applyForCollection(collectionLabel: string | undefined): Promise<void> {
-    await this.init()
-    const prefs = this.loadPreferences()
-
-    if (!prefs.followCollection || !collectionLabel) {
-      this.applyTheme(prefs.selectedTheme || this.defaultThemeId)
-      return
-    }
-
-    const collectionSlug = slugify(collectionLabel)
-    const match = this.collectionThemes.find(t => slugify(t.label) === collectionSlug)
-
-    if (match) {
-      this.applyTheme(match.id)
-    } else {
-      this.applyTheme(prefs.selectedTheme || this.defaultThemeId)
+    if (link.href !== href) {
+      link.href = href
     }
   }
 }

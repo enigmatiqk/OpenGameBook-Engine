@@ -67,16 +67,10 @@ export class LibraryView {
           <h1>Bibliothèque d'aventures</h1>
           <p class="subtitle">Choisissez votre aventure</p>
         </div>
-        <div class="library-header-actions">
-          <button id="btn-theme" class="btn-remote-sources-icon" type="button"
-            title="Choisir le thème" aria-label="Choisir le thème">
-            🎨
-          </button>
-          <button id="btn-remote-sources" class="btn-remote-sources-icon" type="button"
-            title="Gérer les bibliothèques distantes" aria-label="Gérer les bibliothèques distantes">
-            🌐
-          </button>
-        </div>
+        <button id="btn-remote-sources" class="btn-remote-sources-icon" type="button"
+          title="Gérer les bibliothèques distantes" aria-label="Gérer les bibliothèques distantes">
+          🌐
+        </button>
       </div>
       <div id="library-filters"></div>
       <div id="adventure-list" class="loading">Chargement des aventures…</div>
@@ -90,12 +84,6 @@ export class LibraryView {
       const hasRemote = this.remoteStore.getAll().length > 0
       if (hasRemote) remoteBtn.classList.add('btn-remote-sources-icon--active')
       remoteBtn.addEventListener('click', () => this._openRemoteModal())
-    }
-
-    // ── Bouton d'ouverture de la modale thème ────────────────────────────────
-    const themeBtn = container.querySelector<HTMLButtonElement>('#btn-theme')
-    if (themeBtn) {
-      themeBtn.addEventListener('click', () => this._openThemeModal())
     }
 
     // ── Toutes les sources : statiques (options) + persistées (localStorage) ─
@@ -143,6 +131,10 @@ export class LibraryView {
   }
 
   // ── Modale thème ──────────────────────────────────────────────────────────
+
+  openThemeModal(): void {
+    this._openThemeModal()
+  }
 
   private _openThemeModal(): void {
     document.getElementById('theme-modal')?.remove()
@@ -203,7 +195,7 @@ export class LibraryView {
     for (const theme of genericThemes) {
       const card = this._createThemeCard(theme, prefs.selectedTheme === theme.id)
       card.addEventListener('click', () => {
-        themeManager.applyTheme(theme.id)
+        void themeManager.applyLibraryTheme(theme.id)
         themeManager.savePreferences({ selectedTheme: theme.id })
         // Rafraîchit la sélection visuelle
         body.querySelectorAll<HTMLElement>('.theme-card').forEach(c => {

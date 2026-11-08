@@ -3,6 +3,7 @@
   "label": "Défis fantastiques",
   "author": "OpenGameBook",
   "description": "Ambiance heroic fantasy, tons dorés et parchemin, pour la collection Défis Fantastiques.",
-  "css": "theme.css",
+  "library": "library.css",
+  "game": "game.css",
   "preview": "images/preview.webp"
 }

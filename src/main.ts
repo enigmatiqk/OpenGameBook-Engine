@@ -75,7 +75,7 @@ async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void
     setAdventureProvider(() => engine.getAdventure())
 
     // ── Applique le thème de collection si activé ────────────────────────────
-    void themeManager.applyForCollection(meta.collection)
+    void themeManager.applyGameTheme(meta.collection)
 
     if (resume) {
       const save = saveStore.load(adventure.titre)
@@ -171,7 +171,7 @@ function launchGameView(engine: GameEngine): void {
   const gameView = new GameView(engine, {
     onVictory:       () => { gameView.destroy(); stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
     onDefeat:        () => { gameView.destroy(); stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
-    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); showView('library'); libraryView?.refresh(); void themeManager.applyStoredTheme() },
+    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); themeManager.removeGameTheme(); showView('library'); libraryView?.refresh() },
   })
   showView('game')
   gameView.render(gameContainer)
@@ -277,7 +277,7 @@ function initVictoryView(engine: GameEngine): void {
     if (inputGroup) inputGroup.style.display = 'none'
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { void themeManager.applyStoredTheme(); showView('library'); libraryView?.refresh() })
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { themeManager.removeGameTheme(); showView('library'); libraryView?.refresh() })
   renderLeaderboard()
 }
 
@@ -339,12 +339,12 @@ function initDefeatView(engine: GameEngine): void {
     showHeroCreationAndLaunch(newEngine)
   })
 
-  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { void themeManager.applyStoredTheme(); showView('library'); libraryView?.refresh() })
+  container.querySelector<HTMLButtonElement>('#btn-back-library')!.addEventListener('click', () => { themeManager.removeGameTheme(); showView('library'); libraryView?.refresh() })
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   // ── Initialisation du système de thèmes ─────────────────────────────────
-  void themeManager.applyStoredTheme()
+  void themeManager.applyLibraryTheme()
 
   initA11y()
   initTtsControls()
@@ -366,4 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initImagePrefsButton()
   initDebugButton()
   initSectionNotesButton()
+
+  document.getElementById('btn-theme')?.addEventListener('click', () => {
+    libraryView?.openThemeModal()
+  })
 })

@@ -1,0 +1,22 @@
+/* ── Thème Classic IA — vue aventure ─────────────────────────────────────── */
+/* Reprend les mêmes variables que library.css.                               */
+
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #0f3460;
+  --bg-card-hover: #1a4a7a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --accent: #e94560;
+  --accent-hover: #c73652;
+  --success: #4caf50;
+  --border: #2a2a4a;
+  --font-narrative: Georgia, 'Times New Roman', serif;
+  --font-ui: 'Segoe UI', system-ui, sans-serif;
+  --radius: 8px;
+  --shadow: 0 4px 16px rgba(0,0,0,0.4);
+  --bg-image-library: none;
+  --bg-image-opacity: 0;
+}
