@@ -49,6 +49,8 @@ export class GameView {
       window.removeEventListener('imagePrefsChanged', this._onImagePrefsChanged)
       this._onImagePrefsChanged = null
     }
+    // Arrête la synthèse vocale quand on quitte la vue de jeu
+    tts.stop()
   }
 
   private _refreshSectionImage(): void {
@@ -227,9 +229,20 @@ export class GameView {
     const toolbar = document.createElement('div')
     toolbar.className = 'game-toolbar'
 
-    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => this._showModal("Mode d'emploi", `<div class="modal-text">${sanitizeHtml(adventure.mode_emploi)}</div>`))
-    const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => this._showHeroModal())
-    const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => this._showImagesModal(adventure))
+    const manualBtn = this._btn("📖 Mode d'emploi", 'btn btn-secondary btn-manual', () => {
+      tts.speak("Mode d'emploi.")
+      this._showModal("Mode d'emploi", `<div class="modal-text">${sanitizeHtml(adventure.mode_emploi)}</div>`)
+      // Lecture du contenu après un court délai pour laisser la modale s'ouvrir
+      setTimeout(() => tts.speak(stripHtml(adventure.mode_emploi), false), 300)
+    })
+    const heroBtn = this._btn('🧙 Fiche héros', 'btn btn-secondary btn-hero-sheet', () => {
+      tts.speak('Fiche héros.')
+      this._showHeroModal()
+    })
+    const imagesBtn = this._btn('🖼 annexes', 'btn btn-secondary btn-annexes', () => {
+      tts.speak('Images annexes.')
+      this._showImagesModal(adventure)
+    })
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
       this.callbacks.onBackToLibrary()
     })
