@@ -70,14 +70,22 @@ export class ThemeManager {
   private themes: ThemeMeta[] = []
   private index: ThemesIndex | null = null
   private _initialized = false
+  private _initPromise: Promise<void> | null = null
 
   // ── Initialisation ──────────────────────────────────────────────────────────
 
   /**
    * Charge themes.json puis tous les theme.json référencés.
    * À appeler une seule fois au démarrage de l'app.
+   * Idempotent : les appels suivants retournent la même Promise.
    */
-  async init(): Promise<void> {
+  init(): Promise<void> {
+    if (this._initPromise) return this._initPromise
+    this._initPromise = this._doInit()
+    return this._initPromise
+  }
+
+  private async _doInit(): Promise<void> {
     if (this._initialized) return
 
     const res = await fetch(THEMES_INDEX_URL)
@@ -202,7 +210,8 @@ export class ThemeManager {
    * Applique le thème sauvegardé en préférences (ou le thème par défaut).
    * À appeler au démarrage, après `init()`.
    */
-  applyStoredTheme(): void {
+  async applyStoredTheme(): Promise<void> {
+    await this.init()
     const prefs = this.loadPreferences()
     const id = this.themes.some(t => t.id === prefs.selectedTheme)
       ? prefs.selectedTheme
@@ -217,11 +226,11 @@ export class ThemeManager {
    *
    * @param collectionLabel  Valeur du champ `collection` de la couverture de l'aventure
    */
-  applyForCollection(collectionLabel: string | undefined): void {
+  async applyForCollection(collectionLabel: string | undefined): Promise<void> {
+    await this.init()
     const prefs = this.loadPreferences()
 
     if (!prefs.followCollection || !collectionLabel) {
-      // Revenir au thème fixe de l'utilisateur
       this.applyTheme(prefs.selectedTheme || this.defaultThemeId)
       return
     }
@@ -232,7 +241,6 @@ export class ThemeManager {
     if (match) {
       this.applyTheme(match.id)
     } else {
-      // Pas de thème dédié pour cette collection : thème fixe
       this.applyTheme(prefs.selectedTheme || this.defaultThemeId)
     }
   }
