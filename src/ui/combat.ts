@@ -91,6 +91,17 @@ export class CombatView {
     // Phase courante
     wrap.appendChild(this._buildPhase(state))
 
+    // Annonce TTS des actions disponibles après un round (s'enchaîne après le résultat)
+    if (state.phase.type === 'round_result') {
+      const actions = state.phase.availableActions
+      if (actions.length > 0) {
+        const actionsMsg = `Actions disponibles : ${actions.join(', ')}.`
+        tts.speak(actionsMsg, false)
+      } else {
+        tts.speak('Continuer le combat.', false)
+      }
+    }
+
     container.appendChild(wrap)
   }
 
