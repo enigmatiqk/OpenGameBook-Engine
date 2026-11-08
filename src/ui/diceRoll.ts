@@ -66,7 +66,13 @@ function _render(
   if (state.pending) {
     const pending = state.pending
     const card = _buildPendingCard(pending.label, pending.formula, () => {
-      const { count, sides, modifier } = parseDiceFormula(pending.formula)
+      const { count, sides } = parseDiceFormula(pending.formula)
+      // Le modifier est dans def.init (ex: "1d6+6"), pas dans pending.formula ("1d6")
+      const statKey = pending.context.split(':')[1]
+      const adventure = engine.getAdventure()
+      const defInit = adventure?.personnage?.statistiques?.[statKey]?.init ?? pending.formula
+      const { modifier } = parseDiceFormula(defInit)
+
       const rolls = rollDice(count, sides)
       const rollsSum = rolls.reduce((a, b) => a + b, 0)
       // Résolution moteur d'abord — le total réel est calculé par resolveHeroInitRoll
