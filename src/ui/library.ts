@@ -195,12 +195,13 @@ export class LibraryView {
     for (const theme of genericThemes) {
       const card = this._createThemeCard(theme, prefs.selectedTheme === theme.id)
       card.addEventListener('click', () => {
-        void themeManager.applyLibraryTheme(theme.id)
         themeManager.savePreferences({ selectedTheme: theme.id })
         // Rafraîchit la sélection visuelle
         body.querySelectorAll<HTMLElement>('.theme-card').forEach(c => {
           c.classList.toggle('theme-card--active', c.dataset.themeId === theme.id)
         })
+        // Applique immédiatement le nouveau thème en tenant compte de la collection active
+        this._renderList()
       })
       themeGrid.appendChild(card)
     }
@@ -235,6 +236,8 @@ export class LibraryView {
     const checkbox = toggleRow.querySelector<HTMLInputElement>('#theme-follow-collection')!
     checkbox.addEventListener('change', () => {
       themeManager.savePreferences({ followCollection: checkbox.checked })
+      // Applique immédiatement selon la nouvelle préférence
+      this._renderList()
     })
     body.appendChild(toggleRow)
   }
