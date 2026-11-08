@@ -1,6 +1,8 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { HeroInitState, RollResult } from '../types'
 import { parseDiceFormula, rollDice } from '../engine/CombatResolver'
+import { srAnnounce } from './srAnnounce'
+import { tts } from './tts'
 
 /**
  * Affiche l'écran de création du héros.
@@ -37,6 +39,15 @@ function _render(
   subtitle.textContent = 'Lancez les dés pour déterminer vos statistiques de départ.'
   wrap.appendChild(subtitle)
 
+  // Annonce TTS à l'affichage de l'écran (première stat pending uniquement)
+  if (state.resolved.length === 0 && state.pending) {
+    tts.speak(`Création de votre héros. Lancez les dés pour déterminer vos statistiques. Première statistique : ${state.pending.label}, formule ${state.pending.formula}.`)
+  } else if (state.pending) {
+    tts.speak(`Statistique suivante : ${state.pending.label}, formule ${state.pending.formula}.`, false)
+  } else {
+    tts.speak('Toutes vos statistiques sont prêtes. Cliquez pour commencer.', false)
+  }
+
   const grid = document.createElement('div')
   grid.className = 'dice-grid'
 
@@ -53,6 +64,10 @@ function _render(
       const { count, sides } = parseDiceFormula(pending.formula)
       const rolls = rollDice(count, sides)
       const total = rolls.reduce((a, b) => a + b, 0)
+      // Annonce immédiate du résultat
+      const msg = `${pending.label} : ${rolls.join(' et ')}. Total : ${total}.`
+      srAnnounce(msg)
+      tts.speak(msg)
       const result: RollResult = { id: pending.id, rolls, total }
       const newState = engine.resolveHeroInitRoll(result)
       _render(container, engine, newState, onComplete)
@@ -153,6 +168,15 @@ function _renderInventaireDepart(
   wrap.appendChild(subtitle)
 
   if (remaining.length > 0) {
+    // Annonce TTS : liste des items restants à ramasser
+    const itemsList = remaining.map(e => {
+      const qty = e.item.quantite && e.item.quantite > 1
+        ? ` fois ${e.item.quantite}${e.item.quantite_label ? ' ' + e.item.quantite_label : ''}`
+        : ''
+      return `${e.item.label}${qty}`
+    }).join(', ')
+    tts.speak(`Votre équipement de départ. ${remaining.length} objet${remaining.length > 1 ? 's' : ''} à ramasser : ${itemsList}.`)
+
     const grid = document.createElement('div')
     grid.className = 'inventaire-depart-grid'
 
@@ -183,6 +207,9 @@ function _renderInventaireDepart(
       }
 
       card.addEventListener('click', () => {
+        const ramasseMsg = `${item.label} ramassé.`
+        srAnnounce(ramasseMsg)
+        tts.speak(ramasseMsg)
         engine.applyItemDepart(item, isEquipement)
         const next = remaining.filter(e => e.item !== item)
         _renderInventaireDepart(container, engine, next, onComplete)
@@ -194,6 +221,7 @@ function _renderInventaireDepart(
     wrap.appendChild(grid)
   } else {
     // Tout ramassé
+    tts.speak('Tout votre équipement est prêt. Bonne aventure !')
     const btn = document.createElement('button')
     btn.className = 'btn btn-primary dice-confirm'
     btn.type = 'button'
@@ -244,6 +272,15 @@ function _renderChoix(
   subtitle.textContent = `Choisissez ${current.quantite === 1 ? 'une option' : `${current.quantite} options`} :`
   wrap.appendChild(subtitle)
 
+  // Annonce TTS : titre du choix + liste des options disponibles
+  const optionsList = current.options.map((o, i) => {
+    const qty = o.quantite !== undefined
+      ? ` (${o.quantite}${o.quantite_label ? ' ' + o.quantite_label : ''})`
+      : ''
+    return `Option ${i + 1} : ${o.label}${qty}`
+  }).join('. ')
+  tts.speak(`${current.label}. Choisissez ${current.quantite === 1 ? 'une option' : current.quantite + ' options'}. ${optionsList}.`)
+
   const optionsEl = document.createElement('div')
   optionsEl.className = 'choix-initial-options'
 
@@ -259,6 +296,9 @@ function _renderChoix(
       btn.title = option.description
     }
     btn.addEventListener('click', () => {
+      const choixMsg = `${option.label}${qty} choisi.`
+      srAnnounce(choixMsg)
+      tts.speak(choixMsg)
       engine.applyChoixInitial(option)
       _renderChoix(container, engine, choix, index + 1, onComplete)
     })
