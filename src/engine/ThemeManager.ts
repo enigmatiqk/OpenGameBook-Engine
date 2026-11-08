@@ -198,6 +198,34 @@ export class ThemeManager {
   }
 
   /**
+   * Applique library.css du thème de collection correspondant si
+   * followCollection=true et qu'une collection active est identifiée.
+   * Sinon revient au library.css du thème sélectionné par l'utilisateur.
+   *
+   * @param collectionLabel  Collection active dans la bibliothèque (filtre ou collection unique)
+   */
+  async applyLibraryThemeForCollection(collectionLabel: string | undefined): Promise<void> {
+    await this.init()
+    const prefs = this.loadPreferences()
+
+    if (prefs.followCollection && collectionLabel) {
+      const slug = slugify(collectionLabel)
+      const match = this.collectionThemes.find(t => slugify(t.label) === slug)
+      if (match) {
+        this._setLink(LINK_LIBRARY_ID, match.libraryUrl)
+        return
+      }
+    }
+
+    // Fallback : library.css du thème sélectionné
+    const fallbackId = this.themes.some(t => t.id === prefs.selectedTheme)
+      ? prefs.selectedTheme
+      : this.defaultThemeId
+    const fallback = this.themes.find(t => t.id === fallbackId)
+    if (fallback) this._setLink(LINK_LIBRARY_ID, fallback.libraryUrl)
+  }
+
+  /**
    * Injecte le <link> game.css adapté à la collection de l'aventure.
    * Si followCollection=true et qu'un thème de collection correspond,
    * utilise son game.css. Sinon, game.css du thème sélectionné.

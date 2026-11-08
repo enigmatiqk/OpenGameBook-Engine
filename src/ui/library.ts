@@ -556,9 +556,30 @@ export class LibraryView {
     this._renderList()
   }
 
+  /**
+   * Détermine la collection "active" dans la bibliothèque pour le thème :
+   * - filtre de collection explicitement sélectionné → cette collection
+   * - toutes les aventures chargées ont la même collection → cette collection
+   * - sinon → undefined (thème fixe de l'utilisateur)
+   */
+  private _detectActiveCollection(): string | undefined {
+    if (this.filters.collection) return this.filters.collection
+
+    const collections = [...new Set(
+      this.adventures.map(a => a.collection ?? '').filter(Boolean)
+    )]
+    if (collections.length === 1) return collections[0]
+
+    return undefined
+  }
+
   private _renderList(): void {
     if (!this.listEl) return
     const filtered = this._applyFilters()
+
+    // ── Thème bibliothèque selon la collection active ────────────────────────
+    const activeCollection = this._detectActiveCollection()
+    void themeManager.applyLibraryThemeForCollection(activeCollection)
 
     if (filtered.length === 0) {
       this.listEl.innerHTML = `
