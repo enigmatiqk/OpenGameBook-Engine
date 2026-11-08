@@ -198,7 +198,7 @@ function _renderInventaireDepart(
         : ''
       return `${e.item.label}${qty}`
     }).join(', ')
-    tts.speak(`Votre équipement de départ. ${remaining.length} objet${remaining.length > 1 ? 's' : ''} à ramasser : ${itemsList}.`)
+    tts.speak(`Votre équipement de départ. ${remaining.length} objet${remaining.length > 1 ? 's' : ''} à ramasser : ${itemsList}.`, false)
 
     const grid = document.createElement('div')
     grid.className = 'inventaire-depart-grid'
@@ -323,7 +323,7 @@ function _renderChoix(
       const desc = option.description ? `. ${option.description}` : ''
       const choixMsg = `${option.label}${qty} choisi${desc}`
       srAnnounce(`${option.label}${qty} choisi.`)
-      tts.speak(choixMsg)
+      tts.speak(choixMsg, false)
       engine.applyChoixInitial(option)
       _renderChoix(container, engine, choix, index + 1, onComplete)
     })
