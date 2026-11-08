@@ -247,7 +247,10 @@ export class ThemeManager {
       link.rel = 'stylesheet'
       document.head.appendChild(link)
     }
-    if (link.href !== href) {
+    // Comparer via pathname pour éviter les faux positifs absolus vs relatifs
+    const currentPath = link.href ? new URL(link.href).pathname : ''
+    const newPath = href.startsWith('http') ? new URL(href).pathname : href
+    if (currentPath !== newPath) {
       link.href = href
     }
   }
