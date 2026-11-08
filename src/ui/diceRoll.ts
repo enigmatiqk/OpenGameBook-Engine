@@ -61,14 +61,20 @@ function _render(
   if (state.pending) {
     const pending = state.pending
     const card = _buildPendingCard(pending.label, pending.formula, () => {
-      const { count, sides } = parseDiceFormula(pending.formula)
+      const { count, sides, modifier } = parseDiceFormula(pending.formula)
       const rolls = rollDice(count, sides)
-      const total = rolls.reduce((a, b) => a + b, 0)
-      // Annonce immédiate du résultat
-      const msg = `${pending.label} : ${rolls.join(' et ')}. Total : ${total}.`
+      const rollsSum = rolls.reduce((a, b) => a + b, 0)
+      const total = rollsSum + modifier  // total affiché à l'utilisateur
+      // Message explicite : "Habileté : dé 5, plus 6, total 11"
+      const rollsStr = rolls.length === 1 ? `${rolls[0]}` : rolls.join(' et ')
+      const modifierStr = modifier !== 0
+        ? `, ${modifier > 0 ? 'plus' : 'moins'} ${Math.abs(modifier)},`
+        : ''
+      const msg = `${pending.label} : dé ${rollsStr}${modifierStr} total ${total}.`
       srAnnounce(msg)
       tts.speak(msg)
-      const result: RollResult = { id: pending.id, rolls, total }
+      // On passe rollsSum : resolveHeroInitRoll ajoute lui-même le modifier
+      const result: RollResult = { id: pending.id, rolls, total: rollsSum }
       const newState = engine.resolveHeroInitRoll(result)
       _render(container, engine, newState, onComplete)
     })
