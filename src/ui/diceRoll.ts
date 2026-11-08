@@ -39,12 +39,16 @@ function _render(
   subtitle.textContent = 'Lancez les dés pour déterminer vos statistiques de départ.'
   wrap.appendChild(subtitle)
 
-  // Annonce TTS à l'affichage de l'écran (première stat pending uniquement)
+  // Annonce TTS à l'affichage de l'écran
+  // pending.label = "Lancer les dés — Habileté" — on extrait juste le nom de la stat
+  const statName = state.pending
+    ? state.pending.label.replace(/^Lancer les dés — /i, '').trim()
+    : ''
+
   if (state.resolved.length === 0 && state.pending) {
-    tts.speak(`Création de votre héros. Lancez les dés pour déterminer vos statistiques. Première statistique : ${state.pending.label}.`)
+    tts.speak(`Création de votre héros. Lancez les dés pour déterminer vos statistiques. Première statistique : ${statName}.`)
   } else if (state.pending) {
-    // Annonce la stat suivante après un court délai pour ne pas couper le résultat précédent
-    tts.speak(`Statistique suivante : ${state.pending.label}.`, false)
+    tts.speak(`Statistique suivante : ${statName}.`, false)
   } else {
     tts.speak('Toutes vos statistiques sont prêtes. Cliquez pour commencer.', false)
   }
@@ -71,12 +75,16 @@ function _render(
       // Récupère le vrai total depuis la dernière stat résolue
       const resolved = newState.resolved[newState.resolved.length - 1]
       const trueTotal = resolved?.total ?? (rollsSum + modifier)
-      // Message avec les valeurs réelles
+      // Nom lisible de la stat (sans le préfixe "Lancer les dés — ")
+      const statLabel = pending.label.replace(/^Lancer les dés — /i, '').trim()
+      // Message complet et explicite
       const rollsStr = rolls.length === 1 ? `${rolls[0]}` : rolls.join(' et ')
-      const modifierStr = modifier !== 0
-        ? ` plus ${modifier > 0 ? modifier : `moins ${Math.abs(modifier)}`},`
-        : ''
-      const msg = `${pending.label} : dé ${rollsStr},${modifierStr} total ${trueTotal}.`
+      const modifierStr = modifier > 0
+        ? `, plus ${modifier},`
+        : modifier < 0
+          ? `, moins ${Math.abs(modifier)},`
+          : ','
+      const msg = `${statLabel} : dé ${rollsStr}${modifierStr} total ${trueTotal}.`
       srAnnounce(msg)
       tts.speak(msg, true)  // interrupt=true pour couper l'annonce "suivante" si encore en cours
       _render(container, engine, newState, onComplete)
