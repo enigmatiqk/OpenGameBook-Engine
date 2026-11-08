@@ -39,8 +39,8 @@ export interface ThemePreferences {
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const THEMES_INDEX_URL = '/src/themes/themes.json'
-const THEMES_BASE_URL  = '/src/themes'
+const THEMES_INDEX_URL = '/themes/themes.json'
+const THEMES_BASE_URL  = '/themes'
 const STORAGE_KEY      = 'theme-preferences'
 const LINK_ID          = 'active-theme-css'
 
