@@ -256,8 +256,9 @@ export class GameView {
       this._showImagesModal(adventure)
     })
     const backBtn = this._btn('🏠 Bibliothèque', 'btn btn-secondary btn-back-library', () => {
-      tts.speak('Retour à la bibliothèque.')
-      this.callbacks.onBackToLibrary()
+      tts.speakAndWait('Retour à la bibliothèque.').then(() => {
+        this.callbacks.onBackToLibrary()
+      })
     })
 
     if (resolveImages(adventure.images_annexes, adventure.images_annexes_ia).length === 0) imagesBtn.disabled = true
