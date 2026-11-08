@@ -41,9 +41,10 @@ function _render(
 
   // Annonce TTS à l'affichage de l'écran (première stat pending uniquement)
   if (state.resolved.length === 0 && state.pending) {
-    tts.speak(`Création de votre héros. Lancez les dés pour déterminer vos statistiques. Première statistique : ${state.pending.label}, formule ${state.pending.formula}.`)
+    tts.speak(`Création de votre héros. Lancez les dés pour déterminer vos statistiques. Première statistique : ${state.pending.label}.`)
   } else if (state.pending) {
-    tts.speak(`Statistique suivante : ${state.pending.label}, formule ${state.pending.formula}.`, false)
+    // Annonce la stat suivante après un court délai pour ne pas couper le résultat précédent
+    tts.speak(`Statistique suivante : ${state.pending.label}.`, false)
   } else {
     tts.speak('Toutes vos statistiques sont prêtes. Cliquez pour commencer.', false)
   }
@@ -64,18 +65,20 @@ function _render(
       const { count, sides, modifier } = parseDiceFormula(pending.formula)
       const rolls = rollDice(count, sides)
       const rollsSum = rolls.reduce((a, b) => a + b, 0)
-      const total = rollsSum + modifier  // total affiché à l'utilisateur
-      // Message explicite : "Habileté : dé 5, plus 6, total 11"
-      const rollsStr = rolls.length === 1 ? `${rolls[0]}` : rolls.join(' et ')
-      const modifierStr = modifier !== 0
-        ? `, ${modifier > 0 ? 'plus' : 'moins'} ${Math.abs(modifier)},`
-        : ''
-      const msg = `${pending.label} : dé ${rollsStr}${modifierStr} total ${total}.`
-      srAnnounce(msg)
-      tts.speak(msg)
-      // On passe rollsSum : resolveHeroInitRoll ajoute lui-même le modifier
+      // Résolution moteur d'abord — le total réel est calculé par resolveHeroInitRoll
       const result: RollResult = { id: pending.id, rolls, total: rollsSum }
       const newState = engine.resolveHeroInitRoll(result)
+      // Récupère le vrai total depuis la dernière stat résolue
+      const resolved = newState.resolved[newState.resolved.length - 1]
+      const trueTotal = resolved?.total ?? (rollsSum + modifier)
+      // Message avec les valeurs réelles
+      const rollsStr = rolls.length === 1 ? `${rolls[0]}` : rolls.join(' et ')
+      const modifierStr = modifier !== 0
+        ? ` plus ${modifier > 0 ? modifier : `moins ${Math.abs(modifier)}`},`
+        : ''
+      const msg = `${pending.label} : dé ${rollsStr},${modifierStr} total ${trueTotal}.`
+      srAnnounce(msg)
+      tts.speak(msg, true)  // interrupt=true pour couper l'annonce "suivante" si encore en cours
       _render(container, engine, newState, onComplete)
     })
     grid.appendChild(card)
