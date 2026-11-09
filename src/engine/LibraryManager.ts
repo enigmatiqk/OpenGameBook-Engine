@@ -459,6 +459,7 @@ export class LibraryManager {
       return {
         titre:             cover.titre as string,
         collection:        cover.collection as string | undefined,
+        description:       cover.description as string | undefined,
         image_de_garde:    safeImageName,
         image_de_garde_ia: sanitizeImageName(cover.image_de_garde_ia as string | undefined ?? '') ?? undefined,
         repertoire_images: resolvedRepertoire,

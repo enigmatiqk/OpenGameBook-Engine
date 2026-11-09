@@ -662,17 +662,213 @@ export class LibraryView {
       </div>
     `
 
-    card.querySelector<HTMLButtonElement>('.btn-start')!.addEventListener('click', () => this.callbacks.onStartNewGame(adventure))
-    card.querySelector<HTMLButtonElement>('.btn-continue')!.addEventListener('click', () => { if (hasSave) this.callbacks.onContinueGame(adventure) })
-    card.querySelector<HTMLButtonElement>('.btn-leaderboard')!.addEventListener('click', () => { if (hasLeaderboard) this.callbacks.onShowLeaderboard?.(adventure) })
+    const isShelf = this.listEl?.dataset.layout === 'shelf'
 
-    if (coverSrc) {
-      card.querySelector<HTMLImageElement>('.cover-image')?.addEventListener('click', () =>
-        this._showLightbox(coverSrc, adventure.titre)
-      )
+    if (isShelf) {
+      // En mode shelf : le clic ouvre la modale livre (pas de lightbox)
+      card.setAttribute('role', 'button')
+      card.setAttribute('tabindex', '0')
+      card.setAttribute('aria-label', `Ouvrir ${adventure.titre}`)
+      const openModal = () => this._openBookModal(adventure, coverSrc, hasSave, hasLeaderboard, hasVictory)
+      card.addEventListener('click', openModal)
+      card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal() } })
+    } else {
+      // Mode cards : comportement normal
+      card.querySelector<HTMLButtonElement>('.btn-start')!.addEventListener('click', () => this.callbacks.onStartNewGame(adventure))
+      card.querySelector<HTMLButtonElement>('.btn-continue')!.addEventListener('click', () => { if (hasSave) this.callbacks.onContinueGame(adventure) })
+      card.querySelector<HTMLButtonElement>('.btn-leaderboard')!.addEventListener('click', () => { if (hasLeaderboard) this.callbacks.onShowLeaderboard?.(adventure) })
+
+      if (coverSrc) {
+        card.querySelector<HTMLImageElement>('.cover-image')?.addEventListener('click', () =>
+          this._showLightbox(coverSrc, adventure.titre)
+        )
+      }
     }
 
     return card
+  }
+
+  /** Ouvre la modale "livre ouvert" en mode shelf */
+  private _openBookModal(
+    adventure: AdventureMetadata,
+    coverSrc: string | null,
+    hasSave: boolean,
+    hasLeaderboard: boolean,
+    hasVictory: boolean,
+  ): void {
+    document.getElementById('book-modal-overlay')?.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'book-modal-overlay'
+    overlay.className = 'book-modal-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', adventure.titre)
+
+    const book = document.createElement('div')
+    book.className = 'book-modal'
+
+    // ── Page gauche : couverture ─────────────────────────────────────────────
+    const pageLeft = document.createElement('div')
+    pageLeft.className = 'book-modal-left'
+
+    if (coverSrc) {
+      const img = document.createElement('img')
+      img.className = 'book-cover-img'
+      img.src = coverSrc
+      img.alt = adventure.titre
+      pageLeft.appendChild(img)
+    } else {
+      const placeholder = document.createElement('div')
+      placeholder.className = 'book-cover-placeholder'
+      placeholder.textContent = '📖'
+      pageLeft.appendChild(placeholder)
+    }
+
+    // ── Page droite : informations ───────────────────────────────────────────
+    const pageRight = document.createElement('div')
+    pageRight.className = 'book-modal-right'
+
+    // En-tête
+    const header = document.createElement('div')
+    header.className = 'book-modal-right-header'
+
+    const titleBlock = document.createElement('div')
+    if (adventure.collection) {
+      const coll = document.createElement('div')
+      coll.className = 'book-modal-collection'
+      coll.textContent = adventure.collection
+      titleBlock.appendChild(coll)
+    }
+    const title = document.createElement('div')
+    title.className = 'book-modal-title'
+    title.textContent = adventure.titre
+    titleBlock.appendChild(title)
+
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'book-modal-close'
+    closeBtn.setAttribute('aria-label', 'Fermer')
+    closeBtn.textContent = '✕'
+
+    header.appendChild(titleBlock)
+    header.appendChild(closeBtn)
+    pageRight.appendChild(header)
+
+    // Corps
+    const body = document.createElement('div')
+    body.className = 'book-modal-right-body'
+
+    // Badges
+    const badges = [
+      hasSave                          ? `<span class="badge badge-in-progress">En cours</span>` : '',
+      hasLeaderboard && hasVictory     ? `<span class="badge badge-finished">Terminé</span>`     : '',
+      hasLeaderboard && !hasVictory    ? `<span class="badge badge-defeat">Mort</span>`          : '',
+    ].join('')
+    if (badges) {
+      const badgesEl = document.createElement('div')
+      badgesEl.className = 'book-modal-badges'
+      badgesEl.innerHTML = badges
+      body.appendChild(badgesEl)
+    }
+
+    // Tags
+    if (adventure.tags.length > 0) {
+      const tagsEl = document.createElement('div')
+      tagsEl.className = 'book-modal-tags'
+      tagsEl.innerHTML = adventure.tags.map(t => `<span class="tag">${this.escHtml(t)}</span>`).join('')
+      body.appendChild(tagsEl)
+    }
+
+    // Zone texte : description courte (immédiate) + extrait narratif (lazy)
+    const excerptEl = document.createElement('div')
+    excerptEl.className = 'book-modal-excerpt'
+
+    // Description courte disponible immédiatement depuis couverture.json
+    if (adventure.description) {
+      const descP = document.createElement('p')
+      descP.className = 'book-modal-description'
+      descP.textContent = adventure.description
+      excerptEl.appendChild(descP)
+    }
+
+    // Placeholder pendant le chargement
+    const loadingSpan = document.createElement('span')
+    loadingSpan.className = 'book-modal-excerpt-loading'
+    loadingSpan.textContent = '…'
+    excerptEl.appendChild(loadingSpan)
+    body.appendChild(excerptEl)
+
+    // Chargement lazy de livre.json pour l'extrait narratif de l'intro
+    const livreUrl = adventure.path.replace(/\/?$/, '/') + 'livre.json'
+    fetch(livreUrl)
+      .then(r => r.ok ? r.json() : null)
+      .then((livre: { intro?: { texte?: string } } | null) => {
+        loadingSpan.remove()
+        if (!livre?.intro?.texte) return
+        const tmp = document.createElement('div')
+        tmp.innerHTML = livre.intro.texte
+        // Premier paragraphe non-vide
+        const paragraphs = Array.from(tmp.querySelectorAll('p'))
+        const firstParagraphText = paragraphs
+          .map(p => p.textContent?.trim() ?? '')
+          .find(t => t.length > 0) ?? ''
+        if (!firstParagraphText) return
+        const truncated = firstParagraphText.length > 300
+          ? firstParagraphText.slice(0, 300).trimEnd() + '…'
+          : firstParagraphText
+        const introP = document.createElement('p')
+        introP.className = 'book-modal-intro-excerpt'
+        introP.textContent = truncated
+        excerptEl.appendChild(introP)
+      })
+      .catch(() => { loadingSpan.remove() })
+
+    pageRight.appendChild(body)
+
+    // Footer : boutons d'action
+    const footer = document.createElement('div')
+    footer.className = 'book-modal-right-footer'
+
+    const startBtn = document.createElement('button')
+    startBtn.className = 'btn btn-primary btn-start'
+    startBtn.type = 'button'
+    startBtn.textContent = 'Commencer'
+    startBtn.addEventListener('click', () => { overlay.remove(); this.callbacks.onStartNewGame(adventure) })
+
+    const continueBtn = document.createElement('button')
+    continueBtn.className = 'btn btn-secondary btn-continue'
+    continueBtn.type = 'button'
+    continueBtn.textContent = 'Continuer'
+    if (!hasSave) continueBtn.disabled = true
+    continueBtn.addEventListener('click', () => { if (hasSave) { overlay.remove(); this.callbacks.onContinueGame(adventure) } })
+
+    const lbBtn = document.createElement('button')
+    lbBtn.className = 'btn btn-tertiary btn-leaderboard'
+    lbBtn.type = 'button'
+    lbBtn.textContent = 'Scores'
+    if (!hasLeaderboard) lbBtn.disabled = true
+    lbBtn.addEventListener('click', () => { if (hasLeaderboard) { overlay.remove(); this.callbacks.onShowLeaderboard?.(adventure) } })
+
+    footer.appendChild(startBtn)
+    footer.appendChild(continueBtn)
+    footer.appendChild(lbBtn)
+    pageRight.appendChild(footer)
+
+    book.appendChild(pageLeft)
+    book.appendChild(pageRight)
+    overlay.appendChild(book)
+    document.body.appendChild(overlay)
+
+    // Fermeture
+    const close = () => overlay.remove()
+    closeBtn.addEventListener('click', close)
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+    document.addEventListener('keydown', function onKey(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey) }
+    }, { once: true })
+
+    // Focus sur le bouton fermer pour l'accessibilité
+    closeBtn.focus()
   }
 
   private _showLightbox(src: string, alt: string): void {

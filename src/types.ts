@@ -693,6 +693,8 @@ export interface AdventureMetadata {
   repertoire_images: string
   tags: string[]
   path: string
+  /** Description courte de l'aventure (issue de couverture.json). */
+  description?: string
   /** Couleur CSS associée à la source distante (ex: '#e94560'). Absent pour les aventures locales. */
   sourceColor?: string
 }
