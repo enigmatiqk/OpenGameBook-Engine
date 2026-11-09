@@ -26,6 +26,11 @@ export interface ThemeMeta {
   library: string       // chemin relatif → library.css
   game: string          // chemin relatif → game.css
   preview?: string      // chemin relatif → image de prévisualisation
+  /**
+   * Layout de la bibliothèque déclaré par le thème.
+   * "cards" (défaut) = grille de cartes | "shelf" = livres debout sur étagère
+   */
+  layout?: 'cards' | 'shelf'
   /** URLs absolues résolues (calculées après chargement) */
   libraryUrl: string
   gameUrl: string
@@ -127,6 +132,7 @@ export class ThemeManager {
         gameUrl:    `${dir}/${meta.game}`,
         previewUrl: meta.preview ? `${dir}/${meta.preview}` : undefined,
         isCollection,
+        layout: meta.layout ?? 'cards',
       }
     } catch (err) {
       console.warn(`[ThemeManager] Erreur chargement theme.json pour "${id}":`, err)
@@ -202,9 +208,12 @@ export class ThemeManager {
    * followCollection=true et qu'une collection active est identifiée.
    * Sinon revient au library.css du thème sélectionné par l'utilisateur.
    *
+   * Retourne le layout déclaré par le thème appliqué ("cards" | "shelf"),
+   * sans dépendre du CSS parsé par le navigateur.
+   *
    * @param collectionLabel  Collection active dans la bibliothèque (filtre ou collection unique)
    */
-  async applyLibraryThemeForCollection(collectionLabel: string | undefined): Promise<void> {
+  async applyLibraryThemeForCollection(collectionLabel: string | undefined): Promise<'cards' | 'shelf'> {
     await this.init()
     const prefs = this.loadPreferences()
 
@@ -213,7 +222,7 @@ export class ThemeManager {
       const match = this.collectionThemes.find(t => slugify(t.label) === slug)
       if (match) {
         await this._setLink(LINK_LIBRARY_ID, match.libraryUrl)
-        return
+        return match.layout ?? 'cards'
       }
     }
 
@@ -222,7 +231,11 @@ export class ThemeManager {
       ? prefs.selectedTheme
       : this.defaultThemeId
     const fallback = this.themes.find(t => t.id === fallbackId)
-    if (fallback) await this._setLink(LINK_LIBRARY_ID, fallback.libraryUrl)
+    if (fallback) {
+      await this._setLink(LINK_LIBRARY_ID, fallback.libraryUrl)
+      return fallback.layout ?? 'cards'
+    }
+    return 'cards'
   }
 
   /**
@@ -263,22 +276,6 @@ export class ThemeManager {
    */
   removeGameTheme(): void {
     document.getElementById(LINK_GAME_ID)?.remove()
-  }
-
-  /**
-   * Lit la variable CSS `--library-layout` définie par le thème actif et
-   * retourne sa valeur normalisée. Appelé après chaque changement de thème
-   * pour synchroniser l'attribut `data-layout` sur `#adventure-list`.
-   *
-   * Valeurs supportées : "cards" (défaut) | "shelf"
-   */
-  getLayout(): 'cards' | 'shelf' {
-    if (typeof document === 'undefined') return 'cards'
-    const raw = getComputedStyle(document.documentElement)
-      .getPropertyValue('--library-layout')
-      .trim()
-      .replace(/['"]/g, '') // supporte "shelf" avec ou sans guillemets
-    return raw === 'shelf' ? 'shelf' : 'cards'
   }
 
   // ── Interne ─────────────────────────────────────────────────────────────────
