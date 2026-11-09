@@ -194,7 +194,7 @@ export class ThemeManager {
       console.warn(`[ThemeManager] Thème library "${themeId}" introuvable.`)
       return
     }
-    this._setLink(LINK_LIBRARY_ID, theme.libraryUrl)
+    await this._setLink(LINK_LIBRARY_ID, theme.libraryUrl)
   }
 
   /**
@@ -212,7 +212,7 @@ export class ThemeManager {
       const slug = slugify(collectionLabel)
       const match = this.collectionThemes.find(t => slugify(t.label) === slug)
       if (match) {
-        this._setLink(LINK_LIBRARY_ID, match.libraryUrl)
+        await this._setLink(LINK_LIBRARY_ID, match.libraryUrl)
         return
       }
     }
@@ -222,7 +222,7 @@ export class ThemeManager {
       ? prefs.selectedTheme
       : this.defaultThemeId
     const fallback = this.themes.find(t => t.id === fallbackId)
-    if (fallback) this._setLink(LINK_LIBRARY_ID, fallback.libraryUrl)
+    if (fallback) await this._setLink(LINK_LIBRARY_ID, fallback.libraryUrl)
   }
 
   /**
@@ -254,7 +254,7 @@ export class ThemeManager {
     }
 
     if (gameUrl) {
-      this._setLink(LINK_GAME_ID, gameUrl)
+      await this._setLink(LINK_GAME_ID, gameUrl)
     }
   }
 
@@ -283,7 +283,12 @@ export class ThemeManager {
 
   // ── Interne ─────────────────────────────────────────────────────────────────
 
-  private _setLink(id: string, href: string): void {
+  /**
+   * Injecte (ou remplace) le <link> et attend que le CSS soit effectivement
+   * chargé et parsé par le navigateur avant de résoudre la Promise.
+   * Si le href est identique, résout immédiatement.
+   */
+  private _setLink(id: string, href: string): Promise<void> {
     let link = document.getElementById(id) as HTMLLinkElement | null
     if (!link) {
       link = document.createElement('link')
@@ -294,9 +299,23 @@ export class ThemeManager {
     // Comparer via pathname pour éviter les faux positifs absolus vs relatifs
     const currentPath = link.href ? new URL(link.href).pathname : ''
     const newPath = href.startsWith('http') ? new URL(href).pathname : href
-    if (currentPath !== newPath) {
-      link.href = href
+    if (currentPath === newPath) {
+      // Même CSS déjà chargé — pas de changement, résolution immédiate
+      return Promise.resolve()
     }
+
+    // Nouveau CSS — on attend l'événement load avant de résoudre
+    return new Promise<void>((resolve) => {
+      const onLoad  = () => { cleanup(); resolve() }
+      const onError = () => { cleanup(); resolve() } // on résout quand même pour ne pas bloquer
+      const cleanup = () => {
+        link!.removeEventListener('load', onLoad)
+        link!.removeEventListener('error', onError)
+      }
+      link!.addEventListener('load', onLoad,  { once: true })
+      link!.addEventListener('error', onError, { once: true })
+      link!.href = href
+    })
   }
 }
 

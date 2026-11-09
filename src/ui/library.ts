@@ -584,18 +584,19 @@ export class LibraryView {
     return undefined
   }
 
-  private _renderList(): void {
+  private async _renderList(): Promise<void> {
     if (!this.listEl) return
     const filtered = this._applyFilters()
 
     // ── Thème bibliothèque selon la collection active ────────────────────────
+    // On attend que le CSS soit effectivement chargé avant de lire --library-layout
     const activeCollection = this._detectActiveCollection()
-    void themeManager.applyLibraryThemeForCollection(activeCollection).then(() => {
-      // Applique le layout déclaré par le thème CSS (cards ou shelf)
-      if (this.listEl) {
-        this.listEl.dataset.layout = themeManager.getLayout()
-      }
-    })
+    await themeManager.applyLibraryThemeForCollection(activeCollection)
+
+    // Applique le layout déclaré par le thème CSS (cards ou shelf)
+    if (this.listEl) {
+      this.listEl.dataset.layout = themeManager.getLayout()
+    }
 
     if (filtered.length === 0) {
       this.listEl.innerHTML = `
