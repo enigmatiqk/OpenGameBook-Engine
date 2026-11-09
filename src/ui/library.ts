@@ -73,7 +73,15 @@ export class LibraryView {
         </button>
       </div>
       <div id="library-filters"></div>
-      <div id="adventure-list" class="loading">Chargement des aventures…</div>
+      <div class="bookshelf" aria-hidden="false">
+        <div class="bookshelf-top" aria-hidden="true"></div>
+        <div class="bookshelf-body">
+          <div class="bookshelf-side bookshelf-side--left" aria-hidden="true"></div>
+          <div id="adventure-list" class="loading" data-layout="cards">Chargement des aventures…</div>
+          <div class="bookshelf-side bookshelf-side--right" aria-hidden="true"></div>
+        </div>
+        <div class="bookshelf-bottom" aria-hidden="true"></div>
+      </div>
     `
 
     this.listEl = container.querySelector<HTMLElement>('#adventure-list')
@@ -582,7 +590,12 @@ export class LibraryView {
 
     // ── Thème bibliothèque selon la collection active ────────────────────────
     const activeCollection = this._detectActiveCollection()
-    void themeManager.applyLibraryThemeForCollection(activeCollection)
+    void themeManager.applyLibraryThemeForCollection(activeCollection).then(() => {
+      // Applique le layout déclaré par le thème CSS (cards ou shelf)
+      if (this.listEl) {
+        this.listEl.dataset.layout = themeManager.getLayout()
+      }
+    })
 
     if (filtered.length === 0) {
       this.listEl.innerHTML = `

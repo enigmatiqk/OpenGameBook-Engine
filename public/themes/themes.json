@@ -1,7 +1,8 @@
 {
   "defaultTheme": "classic-ia",
   "themes": [
-    "classic-ia"
+    "classic-ia",
+    "bookshelf-wood"
   ],
   "collections": [
     "defis-fantastiques"

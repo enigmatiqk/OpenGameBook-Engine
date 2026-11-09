@@ -1,0 +1,283 @@
+/* ── Thème Bibliothèque en Bois ──────────────────────────────────────────── */
+/* Meuble bibliothèque ancien, entièrement piloté par CSS.                   */
+/* Pour utiliser des images : remplacer les gradients par url('images/...') */
+
+:root {
+  /* ━━ Couleurs globales ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  --bg-primary:    #1a0f05;
+  --bg-secondary:  #251508;
+  --bg-card:       #3a2010;
+  --bg-card-hover: #4e2c18;
+  --text-primary:  #f5e6c8;
+  --text-secondary:#c8a87a;
+  --text-muted:    #7a5a38;
+  --accent:        #c87820;
+  --accent-hover:  #e89030;
+  --success:       #6aaf50;
+  --border:        #6a4020;
+  --font-narrative: 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-ui:        'Segoe UI', system-ui, sans-serif;
+  --radius:         4px;
+  --shadow:         0 4px 20px rgba(0,0,0,0.7);
+
+  /* ━━ Layout bibliothèque : livres debout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  --library-layout: shelf;
+
+  /* ━━ Livres (layout shelf) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  --book-width:             88px;
+  --book-height:            138px;
+  --book-radius:            2px 4px 4px 2px;   /* tranche gauche nette, coins droits légèrement arrondis */
+  --book-gap:               0px;
+  --shelf-book-gap:         4px;
+  --shelf-floor-padding:    6px;
+  --book-border:            1px solid rgba(0,0,0,0.4);
+  --book-shadow:            -2px 2px 6px rgba(0,0,0,0.6), inset 3px 0 6px rgba(0,0,0,0.3);
+  --book-hover-transform:   translateY(-18px) rotate(-1.5deg) scale(1.04);
+  --book-hover-shadow:      -4px 8px 20px rgba(0,0,0,0.7), 0 0 12px rgba(200,120,32,0.3);
+  --book-spine-bg:          #4a2a10;
+  --book-spine-color:       #f5e6c8;
+  --book-spine-overlay:     linear-gradient(to top, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0.2) 100%);
+  --book-spine-font-size:   0.6rem;
+  --book-tooltip-width:     210px;
+
+  /* ━━ Meuble bibliothèque ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  /* Fronton (haut) — gradient simulant un bois sculpté avec moulure */
+  --bookshelf-top-height: 72px;
+  --bookshelf-top-image:
+    /* moulure dorée haute */
+    linear-gradient(to bottom,
+      #8b5010 0%,
+      #c8882a 8%,
+      #e8b050 14%,
+      #c8882a 20%,
+      #8b5010 28%,
+      /* corps bois */
+      #6a3810 30%,
+      #7a4820 45%,
+      #5a2808 60%,
+      #7a4820 75%,
+      /* moulure basse */
+      #8b5010 80%,
+      #c8882a 88%,
+      #e8b050 93%,
+      #c8882a 96%,
+      #5a2808 100%
+    );
+  --bookshelf-top-size: 100% 100%;
+
+  /* Montants gauche/droit — bois avec veine verticale */
+  --bookshelf-side-width: 48px;
+  --bookshelf-side-image:
+    /* veine bois + reflet central */
+    linear-gradient(to right,
+      #3a1a08 0%,
+      #6a3810 15%,
+      #8b5020 25%,
+      #c8882a 40%,
+      #e0a040 50%,
+      #c8882a 60%,
+      #8b5020 75%,
+      #6a3810 85%,
+      #3a1a08 100%
+    );
+  --bookshelf-side-size: 100% auto;
+
+  /* Socle (bas) — gradient avec moulure inversée */
+  --bookshelf-bottom-height: 60px;
+  --bookshelf-bottom-image:
+    linear-gradient(to bottom,
+      #5a2808 0%,
+      #c8882a 4%,
+      #e8b050 7%,
+      #c8882a 12%,
+      #8b5010 18%,
+      /* corps */
+      #6a3810 20%,
+      #7a4820 40%,
+      #5a2808 60%,
+      #7a4820 78%,
+      /* pied */
+      #8b5010 82%,
+      #c8882a 90%,
+      #e8b050 95%,
+      #8b5010 100%
+    );
+  --bookshelf-bottom-size: 100% 100%;
+
+  /* Fond intérieur de la bibliothèque */
+  --bookshelf-bg-color:    #1a0a02;
+  --bookshelf-bg-image:
+    /* veines de bois du fond arrière */
+    repeating-linear-gradient(
+      92deg,
+      transparent 0px,
+      rgba(80,40,10,0.15) 2px,
+      transparent 4px,
+      rgba(60,30,5,0.08) 8px,
+      transparent 12px
+    ),
+    linear-gradient(to bottom,
+      #0f0602 0%,
+      #1a0c04 30%,
+      #120804 60%,
+      #0f0602 100%
+    );
+  --bookshelf-bg-size:     auto, cover;
+  --bookshelf-bg-repeat:   repeat, no-repeat;
+  --bookshelf-bg-position: left top, center;
+  --bookshelf-inner-padding: 12px 8px 8px;
+
+  /* ━━ Modales : style grimoire / parchemin ancien ━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  --modal-bg:          #1e1008;
+  --modal-border:      2px solid #8b5010;
+  --modal-radius:      6px;
+  --modal-shadow:      0 8px 32px rgba(0,0,0,0.8), 0 0 0 4px #3a1a08;
+  --modal-bg-image:
+    /* Texture parchemin subtile */
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      rgba(200,136,42,0.02) 1px,
+      transparent 2px,
+      rgba(200,136,42,0.03) 4px,
+      transparent 5px
+    ),
+    linear-gradient(to bottom,
+      #2a1608 0%,
+      #1e1008 40%,
+      #251508 100%
+    );
+  --modal-bg-size:       auto, cover;
+  --modal-bg-position:   center, center;
+  --modal-header-bg:     #120800;
+  --modal-header-bg-image:
+    /* Bois du fronton de la modale */
+    linear-gradient(to bottom,
+      #3a1a08 0%,
+      #6a3810 20%,
+      #8b5020 40%,
+      #6a3810 70%,
+      #3a1a08 100%
+    );
+  --modal-header-bg-size:   100% 100%;
+  --modal-header-border:    2px solid #8b5010;
+  --modal-title-color:      #f0d090;
+  --modal-title-font:       'Palatino Linotype', Palatino, Georgia, serif;
+
+  /* ━━ Boutons : style bois sculpté / métal doré ━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  --btn-padding:            0.5rem 1.25rem;
+  --btn-border:             none;
+  --btn-radius:             3px;
+  --btn-font:               'Palatino Linotype', Palatino, Georgia, serif;
+  --btn-font-weight:        700;
+  --btn-letter-spacing:     0.04em;
+  --btn-text-transform:     none;
+  --btn-text-shadow:        0 1px 3px rgba(0,0,0,0.7);
+  --btn-shadow:             0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,80,0.2);
+  --btn-hover-transform:    translateY(-2px);
+  --btn-hover-shadow:       0 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,200,80,0.3);
+
+  /* Bouton primaire : métal doré */
+  --btn-primary-bg:
+    linear-gradient(to bottom,
+      #e8a030 0%,
+      #c87820 40%,
+      #a05c10 100%
+    );
+  --btn-primary-bg-image:
+    linear-gradient(to bottom,
+      #e8a030 0%,
+      #c87820 40%,
+      #a05c10 100%
+    );
+  --btn-primary-color:      #1a0800;
+  --btn-primary-border:     1px solid #7a4808;
+  --btn-primary-bg-hover:   #d89030;
+
+  /* Bouton secondaire : bois moyen */
+  --btn-secondary-bg:       #3a2010;
+  --btn-secondary-bg-image:
+    linear-gradient(to bottom,
+      #4a2818 0%,
+      #3a2010 50%,
+      #2a1408 100%
+    );
+  --btn-secondary-color:    #f5e6c8;
+  --btn-secondary-border:   1px solid #6a4020;
+  --btn-secondary-bg-hover: #4a2818;
+
+  /* Bouton tertiaire : bois sombre */
+  --btn-tertiary-bg:        #251508;
+  --btn-tertiary-bg-image:
+    linear-gradient(to bottom,
+      #3a1f0a 0%,
+      #251508 50%,
+      #1a0e05 100%
+    );
+  --btn-tertiary-color:     #c8a87a;
+  --btn-tertiary-border:    1px solid #5a3018;
+  --btn-tertiary-bg-hover:  #3a1f0a;
+}
+
+/* ── Ajustements spécifiques au thème bookshelf-wood ────────────────────── */
+
+/* Vue bibliothèque : fond de page en bois sombre */
+#view-library {
+  background:
+    linear-gradient(to bottom, #0a0402 0%, #120804 100%);
+  padding: 1.5rem;
+}
+
+/* Titre et sous-titre */
+#view-library h1 {
+  color: #f0d090;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(200,136,42,0.3);
+  letter-spacing: 0.04em;
+}
+#view-library .subtitle {
+  color: #c8a87a;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-style: italic;
+}
+
+/* Barre de filtres stylisée bois */
+.library-filters {
+  background:
+    linear-gradient(to bottom, #3a2010 0%, #2a1608 100%);
+  border: 1px solid #6a4020;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Ligne de séparation visuelle entre les deux montants pour simuler l'étagère */
+/* L'étagère horizontale est rendue via une ombre sur la liste */
+#adventure-list[data-layout="shelf"] {
+  box-shadow: inset 0 -4px 0 #6a4020, inset 0 -6px 0 #3a1a08;
+}
+
+/* Badge "Terminé" en doré */
+.badge-finished { background: #3a2800; color: #f0c040; border: 1px solid #6a4808; }
+
+/* Tags en parchemin */
+#adventure-list[data-layout="shelf"] .adventure-card .tag {
+  background: #1a0e05;
+  color: #c8a87a;
+  border-color: #5a3018;
+  font-size: 0.65rem;
+}
+
+/* Le tooltip de la carte (card-body) en mode shelf */
+#adventure-list[data-layout="shelf"] .adventure-card .card-body {
+  background:
+    linear-gradient(to bottom, #2a1608 0%, #1e1008 100%);
+  border: 1px solid #8b5010;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.8), 0 0 0 1px #3a1a08;
+}
+
+/* Scrollbar dans la barre de filtres et les modales */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #1a0a02; }
+::-webkit-scrollbar-thumb { background: #6a3810; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #8b5020; }

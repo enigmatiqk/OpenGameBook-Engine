@@ -1,5 +1,5 @@
 /* Les variables CSS (:root) sont définies par le thème actif.             */
-/* Voir src/themes/classic-ia/theme.css et src/themes/collections/*/theme.css */
+/* Voir public/themes/classic-ia/library.css et collections/theme/library.css */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -42,25 +42,278 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .badge-finished    { background: #2a5a2a; color: #90e090; }
 .badge-defeat      { background: #4a2a2a; color: #e09090; }
 
-#adventure-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+/* ── Structure meuble bibliothèque ───────────────────────────────────────── */
+/* Les zones top/side/bottom sont masquées par défaut (thèmes standards).    */
+/* Un thème "bookshelf" les active via les variables --bookshelf-* ci-dessous */
 
-.adventure-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
-.adventure-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-.adventure-card .cover-image { width: 100%; height: 200px; object-fit: cover; display: block; }
-.adventure-card .cover-placeholder { width: 100%; height: 200px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 3rem; }
-.adventure-card .card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
-.adventure-card .card-title { font-size: 1.1rem; font-weight: bold; }
-.adventure-card .card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.bookshelf { display: flex; flex-direction: column; }
+
+.bookshelf-top {
+  height: var(--bookshelf-top-height, 0px);
+  background-image: var(--bookshelf-top-image, none);
+  background-size: var(--bookshelf-top-size, 100% 100%);
+  background-repeat: no-repeat;
+  background-position: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.bookshelf-body {
+  display: flex;
+  align-items: stretch;
+}
+
+.bookshelf-side {
+  width: var(--bookshelf-side-width, 0px);
+  background-image: var(--bookshelf-side-image, none);
+  background-size: var(--bookshelf-side-size, 100% auto);
+  background-repeat: repeat-y;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bookshelf-side--left  { background-position: left top; }
+.bookshelf-side--right { background-position: right top; }
+
+.bookshelf-bottom {
+  height: var(--bookshelf-bottom-height, 0px);
+  background-image: var(--bookshelf-bottom-image, none);
+  background-size: var(--bookshelf-bottom-size, 100% 100%);
+  background-repeat: no-repeat;
+  background-position: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ── Fond intérieur de la bibliothèque ───────────────────────────────────── */
+#adventure-list {
+  flex: 1;
+  background-image: var(--bookshelf-bg-image, none);
+  background-color: var(--bookshelf-bg-color, transparent);
+  background-size: var(--bookshelf-bg-size, cover);
+  background-repeat: var(--bookshelf-bg-repeat, no-repeat);
+  background-position: var(--bookshelf-bg-position, center);
+  padding: var(--bookshelf-inner-padding, 0px);
+}
+
+/* ══ Layout CARDS (défaut) ═══════════════════════════════════════════════════ */
+#adventure-list[data-layout="cards"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+#adventure-list[data-layout="cards"] .adventure-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+#adventure-list[data-layout="cards"] .adventure-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+#adventure-list[data-layout="cards"] .adventure-card .cover-image  { width: 100%; height: 200px; object-fit: cover; display: block; }
+#adventure-list[data-layout="cards"] .adventure-card .cover-placeholder { width: 100%; height: 200px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 3rem; }
+#adventure-list[data-layout="cards"] .adventure-card .card-body    { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+#adventure-list[data-layout="cards"] .adventure-card .card-title   { font-size: 1.1rem; font-weight: bold; }
+#adventure-list[data-layout="cards"] .adventure-card .card-tags    { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+#adventure-list[data-layout="cards"] .adventure-card .card-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto; }
+
+/* ══ Layout SHELF (couverture debout) ════════════════════════════════════════ */
+#adventure-list[data-layout="shelf"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--shelf-book-gap, 6px);
+  padding-bottom: var(--shelf-floor-padding, 4px);
+}
+
+#adventure-list[data-layout="shelf"] .adventure-card {
+  position: relative;
+  width:  var(--book-width, 90px);
+  height: var(--book-height, 140px);
+  border-radius: var(--book-radius, 3px);
+  overflow: hidden;
+  box-shadow: var(--book-shadow, 3px 3px 8px rgba(0,0,0,0.5));
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+  /* Fond par défaut si pas de couverture */
+  background: var(--book-spine-bg, var(--bg-card));
+  border: var(--book-border, 1px solid var(--border));
+}
+
+/* Légère inclinaison au survol — effet "on tire le livre de l'étagère" */
+#adventure-list[data-layout="shelf"] .adventure-card:hover {
+  transform: var(--book-hover-transform, translateY(-12px) rotate(-2deg));
+  box-shadow: var(--book-hover-shadow, 6px 12px 20px rgba(0,0,0,0.6));
+  z-index: 10;
+}
+
+/* La couverture remplit tout le livre */
+#adventure-list[data-layout="shelf"] .adventure-card .cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Placeholder si pas d'image */
+#adventure-list[data-layout="shelf"] .adventure-card .cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: var(--book-spine-bg, var(--bg-card));
+  color: var(--text-muted);
+}
+
+/* Le titre en tranche (rotation) — visible sur le dos du livre */
+#adventure-list[data-layout="shelf"] .adventure-card .card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: var(--book-spine-font-size, 0.62rem);
+  font-weight: 700;
+  font-family: var(--font-narrative, Georgia, serif);
+  color: var(--book-spine-color, #fff);
+  background: var(--book-spine-overlay, linear-gradient(to top, rgba(0,0,0,0.85) 60%, transparent));
+  padding: 1.5rem 0.3rem 0.3rem;
+  text-align: center;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+/* Panneau d'info au survol — card-body apparaît en tooltip */
+#adventure-list[data-layout="shelf"] .adventure-card .card-body {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max(180px, var(--book-tooltip-width, 200px));
+  background: var(--modal-bg, var(--bg-secondary));
+  border: var(--modal-border, 1px solid var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 20;
+  font-size: 0.8rem;
+  /* Dépasse sur le côté si nécessaire, pas vers le bas */
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* Petite flèche du tooltip */
+#adventure-list[data-layout="shelf"] .adventure-card .card-body::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--border);
+}
+
+#adventure-list[data-layout="shelf"] .adventure-card:hover .card-body,
+#adventure-list[data-layout="shelf"] .adventure-card:focus-within .card-body {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Dans le tooltip, les boutons reprennent la mise en page normale */
+#adventure-list[data-layout="shelf"] .adventure-card .card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Les autres éléments card-body restent visibles dans le tooltip */
+#adventure-list[data-layout="shelf"] .adventure-card .card-tags  { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#adventure-list[data-layout="shelf"] .adventure-card .card-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#adventure-list[data-layout="shelf"] .adventure-card .card-collection { font-size: 0.7rem; color: var(--text-secondary); font-style: italic; }
+
+/* ══ Règles communes (indépendantes du layout) ═══════════════════════════════ */
+
+/* adventure-card a toujours position:relative (pour ::after remote) */
+.adventure-card { position: relative; }
+
+.adventure-card .card-collection { font-size: 0.75rem; color: var(--text-secondary); font-style: italic; }
+.adventure-card .card-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .adventure-card .tag { background: var(--bg-primary); color: var(--text-secondary); font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); }
-.adventure-card .card-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto; }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; border: none; border-radius: var(--radius); font-family: var(--font-ui); font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s, opacity 0.15s; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
-.btn-secondary:hover:not(:disabled) { background: var(--bg-card-hover); }
-.btn-tertiary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
-.btn-tertiary:hover:not(:disabled) { background: var(--bg-card-hover); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--btn-padding, 0.5rem 1rem);
+  border: var(--btn-border, none);
+  border-radius: var(--btn-radius, var(--radius));
+  font-family: var(--btn-font, var(--font-ui));
+  font-size: 0.875rem;
+  font-weight: var(--btn-font-weight, 600);
+  letter-spacing: var(--btn-letter-spacing, normal);
+  text-transform: var(--btn-text-transform, none);
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  background-image: var(--btn-bg-image, none);
+  background-size: var(--btn-bg-size, 100% 100%);
+  text-shadow: var(--btn-text-shadow, none);
+  box-shadow: var(--btn-shadow, none);
+}
+.btn:hover:not(:disabled) {
+  transform: var(--btn-hover-transform, none);
+  box-shadow: var(--btn-hover-shadow, none);
+}
+.btn-primary {
+  background: var(--btn-primary-bg, var(--accent));
+  color: var(--btn-primary-color, #fff);
+  border: var(--btn-primary-border, none);
+  background-image: var(--btn-primary-bg-image, var(--btn-bg-image, none));
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover, var(--accent-hover));
+  background-image: var(--btn-primary-bg-image, var(--btn-bg-image, none));
+}
+.btn-secondary {
+  background: var(--btn-secondary-bg, var(--bg-secondary));
+  color: var(--btn-secondary-color, var(--text-primary));
+  border: var(--btn-secondary-border, 1px solid var(--border));
+  background-image: var(--btn-secondary-bg-image, var(--btn-bg-image, none));
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover, var(--bg-card-hover));
+  background-image: var(--btn-secondary-bg-image, var(--btn-bg-image, none));
+}
+.btn-tertiary {
+  background: var(--btn-tertiary-bg, var(--bg-card));
+  color: var(--btn-tertiary-color, var(--text-primary));
+  border: var(--btn-tertiary-border, 1px solid var(--border));
+  background-image: var(--btn-tertiary-bg-image, var(--btn-bg-image, none));
+}
+.btn-tertiary:hover:not(:disabled) {
+  background: var(--btn-tertiary-bg-hover, var(--bg-card-hover));
+  background-image: var(--btn-tertiary-bg-image, var(--btn-bg-image, none));
+}
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
@@ -117,8 +370,10 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 @media (max-width: 600px) {
   .view { padding: 1rem; }
   #view-library h1 { font-size: 1.75rem; }
-  #adventure-list { grid-template-columns: 1fr; }
-  .adventure-card .card-actions { flex-direction: column; }
+  #adventure-list[data-layout="cards"] { grid-template-columns: 1fr; }
+  #adventure-list[data-layout="cards"] .adventure-card .card-actions { flex-direction: column; }
+  /* En mode shelf sur mobile : livres un peu plus petits */
+  #adventure-list[data-layout="shelf"] { --book-width: 70px; --book-height: 110px; }
 }
 
 /* ── Game toolbar ─────────────────────────────────────────────────────────── */
@@ -140,24 +395,6 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .hero-monnaie-section { margin-top: 1rem; }
 .monnaie-modal-line { font-size: 1rem; color: var(--text-primary); }
 
-/* ── Modal overlay ────────────────────────────────────────────────────────── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); max-width: 640px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
-.modal-title { font-size: 1.25rem; }
-.modal-close { background: none; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; }
-.modal-close:hover { color: var(--text-primary); background: var(--bg-card); }
-.modal-body { padding: 1.25rem; overflow-y: auto; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; }
-.modal-body h3 { font-size: 1rem; margin: 1rem 0 0.5rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.modal-body h3:first-child { margin-top: 0; }
-.modal-body ul { padding-left: 1.25rem; }
-.modal-body li { margin-bottom: 0.25rem; }
-.hero-stats-table { width: 100%; border-collapse: collapse; }
-.hero-stats-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); }
-.hero-stats-table td:last-child { text-align: right; }
-.hero-history li { font-size: 0.875rem; color: var(--text-secondary); }
-.annex-image { width: 100%; border-radius: var(--radius); margin-bottom: 1rem; display: block; }
-
 /* ── Error message ────────────────────────────────────────────────────────── */
 .error-msg { color: var(--accent); padding: 2rem; text-align: center; }
 
@@ -174,9 +411,37 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 
 /* ─── Modal ────────────────────────────────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); max-width: 600px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: var(--shadow); }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); }
-.modal-title { font-size: 1.25rem; }
+.modal-box {
+  background: var(--modal-bg, var(--bg-secondary));
+  border: var(--modal-border, 1px solid var(--border));
+  border-radius: var(--modal-radius, var(--radius));
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--modal-shadow, var(--shadow));
+  /* Image décorative de fond optionnelle pour les thèmes */
+  background-image: var(--modal-bg-image, none);
+  background-size: var(--modal-bg-size, cover);
+  background-position: var(--modal-bg-position, center);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: var(--modal-header-border, 1px solid var(--border));
+  background: var(--modal-header-bg, transparent);
+  background-image: var(--modal-header-bg-image, none);
+  background-size: var(--modal-header-bg-size, 100% 100%);
+  border-radius: var(--modal-radius, var(--radius)) var(--modal-radius, var(--radius)) 0 0;
+}
+.modal-title {
+  font-size: 1.25rem;
+  color: var(--modal-title-color, var(--text-primary));
+  font-family: var(--modal-title-font, var(--font-ui));
+}
 .modal-close { background: none; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; }
 .modal-close:hover { color: var(--text-primary); background: var(--bg-card); }
 .modal-body { padding: 1rem; overflow-y: auto; line-height: 1.7; }

@@ -1,0 +1,9 @@
+{
+  "id": "bookshelf-wood",
+  "label": "Bibliothèque en bois",
+  "author": "OpenGameBook",
+  "description": "Meuble bibliothèque en bois ancien avec étagères, fronton et socle. Les livres se tiennent debout, couverture visible.",
+  "library": "library.css",
+  "game": "game.css",
+  "preview": "images/preview.webp"
+}

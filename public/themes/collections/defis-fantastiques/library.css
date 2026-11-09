@@ -2,6 +2,7 @@
 /* Ambiance heroic fantasy, tons dorés et parchemin.                          */
 
 :root {
+  /* ── Couleurs ── */
   --bg-primary: #1c1508;
   --bg-secondary: #251d0d;
   --bg-card: #3a2a0e;
@@ -17,6 +18,60 @@
   --font-ui: 'Segoe UI', system-ui, sans-serif;
   --radius: 6px;
   --shadow: 0 4px 20px rgba(0,0,0,0.6);
+
+  /* ── Fond bibliothèque (image optionnelle) ── */
   --bg-image-library: none;
   --bg-image-opacity: 0;
+
+  /* ── Layout bibliothèque ── */
+  --library-layout: cards;
+
+  /* ── Meuble bibliothèque : désactivé pour ce thème ── */
+  --bookshelf-top-height: 0px;
+  --bookshelf-side-width: 0px;
+  --bookshelf-bottom-height: 0px;
+  --bookshelf-top-image: none;
+  --bookshelf-side-image: none;
+  --bookshelf-bottom-image: none;
+  --bookshelf-bg-image: none;
+  --bookshelf-bg-color: transparent;
+  --bookshelf-inner-padding: 0px;
+
+  /* ── Modales : style parchemin léger ── */
+  --modal-bg: #2a1f0a;
+  --modal-border: 1px solid #6a4e28;
+  --modal-radius: 6px;
+  --modal-shadow: 0 6px 24px rgba(0,0,0,0.7);
+  --modal-bg-image: none;
+  --modal-header-bg: #1c1508;
+  --modal-header-bg-image: none;
+  --modal-header-border: 1px solid #6a4e28;
+  --modal-title-color: #f0d898;
+  --modal-title-font: 'Palatino Linotype', Palatino, Georgia, serif;
+
+  /* ── Boutons : style fantastique ── */
+  --btn-padding: 0.5rem 1.1rem;
+  --btn-border: none;
+  --btn-radius: 4px;
+  --btn-font: 'Palatino Linotype', Palatino, Georgia, serif;
+  --btn-font-weight: 700;
+  --btn-letter-spacing: 0.03em;
+  --btn-text-transform: none;
+  --btn-bg-image: none;
+  --btn-text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  --btn-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  --btn-hover-transform: translateY(-1px);
+  --btn-hover-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  --btn-primary-bg: #c8882a;
+  --btn-primary-color: #1c1508;
+  --btn-primary-border: none;
+  --btn-primary-bg-hover: #e0a040;
+  --btn-secondary-bg: #2a1f0a;
+  --btn-secondary-color: #f0e6c8;
+  --btn-secondary-border: 1px solid #6a4e28;
+  --btn-secondary-bg-hover: #3a2a0e;
+  --btn-tertiary-bg: #1c1508;
+  --btn-tertiary-color: #c8a87a;
+  --btn-tertiary-border: 1px solid #5a3e18;
+  --btn-tertiary-bg-hover: #2a1f0a;
 }

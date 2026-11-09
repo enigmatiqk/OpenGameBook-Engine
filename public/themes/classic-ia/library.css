@@ -2,6 +2,7 @@
 /* Thème sombre navy avec illustrations IA, style bibliothèque classique.     */
 
 :root {
+  /* ── Couleurs ── */
   --bg-primary: #1a1a2e;
   --bg-secondary: #16213e;
   --bg-card: #0f3460;
@@ -17,6 +18,60 @@
   --font-ui: 'Segoe UI', system-ui, sans-serif;
   --radius: 8px;
   --shadow: 0 4px 16px rgba(0,0,0,0.4);
+
+  /* ── Fond bibliothèque (image optionnelle) ── */
   --bg-image-library: none;
   --bg-image-opacity: 0;
+
+  /* ── Layout bibliothèque ── */
+  --library-layout: cards;
+
+  /* ── Meuble bibliothèque : désactivé pour ce thème ── */
+  --bookshelf-top-height: 0px;
+  --bookshelf-side-width: 0px;
+  --bookshelf-bottom-height: 0px;
+  --bookshelf-top-image: none;
+  --bookshelf-side-image: none;
+  --bookshelf-bottom-image: none;
+  --bookshelf-bg-image: none;
+  --bookshelf-bg-color: transparent;
+  --bookshelf-inner-padding: 0px;
+
+  /* ── Modales : style standard ── */
+  --modal-bg: var(--bg-secondary);
+  --modal-border: 1px solid var(--border);
+  --modal-radius: var(--radius);
+  --modal-shadow: var(--shadow);
+  --modal-bg-image: none;
+  --modal-header-bg: transparent;
+  --modal-header-bg-image: none;
+  --modal-header-border: 1px solid var(--border);
+  --modal-title-color: var(--text-primary);
+  --modal-title-font: var(--font-ui);
+
+  /* ── Boutons : style standard ── */
+  --btn-padding: 0.5rem 1rem;
+  --btn-border: none;
+  --btn-radius: var(--radius);
+  --btn-font: var(--font-ui);
+  --btn-font-weight: 600;
+  --btn-letter-spacing: normal;
+  --btn-text-transform: none;
+  --btn-bg-image: none;
+  --btn-text-shadow: none;
+  --btn-shadow: none;
+  --btn-hover-transform: none;
+  --btn-hover-shadow: none;
+  --btn-primary-bg: var(--accent);
+  --btn-primary-color: #fff;
+  --btn-primary-border: none;
+  --btn-primary-bg-hover: var(--accent-hover);
+  --btn-secondary-bg: var(--bg-secondary);
+  --btn-secondary-color: var(--text-primary);
+  --btn-secondary-border: 1px solid var(--border);
+  --btn-secondary-bg-hover: var(--bg-card-hover);
+  --btn-tertiary-bg: var(--bg-card);
+  --btn-tertiary-color: var(--text-primary);
+  --btn-tertiary-border: 1px solid var(--border);
+  --btn-tertiary-bg-hover: var(--bg-card-hover);
 }

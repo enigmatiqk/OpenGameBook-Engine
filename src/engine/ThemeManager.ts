@@ -265,6 +265,22 @@ export class ThemeManager {
     document.getElementById(LINK_GAME_ID)?.remove()
   }
 
+  /**
+   * Lit la variable CSS `--library-layout` définie par le thème actif et
+   * retourne sa valeur normalisée. Appelé après chaque changement de thème
+   * pour synchroniser l'attribut `data-layout` sur `#adventure-list`.
+   *
+   * Valeurs supportées : "cards" (défaut) | "shelf"
+   */
+  getLayout(): 'cards' | 'shelf' {
+    if (typeof document === 'undefined') return 'cards'
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--library-layout')
+      .trim()
+      .replace(/['"]/g, '') // supporte "shelf" avec ou sans guillemets
+    return raw === 'shelf' ? 'shelf' : 'cards'
+  }
+
   // ── Interne ─────────────────────────────────────────────────────────────────
 
   private _setLink(id: string, href: string): void {
