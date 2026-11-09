@@ -224,16 +224,13 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 .book-modal {
   display: flex;
   width: min(820px, 96vw);
-  height: min(520px, 85vh);
+  height: min(520px, 88vh);
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.8),
     0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: book-modal-open 0.25s ease;
   transform-origin: center center;
   position: relative;
-  /* Empêche la modale de déborder de la fenêtre */
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
 }
 
 @keyframes book-modal-open {
@@ -422,50 +419,13 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   }
   .book-modal::after { display: none; }
   .book-modal-left {
-    flex: 0 0 160px;
+    flex: 0 0 200px;
     border-radius: var(--modal-radius, var(--radius)) var(--modal-radius, var(--radius)) 0 0;
   }
   .book-modal-right {
     border-radius: 0 0 var(--modal-radius, var(--radius)) var(--modal-radius, var(--radius));
     box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.3);
-    flex: 1;
-    min-height: 0;
   }
-  /* Masquer l'extrait narratif sur mobile — trop long */
-  .book-modal-intro-excerpt { display: none; }
-  .book-modal-excerpt-loading { display: none; }
-  .book-modal-right-body { gap: 0.5rem; padding: 0.75rem 1rem; }
-  .book-modal-right-header { padding: 0.75rem 1rem 0.5rem; }
-  .book-modal-right-footer { padding: 0.5rem 1rem 0.75rem; }
-}
-
-/* Taille intermédiaire (tablette portrait, fenêtre réduite) */
-@media (max-width: 780px) and (min-width: 601px) {
-  .book-modal {
-    width: min(680px, 96vw);
-    height: min(440px, 88vh);
-  }
-  .book-modal-left { flex: 0 0 42%; }
-  /* Réduire l'extrait à 2 lignes max */
-  .book-modal-intro-excerpt {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-}
-
-/* Petite hauteur (fenêtre courte, paysage mobile) */
-@media (max-height: 500px) {
-  .book-modal {
-    height: min(95vh, 340px);
-    width: min(820px, 98vw);
-  }
-  .book-modal-left { flex: 0 0 38%; }
-  .book-modal-intro-excerpt { display: none; }
-  .book-modal-right-body { padding: 0.5rem 1rem; gap: 0.35rem; }
-  .book-modal-right-header { padding: 0.6rem 1rem 0.4rem; }
-  .book-modal-right-footer { padding: 0.4rem 1rem 0.6rem; gap: 0.35rem; }
 }
 
 /* ── Supprimer le tooltip CSS hover en mode shelf (remplacé par la modale) ── */
