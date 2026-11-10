@@ -55,8 +55,9 @@ export interface ThemePreferences {
 const THEMES_INDEX_URL = '/themes/themes.json'
 const THEMES_BASE_URL  = '/themes'
 const STORAGE_KEY      = 'theme-preferences'
-const LINK_LIBRARY_ID  = 'active-theme-library-css'
-const LINK_GAME_ID     = 'active-theme-game-css'
+const LINK_LIBRARY_ID   = 'active-theme-library-css'
+const LINK_GAME_ID      = 'active-theme-game-css'
+const LINK_ADVENTURE_ID = 'adventure-theme-css'
 
 const DEFAULT_PREFS: ThemePreferences = {
   selectedTheme: 'classic-ia',
@@ -276,6 +277,32 @@ export class ThemeManager {
    */
   removeGameTheme(): void {
     document.getElementById(LINK_GAME_ID)?.remove()
+  }
+
+  /**
+   * Tente de charger `theme/game.css` depuis le répertoire de l'aventure.
+   * Injecte un <link id="adventure-theme-css"> après le game.css du thème
+   * global si le fichier existe (HEAD request). Silencieux si absent.
+   *
+   * @param adventurePath  Chemin de l'aventure avec slash final (ex: "adventures/xxx/")
+   */
+  async applyAdventureTheme(adventurePath: string): Promise<void> {
+    const cssUrl = adventurePath.replace(/\/?$/, '/') + 'theme/game.css'
+    try {
+      const res = await fetch(cssUrl, { method: 'HEAD' })
+      if (res.ok) {
+        await this._setLink(LINK_ADVENTURE_ID, cssUrl)
+      }
+    } catch {
+      // Fichier absent ou réseau indisponible — silencieux
+    }
+  }
+
+  /**
+   * Retire le <link> adventure-theme-css. À appeler au retour à la bibliothèque.
+   */
+  removeAdventureTheme(): void {
+    document.getElementById(LINK_ADVENTURE_ID)?.remove()
   }
 
   // ── Interne ─────────────────────────────────────────────────────────────────
