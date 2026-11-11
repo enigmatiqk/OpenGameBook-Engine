@@ -14,7 +14,10 @@ export class SyncCoordinator {
       const id = setTimeout(() => ctrl.abort(), 2500)
       const res = await fetch('/api/health', { signal: ctrl.signal })
       clearTimeout(id)
-      this.mode = res.ok ? 'server' : 'local'
+      // Vérifier aussi le Content-Type : Vite dev retourne index.html (text/html)
+      // avec HTTP 200 pour toute route inconnue, ce qui fausserait la détection.
+      const ct = res.headers.get('content-type') ?? ''
+      this.mode = (res.ok && ct.includes('application/json')) ? 'server' : 'local'
     } catch {
       this.mode = 'local'
     }

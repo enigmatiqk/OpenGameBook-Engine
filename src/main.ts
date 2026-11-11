@@ -442,7 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tâche 9.2 : monter le ModeIndicator dans la nav globale
     const modeContainer = document.createElement('div')
     modeContainer.id = 'mode-indicator'
-    modeContainer.className = 'btn-a11y-global'
     document.getElementById('global-btns')?.prepend(modeContainer)
     const modeIndicator = new ModeIndicator(modeContainer)
     modeIndicator.render(appMode)
