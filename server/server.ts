@@ -26,12 +26,8 @@ async function main(): Promise<void> {
   app.use(express.json({ limit: '1mb' }))
   app.use(securityHeadersMiddleware)
 
-  // Déterminer le mode DB pour le health endpoint
-  const dbMode: 'sqlite' | 'postgres' | 'mariadb' = config.databaseUrl
-    ? (config.databaseUrl.startsWith('postgres') ? 'postgres' : 'mariadb')
-    : 'sqlite'
-
-  app.use('/api/health', healthRouter(dbMode))
+  // Déterminer le mode DB pour le health endpoint — intentionnellement non exposé
+  app.use('/api/health', healthRouter())
   app.use('/api/auth', authRouter(db))
   app.use('/api/saves', savesRouter(db))
   app.use('/api/leaderboard', leaderboardRouter(db))
