@@ -17,10 +17,15 @@ gamebook-engine/
 ├── adventures/          # Aventures JSON + images
 │   └── manifest.json    # Liste des aventures disponibles
 ├── docs/                # Documentation
-│   └── 10-json-schema-ia.md  # Guide de structure JSON pour génération IA
-├── scanner/             # Scanner PDF (Python)
-├── scripts/             # Scripts IA (Python)
-├── src/                 # Code source TypeScript
+├── server/              # Backend Node.js/Express (synchronisation cloud)
+│   ├── db/              # Couche base de données (SQLite / PostgreSQL / MariaDB)
+│   ├── middleware/      # Auth JWT, rate limiting, en-têtes sécurité
+│   ├── routes/          # Endpoints API REST
+│   ├── services/        # Logique métier (auth, saves, leaderboard, email)
+│   ├── config.ts        # Variables d'environnement
+│   └── server.ts        # Point d'entrée Express
+├── scripts/             # Scripts IA et utilitaires (Python)
+├── src/                 # Code source TypeScript (frontend)
 │   ├── engine/          # Moteur de jeu
 │   ├── ui/              # Interface utilisateur
 │   ├── main.ts          # Point d'entrée
@@ -28,7 +33,8 @@ gamebook-engine/
 ├── tests/               # Tests unitaires
 ├── index.html           # Page HTML principale
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json        # Config TypeScript frontend
+└── tsconfig.server.json # Config TypeScript backend
 ```
 
 ---
@@ -61,15 +67,17 @@ npm run test:watch
 
 ---
 
-## Mode production
+## Mode production — Frontend seul (localStorage)
 
-### 1. Compiler et bundler
+Le frontend fonctionne entièrement dans le navigateur sans backend. Les sauvegardes et le leaderboard sont stockés localement dans le navigateur de chaque joueur.
+
+### 1. Compiler
 
 ```bash
 npm run build
 ```
 
-Cela exécute `tsc` (vérification TypeScript) puis `vite build`. Le résultat est dans le dossier `dist/`.
+Le résultat est dans `dist/`. C'est un site statique pur (HTML + JS + CSS).
 
 ### 2. Prévisualiser le build
 
@@ -77,17 +85,80 @@ Cela exécute `tsc` (vérification TypeScript) puis `vite build`. Le résultat e
 npm run preview
 ```
 
-Lance un serveur local sur le contenu de `dist/` pour vérifier le build avant déploiement.
-
 ### 3. Déployer
 
-Le contenu de `dist/` est un site statique pur (HTML + JS + CSS). Il peut être servi par n'importe quel serveur web statique :
+Copier ou pointer le dossier `dist/` sur n'importe quel hébergement statique :
 
 - **Nginx / Apache** : copier `dist/` dans le répertoire web
 - **GitHub Pages** : pousser `dist/` sur la branche `gh-pages`
-- **Netlify / Vercel** : pointer sur le dossier `dist/` avec la commande de build `npm run build`
+- **Cloudflare Pages / Vercel** : connecter le repo, commande de build `npm run build`, dossier de sortie `dist`
 
 > Le dossier `adventures/` doit être accessible depuis la racine du serveur, car les aventures sont chargées via `fetch()` au runtime.
+
+---
+
+## Mode production — Frontend + Backend (synchronisation cloud)
+
+Avec le backend activé, les joueurs peuvent créer un compte et retrouver leur progression sur n'importe quel appareil. Le leaderboard devient global et partagé.
+
+Le frontend **détecte automatiquement** la présence du backend au démarrage (ping sur `/api/health`). Aucun rebuild du frontend n'est nécessaire pour basculer entre les deux modes.
+
+### Variables d'environnement
+
+Créer un fichier `.env` à la racine (ou configurer les variables sur la plateforme d'hébergement) :
+
+```env
+# Obligatoire en production
+JWT_SECRET=une_chaine_aleatoire_longue_et_secrete
+
+# Port d'écoute (défaut : 3000)
+PORT=3000
+
+# URL publique du serveur (utilisée dans les liens magiques envoyés par email)
+APP_BASE_URL=https://ton-domaine.com
+
+# SMTP — obligatoire pour les inscriptions
+# Sans ces 4 variables, le serveur démarre mais les inscriptions sont désactivées (HTTP 503)
+SMTP_HOST=smtp.ton-fournisseur.com
+SMTP_PORT=587
+SMTP_USER=ton@email.com
+SMTP_PASS=mot_de_passe_smtp
+SMTP_FROM=noreply@ton-domaine.com
+
+# Base de données — SQLite par défaut (aucune config nécessaire)
+# Pour PostgreSQL ou MariaDB :
+# DATABASE_URL=postgresql://user:pass@host:5432/dbname
+# DATABASE_URL=mysql://user:pass@host:3306/dbname
+
+# Dossier du frontend statique à servir (optionnel)
+# Si défini, le backend sert aussi le frontend sur le même port
+STATIC_DIR=dist
+```
+
+**Comportement si une variable est manquante :**
+
+| Variable | Si absente | Impact |
+|---|---|---|
+| `JWT_SECRET` | Secret temporaire (dev) / arrêt immédiat (prod) | Sessions perdues au redémarrage en dev |
+| `SMTP_*` (un manquant) | Inscriptions désactivées (HTTP 503) | Comptes existants toujours utilisables |
+| `DATABASE_URL` | SQLite automatique (`game.db`) | Aucun |
+| `APP_BASE_URL` | `http://localhost:PORT` | Liens magiques cassés en prod |
+| `STATIC_DIR` | Frontend non servi par le backend | Déployer `dist/` séparément |
+
+### Déployer
+
+```bash
+npm run build   # compile frontend (dist/) + backend (dist-server/)
+npm start       # démarre Express sur $PORT
+```
+
+Le serveur sert à la fois l'API (`/api/*`) et optionnellement le frontend statique si `STATIC_DIR=dist` est défini.
+
+**Plateformes compatibles :** Railway, Render, VPS, serveur auto-hébergé — tout ce qui peut exécuter `node`.
+
+### Migration progressive
+
+Il est possible de déployer le frontend seul d'abord, puis d'ajouter le backend plus tard. Le frontend bascule automatiquement en mode cloud dès que le backend répond — sans rebuild ni modification.
 
 ---
 
