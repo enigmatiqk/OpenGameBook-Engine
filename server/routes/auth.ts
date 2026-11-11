@@ -5,13 +5,23 @@ import { EmailService } from '../services/EmailService'
 import { authRateLimiter } from '../middleware/rateLimiter'
 import { config } from '../config'
 
+function smtpRequired(res: import('express').Response): boolean {
+  if (!config.smtpConfigured) {
+    res.status(503).json({
+      message: 'Inscriptions desactivees : SMTP non configure sur ce serveur.',
+    })
+    return true
+  }
+  return false
+}
+
 export function authRouter(db: DatabaseAdapter): Router {
   const router = Router()
   const emailService = new EmailService(config.smtp)
   const authService = new AuthService(db, emailService, config)
 
-  // POST /api/auth/register
   router.post('/register', authRateLimiter, async (req, res, next) => {
+    if (smtpRequired(res)) return
     try {
       const { email, pseudo } = req.body as { email: string; pseudo: string }
       await authService.register(email, pseudo)
@@ -21,7 +31,6 @@ export function authRouter(db: DatabaseAdapter): Router {
     }
   })
 
-  // GET /api/auth/login?token=<token>
   router.get('/login', (req, res, next) => {
     try {
       const token = req.query['token'] as string | undefined
@@ -36,8 +45,8 @@ export function authRouter(db: DatabaseAdapter): Router {
     }
   })
 
-  // POST /api/auth/request-login
   router.post('/request-login', authRateLimiter, async (req, res, next) => {
+    if (smtpRequired(res)) return
     try {
       const { email } = req.body as { email: string }
       await authService.requestLogin(email)
