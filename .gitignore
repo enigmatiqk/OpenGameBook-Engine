@@ -6,6 +6,9 @@ package-lock.json
 dist/
 dist-server/
 
+# Base de données SQLite (générée au démarrage du backend)
+data/
+
 # Python
 __pycache__/
 *.py[cod]
