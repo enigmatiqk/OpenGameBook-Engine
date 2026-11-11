@@ -5,6 +5,10 @@ import { LeaderboardView } from './ui/leaderboard'
 import { GameEngine } from './engine/GameEngine'
 import { LibraryManager } from './engine/LibraryManager'
 import { SaveStore } from './engine/SaveStore'
+import { SyncCoordinator } from './engine/SyncCoordinator'
+import { SyncStore } from './engine/SyncStore'
+import { APIClient } from './engine/APIClient'
+import { ModeIndicator } from './ui/ModeIndicator'
 import { themeManager } from './engine/ThemeManager'
 import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
 import { initA11y, showA11yPanel } from './ui/accessibility'
@@ -34,7 +38,46 @@ function showView(name: ViewName): void {
   }
 }
 
+// ── État global de synchronisation ────────────────────────────────────────────
+// Initialisé dans bootstrap() avant tout affichage UI (tâche 9.1)
+let syncStore: SyncStore = new SyncStore(new SaveStore(), null)
+let appMode: 'local' | 'server' = 'local'
+
 let libraryView: LibraryView | null = null
+
+// ── Modal d'erreur de synchronisation (tâche 9.3) ─────────────────────────────
+/**
+ * Affiche une modal bloquante proposant de réessayer ou de rester sur la page.
+ * Résoud `true` si le joueur choisit "Réessayer", `false` s'il choisit "Rester".
+ */
+function showSyncErrorDialog(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div')
+    overlay.className = 'sync-error-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', 'Erreur de synchronisation')
+    overlay.innerHTML = `
+      <div class="sync-error-modal">
+        <p class="sync-error-message">⚠️ La sauvegarde n'a pas pu être synchronisée avec le serveur.</p>
+        <div class="sync-error-actions">
+          <button class="btn btn-primary" id="sync-retry-btn" type="button">Réessayer</button>
+          <button class="btn btn-secondary" id="sync-stay-btn" type="button">Rester sur la page</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(overlay)
+
+    overlay.querySelector<HTMLButtonElement>('#sync-retry-btn')!.addEventListener('click', () => {
+      overlay.remove()
+      resolve(true)
+    })
+    overlay.querySelector<HTMLButtonElement>('#sync-stay-btn')!.addEventListener('click', () => {
+      overlay.remove()
+      resolve(false)
+    })
+  })
+}
 
 function initLibrary(): void {
   const container = document.getElementById('view-library')
@@ -64,7 +107,6 @@ function initLibrary(): void {
 
 async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void> {
   const libraryManager = new LibraryManager()
-  const saveStore = new SaveStore()
   const engine = new GameEngine()
 
   try {
@@ -80,7 +122,8 @@ async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void
     void themeManager.applyAdventureTheme(meta.path)
 
     if (resume) {
-      const save = saveStore.load(adventure.titre)
+      // Tâche 9.4 : charger depuis le backend avant de passer le SaveState au moteur
+      const save = await syncStore.loadSaveFromBackend(adventure.titre)
       if (save) {
         engine.resumeGame(save)
         launchGameView(engine)
@@ -170,10 +213,40 @@ function launchGameView(engine: GameEngine): void {
     document.removeEventListener('visibilitychange', onVisibilityChange)
   }
 
+  // Tâche 9.3 : callback retour bibliothèque avec synchronisation bloquante
+  const handleBackToLibrary = async (): Promise<void> => {
+    if (appMode === 'server') {
+      const adventure = engine.getAdventure()
+      if (adventure) {
+        let synced = false
+        while (!synced) {
+          try {
+            await syncStore.syncSaveToBackend(adventure.titre)
+            synced = true
+          } catch {
+            const retry = await showSyncErrorDialog()
+            if (!retry) {
+              // Rester sur la page — ne pas naviguer
+              return
+            }
+            // retry = true → relancer la boucle
+          }
+        }
+      }
+    }
+    gameView.destroy()
+    stopVisibilityListener()
+    engine.pauseTimer()
+    themeManager.removeGameTheme()
+    themeManager.removeAdventureTheme()
+    showView('library')
+    libraryView?.refresh()
+  }
+
   const gameView = new GameView(engine, {
     onVictory:       () => { gameView.destroy(); stopVisibilityListener(); showView('victory'); initVictoryView(engine) },
     onDefeat:        () => { gameView.destroy(); stopVisibilityListener(); showView('defeat');  initDefeatView(engine) },
-    onBackToLibrary: () => { gameView.destroy(); stopVisibilityListener(); engine.pauseTimer(); themeManager.removeGameTheme(); themeManager.removeAdventureTheme(); showView('library'); libraryView?.refresh() },
+    onBackToLibrary: () => { void handleBackToLibrary() },
   })
   showView('game')
   gameView.render(gameContainer)
@@ -231,11 +304,9 @@ function initVictoryView(engine: GameEngine): void {
     <button class="btn btn-secondary" id="btn-back-library" type="button" style="margin-top:1rem">Retour à la bibliothèque</button>
   `
 
-  const saveStore = new SaveStore()
-
   const renderLeaderboard = () => {
     if (!adventure) return
-    const entries = saveStore.getLeaderboard(adventure.titre)
+    const entries = syncStore.getLeaderboard(adventure.titre)
     const area = container.querySelector<HTMLElement>('#leaderboard-area')
     if (!area || entries.length === 0) { if (area) area.innerHTML = ''; return }
     area.innerHTML = `
@@ -254,6 +325,7 @@ function initVictoryView(engine: GameEngine): void {
     `
   }
 
+  // Tâche 9.5 : submitLeaderboardEntry via syncStore
   container.querySelector<HTMLButtonElement>('#btn-submit-score')!.addEventListener('click', () => {
     if (!adventure) return
     const nameInput = container.querySelector<HTMLInputElement>('#winner-name')
@@ -263,17 +335,19 @@ function initVictoryView(engine: GameEngine): void {
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
     const statistiques = engine.getHero()?.statistiques || {}
     const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
-    saveStore.addLeaderboardEntry(adventure.titre, { 
+    const entry = { 
       nom, 
-      resultat: 'victoire',
+      resultat: 'victoire' as const,
       tempsJeuMs: finalTime, 
       date: new Date().toISOString(),
       nombreSectionsParcourues,
       nombreOuverturesCarte,
       statistiques,
       statistiques_initiales,
-    })
-    saveStore.deleteSave(adventure.titre)
+    }
+    // Soumettre via syncStore (local + backend si mode serveur)
+    void syncStore.submitLeaderboardEntry(adventure.titre, entry)
+    syncStore.deleteSave(adventure.titre)
     renderLeaderboard()
     const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
     if (inputGroup) inputGroup.style.display = 'none'
@@ -307,8 +381,7 @@ function initDefeatView(engine: GameEngine): void {
     </div>
   `
 
-  const saveStore = new SaveStore()
-
+  // Tâche 9.5 : submitLeaderboardEntry via syncStore
   container.querySelector<HTMLButtonElement>('#btn-submit-defeat-score')!.addEventListener('click', () => {
     if (!adventure) return
     const nameInput = container.querySelector<HTMLInputElement>('#loser-name')
@@ -318,9 +391,9 @@ function initDefeatView(engine: GameEngine): void {
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
     const statistiques = engine.getHero()?.statistiques || {}
     const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
-    saveStore.addLeaderboardEntry(adventure.titre, {
+    const entry = {
       nom,
-      resultat: 'defaite',
+      resultat: 'defaite' as const,
       tempsJeuMs: finalTime,
       date: new Date().toISOString(),
       nombreSectionsParcourues,
@@ -328,8 +401,10 @@ function initDefeatView(engine: GameEngine): void {
       sectionMort,
       statistiques,
       statistiques_initiales,
-    })
-    saveStore.deleteSave(adventure.titre)
+    }
+    // Soumettre via syncStore (local + backend si mode serveur)
+    void syncStore.submitLeaderboardEntry(adventure.titre, entry)
+    syncStore.deleteSave(adventure.titre)
     const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
     if (inputGroup) inputGroup.style.display = 'none'
   })
@@ -351,18 +426,43 @@ document.addEventListener('DOMContentLoaded', () => {
   initA11y()
   initTtsControls()
 
-  showView('library')
-  initLibrary()
+  // ── Tâches 9.1 et 9.2 : détection backend + ModeIndicator ───────────────
+  // La détection complète avant d'afficher l'UI (Requirement 1.4)
+  const bootstrap = async (): Promise<void> => {
+    const coordinator = new SyncCoordinator()
+    appMode = await coordinator.detect()
 
-  // Deep-link debug : uniquement en développement
-  if (import.meta.env.DEV) {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('section')) {
-      import('./ui/debugLoader').then(({ initDebugLoader }) => {
-        void initDebugLoader(launchGameView)
-      })
+    // Tâche 9.1 : créer l'APIClient si mode serveur, null sinon
+    const api = appMode === 'server' ? new APIClient() : null
+    if (api) api.restoreToken()
+
+    // Instancier SyncStore et l'exposer globalement
+    syncStore = new SyncStore(new SaveStore(), api)
+
+    // Tâche 9.2 : monter le ModeIndicator dans la nav globale
+    const modeContainer = document.createElement('div')
+    modeContainer.id = 'mode-indicator'
+    modeContainer.className = 'btn-a11y-global'
+    document.getElementById('global-btns')?.prepend(modeContainer)
+    const modeIndicator = new ModeIndicator(modeContainer)
+    modeIndicator.render(appMode)
+
+    // Afficher la bibliothèque après la détection
+    showView('library')
+    initLibrary()
+
+    // Deep-link debug : uniquement en développement
+    if (import.meta.env.DEV) {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('section')) {
+        import('./ui/debugLoader').then(({ initDebugLoader }) => {
+          void initDebugLoader(launchGameView)
+        })
+      }
     }
   }
+
+  void bootstrap()
 
   document.getElementById('btn-a11y')?.addEventListener('click', showA11yPanel)
   initImagePrefsButton()
