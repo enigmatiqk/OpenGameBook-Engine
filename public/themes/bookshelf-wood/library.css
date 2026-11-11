@@ -42,91 +42,33 @@
 
   /* ━━ Meuble bibliothèque ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-  /* Fronton (haut) — gradient simulant un bois sculpté avec moulure */
-  --bookshelf-top-height: 72px;
-  --bookshelf-top-image:
-    /* moulure dorée haute */
-    linear-gradient(to bottom,
-      #8b5010 0%,
-      #c8882a 8%,
-      #e8b050 14%,
-      #c8882a 20%,
-      #8b5010 28%,
-      /* corps bois */
-      #6a3810 30%,
-      #7a4820 45%,
-      #5a2808 60%,
-      #7a4820 75%,
-      /* moulure basse */
-      #8b5010 80%,
-      #c8882a 88%,
-      #e8b050 93%,
-      #c8882a 96%,
-      #5a2808 100%
-    );
+  /* ── Fronton (haut) ──────────────────────────────────────────────────────
+     Panneau de bois avec moulures en haut et en bas.
+     SVG : bois teinté chaud avec veinures feTurbulence + ombres de moulure. */
+  --bookshelf-top-height: 80px;
+  --bookshelf-top-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='80'%3E%3Cdefs%3E%3Cfilter id='wood-top' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015 0.6' numOctaves='4' seed='8' result='noise'/%3E%3CfeColorMatrix type='saturate' values='0.4' in='noise' result='tinted'/%3E%3CfeBlend in='SourceGraphic' in2='tinted' mode='multiply' result='blend'/%3E%3CfeComponentTransfer in='blend'%3E%3CfeFuncR type='linear' slope='1.1' intercept='0.02'/%3E%3CfeFuncG type='linear' slope='0.85' intercept='-0.02'/%3E%3CfeFuncB type='linear' slope='0.5' intercept='-0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3ClinearGradient id='g-top' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23a06020'/%3E%3Cstop offset='7%25' stop-color='%23e8b060'/%3E%3Cstop offset='13%25' stop-color='%23c88030'/%3E%3Cstop offset='18%25' stop-color='%236a3808'/%3E%3Cstop offset='22%25' stop-color='%235a2e08'/%3E%3Cstop offset='78%25' stop-color='%23704010'/%3E%3Cstop offset='82%25' stop-color='%235a2e08'/%3E%3Cstop offset='87%25' stop-color='%23c88030'/%3E%3Cstop offset='93%25' stop-color='%23e8b060'/%3E%3Cstop offset='100%25' stop-color='%23804010'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='80' fill='url(%23g-top)'/%3E%3Crect width='800' height='80' fill='url(%23g-top)' filter='url(%23wood-top)' opacity='0.55'/%3E%3Crect y='0' width='800' height='3' fill='rgba(0,0,0,0.5)'/%3E%3Crect y='17' width='800' height='2' fill='rgba(0,0,0,0.35)'/%3E%3Crect y='19' width='800' height='1' fill='rgba(255,200,100,0.15)'/%3E%3Crect y='59' width='800' height='1' fill='rgba(255,200,100,0.12)'/%3E%3Crect y='60' width='800' height='2' fill='rgba(0,0,0,0.3)'/%3E%3Crect y='77' width='800' height='3' fill='rgba(0,0,0,0.6)'/%3E%3C/svg%3E");
   --bookshelf-top-size: 100% 100%;
 
-  /* Montants gauche/droit — bois avec veine verticale */
-  --bookshelf-side-width: 48px;
-  --bookshelf-side-image:
-    /* veine bois + reflet central */
-    linear-gradient(to right,
-      #3a1a08 0%,
-      #6a3810 15%,
-      #8b5020 25%,
-      #c8882a 40%,
-      #e0a040 50%,
-      #c8882a 60%,
-      #8b5020 75%,
-      #6a3810 85%,
-      #3a1a08 100%
-    );
+  /* ── Montants gauche/droit ────────────────────────────────────────────────
+     Colonne de bois avec reflet central et ombres latérales profondes. */
+  --bookshelf-side-width: 52px;
+  --bookshelf-side-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='400'%3E%3Cdefs%3E%3Cfilter id='wood-side'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.02' numOctaves='5' seed='12' result='noise'/%3E%3CfeColorMatrix type='saturate' values='0.35' in='noise' result='tinted'/%3E%3CfeBlend in='SourceGraphic' in2='tinted' mode='multiply'/%3E%3C/filter%3E%3ClinearGradient id='g-side' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0%25' stop-color='%23200e02'/%3E%3Cstop offset='8%25' stop-color='%235a2e08'/%3E%3Cstop offset='22%25' stop-color='%238b4e18'/%3E%3Cstop offset='42%25' stop-color='%23c07828'/%3E%3Cstop offset='50%25' stop-color='%23e0a040'/%3E%3Cstop offset='58%25' stop-color='%23c07828'/%3E%3Cstop offset='78%25' stop-color='%238b4e18'/%3E%3Cstop offset='92%25' stop-color='%235a2e08'/%3E%3Cstop offset='100%25' stop-color='%23200e02'/%3E%3C/linearGradient%3E%3ClinearGradient id='g-side-shade' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0%25' stop-color='rgba(0,0,0,0.6)'/%3E%3Cstop offset='30%25' stop-color='rgba(0,0,0,0)'/%3E%3Cstop offset='70%25' stop-color='rgba(0,0,0,0)'/%3E%3Cstop offset='100%25' stop-color='rgba(0,0,0,0.5)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='52' height='400' fill='url(%23g-side)'/%3E%3Crect width='52' height='400' fill='url(%23g-side)' filter='url(%23wood-side)' opacity='0.5'/%3E%3Crect width='52' height='400' fill='url(%23g-side-shade)'/%3E%3C/svg%3E");
   --bookshelf-side-size: 100% auto;
 
-  /* Socle (bas) — gradient avec moulure inversée */
-  --bookshelf-bottom-height: 60px;
-  --bookshelf-bottom-image:
-    linear-gradient(to bottom,
-      #5a2808 0%,
-      #c8882a 4%,
-      #e8b050 7%,
-      #c8882a 12%,
-      #8b5010 18%,
-      /* corps */
-      #6a3810 20%,
-      #7a4820 40%,
-      #5a2808 60%,
-      #7a4820 78%,
-      /* pied */
-      #8b5010 82%,
-      #c8882a 90%,
-      #e8b050 95%,
-      #8b5010 100%
-    );
+  /* ── Socle (bas) ─────────────────────────────────────────────────────────
+     Plus massif que le fronton, avec pied en saillie. */
+  --bookshelf-bottom-height: 68px;
+  --bookshelf-bottom-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='68'%3E%3Cdefs%3E%3Cfilter id='wood-bot' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015 0.6' numOctaves='4' seed='3' result='noise'/%3E%3CfeColorMatrix type='saturate' values='0.4' in='noise' result='tinted'/%3E%3CfeBlend in='SourceGraphic' in2='tinted' mode='multiply'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.05' intercept='0.0'/%3E%3CfeFuncG type='linear' slope='0.8' intercept='-0.02'/%3E%3CfeFuncB type='linear' slope='0.45' intercept='-0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3ClinearGradient id='g-bot' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23200e02'/%3E%3Cstop offset='5%25' stop-color='%236a3808'/%3E%3Cstop offset='20%25' stop-color='%23704010'/%3E%3Cstop offset='65%25' stop-color='%235a2e08'/%3E%3Cstop offset='72%25' stop-color='%23804818'/%3E%3Cstop offset='80%25' stop-color='%23c07828'/%3E%3Cstop offset='88%25' stop-color='%23e8b060'/%3E%3Cstop offset='94%25' stop-color='%23c07828'/%3E%3Cstop offset='100%25' stop-color='%23904010'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='68' fill='url(%23g-bot)'/%3E%3Crect width='800' height='68' fill='url(%23g-bot)' filter='url(%23wood-bot)' opacity='0.55'/%3E%3Crect y='0' width='800' height='2' fill='rgba(0,0,0,0.6)'/%3E%3Crect y='2' width='800' height='1' fill='rgba(255,200,100,0.1)'/%3E%3Crect y='63' width='800' height='1' fill='rgba(255,180,60,0.2)'/%3E%3Crect y='64' width='800' height='4' fill='rgba(0,0,0,0.65)'/%3E%3C/svg%3E");
   --bookshelf-bottom-size: 100% 100%;
 
-  /* Fond intérieur de la bibliothèque */
-  --bookshelf-bg-color:    #1a0a02;
-  --bookshelf-bg-image:
-    /* veines de bois du fond arrière */
-    repeating-linear-gradient(
-      92deg,
-      transparent 0px,
-      rgba(80,40,10,0.15) 2px,
-      transparent 4px,
-      rgba(60,30,5,0.08) 8px,
-      transparent 12px
-    ),
-    linear-gradient(to bottom,
-      #0f0602 0%,
-      #1a0c04 30%,
-      #120804 60%,
-      #0f0602 100%
-    );
-  --bookshelf-bg-size:     auto, cover;
-  --bookshelf-bg-repeat:   repeat, no-repeat;
-  --bookshelf-bg-position: left top, center;
-  --bookshelf-inner-padding: 12px 8px 8px;
+  /* ── Fond intérieur de la bibliothèque ───────────────────────────────────
+     Bois de fond plus sombre, avec légères veinures horizontales. */
+  --bookshelf-bg-color:    #0e0804;
+  --bookshelf-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cdefs%3E%3Cfilter id='wood-back'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.5' numOctaves='5' seed='21' result='noise'/%3E%3CfeColorMatrix type='saturate' values='0.3' in='noise' result='tinted'/%3E%3CfeBlend in='SourceGraphic' in2='tinted' mode='multiply'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.9' intercept='-0.02'/%3E%3CfeFuncG type='linear' slope='0.65' intercept='-0.05'/%3E%3CfeFuncB type='linear' slope='0.35' intercept='-0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3ClinearGradient id='g-back' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23140a02'/%3E%3Cstop offset='50%25' stop-color='%231a0e04'/%3E%3Cstop offset='100%25' stop-color='%230e0802'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23g-back)'/%3E%3Crect width='600' height='400' fill='url(%23g-back)' filter='url(%23wood-back)' opacity='0.6'/%3E%3C/svg%3E");
+  --bookshelf-bg-size:     cover;
+  --bookshelf-bg-repeat:   no-repeat;
+  --bookshelf-bg-position: center;
+  --bookshelf-inner-padding: 14px 10px 10px;
 
   /* ━━ Modales : style grimoire / parchemin ancien ━━━━━━━━━━━━━━━━━━━━━━━━━ */
   --modal-bg:          #1e1008;
