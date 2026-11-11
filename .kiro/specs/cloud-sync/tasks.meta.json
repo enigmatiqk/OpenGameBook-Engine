@@ -1,0 +1,535 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Mettre en place la structure de fichiers et la configuration TypeScript backend": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402914995
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402921136
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408006837
+      }
+    ],
+    "2.1 Créer l'interface `DatabaseAdapter` et la factory `createDb` dans `server/db/DatabaseAdapter.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915049
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408012442
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408015087
+      }
+    ],
+    "2.2 Implémenter `SqliteAdapter` dans `server/db/SqliteAdapter.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915078
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408019721
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408022331
+      }
+    ],
+    "2.3 Implémenter les migrations dans `server/db/migrations.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915127
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408024840
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408028181
+      }
+    ],
+    "3.1 Créer `server/config.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915158
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408012740
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408015259
+      }
+    ],
+    "3.2 Créer `server/middleware/securityHeaders.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915185
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408025188
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408028613
+      }
+    ],
+    "3.3 Créer `server/middleware/rateLimiter.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915235
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408025704
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408029046
+      }
+    ],
+    "3.4 Créer `server/middleware/auth.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915263
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408025993
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408029376
+      }
+    ],
+    "4.1 Créer `server/services/EmailService.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915291
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408034981
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408037152
+      }
+    ],
+    "4.2 Créer `server/services/AuthService.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915333
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408035031
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408037497
+      }
+    ],
+    "4.8 Créer `server/services/SaveService.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915360
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408039469
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408041534
+      }
+    ],
+    "4.10 Créer `server/services/LeaderboardService.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915388
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408043649
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408045702
+      }
+    ],
+    "5. Checkpoint — Tests services backend": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915434
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408059426
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414262307
+      }
+    ],
+    "6.1 Créer `server/routes/health.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915462
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408047793
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408051802
+      }
+    ],
+    "6.2 Créer `server/routes/auth.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915489
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408048343
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408052250
+      }
+    ],
+    "6.3 Créer `server/routes/saves.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915516
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408048805
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408052523
+      }
+    ],
+    "6.4 Créer `server/routes/leaderboard.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915561
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408049075
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408051349
+      }
+    ],
+    "6.5 Créer `server/server.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915593
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408054511
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408056570
+      }
+    ],
+    "7. Checkpoint — Backend complet": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915622
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414264501
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414266670
+      }
+    ],
+    "8.1 Créer `src/engine/SyncCoordinator.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915650
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414269390
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414311483
+      }
+    ],
+    "8.3 Créer `src/engine/APIClient.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915695
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414269579
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414311814
+      }
+    ],
+    "8.4 Créer `src/engine/SyncStore.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915725
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414314033
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414360917
+      }
+    ],
+    "8.8 Créer `src/ui/ModeIndicator.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915756
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414316209
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414361288
+      }
+    ],
+    "9.1 Modifier `src/main.ts` : appel `SyncCoordinator.detect()` avant affichage de l'UI": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915784
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414364212
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414783256
+      }
+    ],
+    "9.2 Intégrer `ModeIndicator` dans l'UI principale": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915815
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414785572
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414789087
+      }
+    ],
+    "9.3 Implémenter la modal d'erreur de synchronisation et le callback `onBackToLibrary`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915867
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414785986
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414789988
+      }
+    ],
+    "9.4 Intégrer `loadSaveFromBackend` sur l'action \"Continuer\"": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915892
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414786485
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414789538
+      }
+    ],
+    "9.5 Intégrer `submitLeaderboardEntry` à la fin de partie": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915920
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414786840
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414790396
+      }
+    ],
+    "10. Checkpoint final — Tous les tests passent": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794402915948
+      },
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414792789
+      }
+    ],
+    "2. Implémenter la couche base de données": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408028208
+      }
+    ],
+    "3. Implémenter la configuration et les middlewares backend": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408029421
+      }
+    ],
+    "4. Implémenter les services backend": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408045731
+      }
+    ],
+    "6. Implémenter les routes backend et le serveur": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794408056598
+      }
+    ],
+    "8. Implémenter les composants frontend": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414361318
+      }
+    ],
+    "9. Intégrer cloud-sync dans `src/main.ts`": [
+      {
+        "executionId": "62d01e08-5a94-41da-b8e0-dc3765a897ae",
+        "chatSessionId": "sess_3e479856-191d-46a9-8ed5-a0b6acfc3802",
+        "timestamp": 1794414790430
+      }
+    ]
+  }
+}
