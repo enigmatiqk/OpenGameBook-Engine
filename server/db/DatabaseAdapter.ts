@@ -1,3 +1,5 @@
+import { createSqliteAdapter } from './SqliteAdapter'
+
 export interface DatabaseAdapter {
   run(sql: string, params?: unknown[]): void
   get<T>(sql: string, params?: unknown[]): T | undefined
@@ -12,6 +14,5 @@ export function createDb(databaseUrl: string | null): DatabaseAdapter {
     )
   }
   // SQLite par défaut
-  const { createSqliteAdapter } = require('./SqliteAdapter') as typeof import('./SqliteAdapter')
   return createSqliteAdapter('./data/gamebook.db')
 }

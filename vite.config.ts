@@ -52,6 +52,15 @@ export default defineConfig({
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'SAMEORIGIN',
     },
+    // Proxy /api/* vers le backend Express en dev.
+    // Actif uniquement quand le backend tourne (npm run dev:server).
+    // Sans backend, les requêtes /api/* échouent → SyncCoordinator bascule en mode local.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     headers: {
