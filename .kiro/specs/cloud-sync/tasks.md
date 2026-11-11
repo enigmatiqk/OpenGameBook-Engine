@@ -233,7 +233,7 @@ Ajout d'un backend Node.js/Express/TypeScript et d'une couche de synchronisation
     - **Property 4: Pas de navigation sans synchronisation réussie**
     - **Validates: Requirements 3.7, 3.5**
 
-- [-] 10. Checkpoint final — Tous les tests passent
+- [x] 10. Checkpoint final — Tous les tests passent
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
