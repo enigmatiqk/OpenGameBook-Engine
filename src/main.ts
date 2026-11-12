@@ -8,6 +8,7 @@ import { SaveStore } from './engine/SaveStore'
 import { SyncCoordinator } from './engine/SyncCoordinator'
 import { SyncStore } from './engine/SyncStore'
 import { APIClient } from './engine/APIClient'
+import { AuthModal } from './ui/AuthModal'
 import { ModeIndicator } from './ui/ModeIndicator'
 import { themeManager } from './engine/ThemeManager'
 import { showHeroCreationScreen, showChoixInitiaux, showInventaireDepart } from './ui/diceRoll'
@@ -97,6 +98,9 @@ function initLibrary(): void {
       onContinueGame: (adventure: AdventureMetadata) => { void startGame(adventure, true) },
       onShowLeaderboard: (adventure: AdventureMetadata) => { showLeaderboardModal(adventure) },
     },
+    // Passer le syncStore global afin que les badges "En cours" / "Terminé"
+    // reflètent l'état réel (backend en mode serveur, localStorage en mode local)
+    saveStore: syncStore,
     remoteSources,
   })
 
@@ -446,7 +450,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeIndicator = new ModeIndicator(modeContainer)
     modeIndicator.render(appMode)
 
-    // Afficher la bibliothèque après la détection
+    // ── Authentification en mode serveur ──────────────────────────────────
+    if (api) {
+      await new Promise<void>((resolve) => {
+        const modal = new AuthModal(api, () => {
+          modal.close()
+          resolve()
+        })
+        void modal.mountAndWait()
+      })
+    }
+
+    // Afficher la bibliothèque après la détection (et l'auth éventuelle)
     showView('library')
     initLibrary()
 

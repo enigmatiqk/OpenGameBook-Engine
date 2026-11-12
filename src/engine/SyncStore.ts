@@ -49,6 +49,10 @@ export class SyncStore implements ISyncStore {
   }
 
   hasSave(adventureId: string): boolean {
+    // En mode serveur, ne jamais s'appuyer sur le cache local comme source de
+    // vérité : le localStorage peut contenir des données d'une autre session ou
+    // d'un autre appareil. La vérification réelle passe par loadSaveFromBackend().
+    if (this.api) return false
     return this.localStore.hasSave(adventureId)
   }
 
@@ -58,10 +62,12 @@ export class SyncStore implements ISyncStore {
 
   /**
    * Retourne le leaderboard depuis le cache local.
-   * Pour obtenir la liste depuis le backend en mode serveur,
-   * utiliser `loadLeaderboardFromBackend()`.
+   * En mode serveur, retourne toujours [] car le leaderboard authoritative
+   * vient du backend via `loadLeaderboardFromBackend()`.
+   * Le cache local ne doit jamais être affiché comme source de vérité en mode cloud.
    */
   getLeaderboard(adventureId: string): LeaderboardEntry[] {
+    if (this.api) return []
     return this.localStore.getLeaderboard(adventureId)
   }
 

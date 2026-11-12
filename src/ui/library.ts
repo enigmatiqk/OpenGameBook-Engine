@@ -6,6 +6,15 @@ import type { AdventureMetadata } from '../types'
 import { resolveImage } from '../utils/imageUtils'
 import { sanitizeRemoteUrl } from '../utils/sanitize'
 
+/**
+ * Interface minimale requise par LibraryView pour les indicateurs d'état
+ * (save en cours, leaderboard). Implémentée à la fois par SaveStore et SyncStore.
+ */
+export interface ISaveStatusStore {
+  hasSave(adventureId: string): boolean
+  getLeaderboard(adventureId: string): import('../types').LeaderboardEntry[]
+}
+
 export interface LibraryCallbacks {
   onStartNewGame: (adventure: AdventureMetadata) => void
   onContinueGame: (adventure: AdventureMetadata) => void
@@ -16,7 +25,7 @@ export interface LibraryOptions {
   callbacks: LibraryCallbacks
   /** Instances injectables pour les tests */
   libraryManager?: LibraryManager
-  saveStore?: SaveStore
+  saveStore?: SaveStore | ISaveStatusStore
   /**
    * URLs supplémentaires de manifests distants à charger en plus de la
    * bibliothèque locale `adventures/`. Chaque URL doit pointer vers un
@@ -33,7 +42,7 @@ type FilterState = {
 
 export class LibraryView {
   private libraryManager: LibraryManager
-  private saveStore: SaveStore
+  private saveStore: ISaveStatusStore
   private remoteStore: RemoteLibraryStore
   private callbacks: LibraryCallbacks
   private remoteSources: string[]
