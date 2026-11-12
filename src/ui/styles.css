@@ -1551,3 +1551,20 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 .auth-message--success { color: var(--success, #4caf50); }
 .auth-message--error   { color: var(--accent); }
+
+/* ── Auth divider & token input ── */
+.auth-divider {
+  display: flex; align-items: center; gap: 0.75rem;
+  color: var(--text-secondary); font-size: 0.8rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: ''; flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+.auth-input--mono {
+  font-family: monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}

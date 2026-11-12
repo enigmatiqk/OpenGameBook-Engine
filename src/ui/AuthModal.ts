@@ -89,6 +89,18 @@ export class AuthModal {
             <button class="btn btn-primary auth-submit" type="submit">Recevoir un lien de connexion</button>
           </form>
           <p class="auth-message" id="auth-login-message" aria-live="polite"></p>
+
+          <div class="auth-divider"><span>ou</span></div>
+
+          <form class="auth-form" id="auth-form-token" novalidate>
+            <label class="auth-label" for="auth-login-token">Coller votre token</label>
+            <input class="auth-input auth-input--mono" id="auth-login-token" type="text"
+              autocomplete="off" spellcheck="false"
+              placeholder="Collez votre token ici…" />
+
+            <button class="btn btn-secondary auth-submit" type="submit">Se connecter</button>
+          </form>
+          <p class="auth-message" id="auth-token-message" aria-live="polite"></p>
         </div>
       </div>
     `
@@ -120,6 +132,13 @@ export class AuthModal {
       .addEventListener('submit', async (e) => {
         e.preventDefault()
         await this._handleLogin()
+      })
+
+    // ── Formulaire token direct ───────────────────────────────────────────────
+    this.overlay.querySelector<HTMLFormElement>('#auth-form-token')!
+      .addEventListener('submit', async (e) => {
+        e.preventDefault()
+        await this._handleTokenLogin()
       })
   }
 
@@ -214,6 +233,37 @@ export class AuthModal {
     } finally {
       submitBtn.disabled    = false
       submitBtn.textContent = 'Recevoir un lien de connexion'
+    }
+  }
+
+  private async _handleTokenLogin(): Promise<void> {
+    if (!this.overlay) return
+
+    const tokenInput = this.overlay.querySelector<HTMLInputElement>('#auth-login-token')!
+    const msgEl      = this.overlay.querySelector<HTMLElement>('#auth-token-message')!
+    const submitBtn  = this.overlay.querySelector<HTMLButtonElement>('#auth-form-token .auth-submit')!
+
+    const token = tokenInput.value.trim()
+
+    if (!token) {
+      this._setMessage(msgEl, 'error', 'Veuillez coller votre token.')
+      return
+    }
+
+    submitBtn.disabled = true
+    submitBtn.textContent = 'Connexion…'
+    this._setMessage(msgEl, '', '')
+
+    try {
+      const { sessionToken } = await this.api.loginWithToken(token)
+      this.api.setToken(sessionToken)
+      this.close()
+      this.onAuthenticated()
+    } catch (err) {
+      this._setMessage(msgEl, 'error', this._errorMessage(err))
+    } finally {
+      submitBtn.disabled    = false
+      submitBtn.textContent = 'Se connecter'
     }
   }
 
