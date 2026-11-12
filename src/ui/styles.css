@@ -1456,3 +1456,98 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
 }
 .theme-toggle-checkbox { width: 1rem; height: 1rem; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
 .theme-toggle-label { line-height: 1.4; }
+
+/* ── Auth Modal (connexion cloud) ────────────────────────────────────────── */
+.auth-modal-overlay {
+  position: fixed; inset: 0; z-index: 1100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+
+.auth-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%; max-width: 420px;
+  padding: 2rem;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+
+.auth-modal__title {
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.auth-modal__subtitle {
+  font-size: 0.875rem; color: var(--text-secondary);
+  text-align: center; line-height: 1.5;
+  margin: -0.5rem 0 0;
+}
+
+/* ── Onglets ── */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  gap: 0;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: none; border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-ui); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.auth-tab:hover { color: var(--text-primary); }
+.auth-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Panneaux ── */
+.auth-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-panel--hidden { display: none; }
+
+/* ── Formulaires ── */
+.auth-form { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.auth-label {
+  font-size: 0.8rem; font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: -0.5rem;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-ui); font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.auth-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.auth-submit { width: 100%; margin-top: 0.25rem; }
+
+/* ── Messages retour ── */
+.auth-message {
+  font-size: 0.85rem; min-height: 1.2em;
+  text-align: center; line-height: 1.4;
+}
+.auth-message--success { color: var(--success, #4caf50); }
+.auth-message--error   { color: var(--accent); }
