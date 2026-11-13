@@ -13,6 +13,8 @@ import { sanitizeRemoteUrl } from '../utils/sanitize'
 export interface ISaveStatusStore {
   hasSave(adventureId: string): boolean
   getLeaderboard(adventureId: string): import('../types').LeaderboardEntry[]
+  /** Vérification async côté serveur (optionnel — absent en mode local) */
+  checkSaveAsync?: (adventureId: string) => Promise<boolean>
 }
 
 export interface LibraryCallbacks {
@@ -692,6 +694,23 @@ export class LibraryView {
           this._showLightbox(coverSrc, adventure.titre)
         )
       }
+    }
+
+    // Vérification async de la save côté serveur (mode cloud)
+    if (!hasSave && this.saveStore.checkSaveAsync) {
+      void this.saveStore.checkSaveAsync(adventure.titre).then(exists => {
+        if (!exists) return
+        const continueBtn = card.querySelector<HTMLButtonElement>('.btn-continue')
+        if (continueBtn) {
+          continueBtn.disabled = false
+          continueBtn.addEventListener('click', () => this.callbacks.onContinueGame(adventure))
+        }
+        // Badge "En cours" dans la carte
+        const badges = card.querySelector<HTMLElement>('.card-badges')
+        if (badges && !badges.querySelector('.badge-in-progress')) {
+          badges.insertAdjacentHTML('afterbegin', '<span class="badge badge-in-progress">En cours</span>')
+        }
+      })
     }
 
     return card

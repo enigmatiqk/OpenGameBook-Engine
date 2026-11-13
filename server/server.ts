@@ -26,14 +26,16 @@ async function main(): Promise<void> {
   app.use(express.json({ limit: '1mb' }))
   app.use(securityHeadersMiddleware)
 
+  // EmailService instancié une seule fois, partagé entre les routes et le cleanup
+  const emailService = new EmailService(config.smtp)
+
   // Déterminer le mode DB pour le health endpoint — intentionnellement non exposé
   app.use('/api/health', healthRouter())
-  app.use('/api/auth', authRouter(db))
+  app.use('/api/auth', authRouter(db, emailService))
   app.use('/api/saves', savesRouter(db))
   app.use('/api/leaderboard', leaderboardRouter(db))
 
   // Nettoyage périodique des comptes non activés (toutes les heures)
-  const emailService = new EmailService(config.smtp)
   const authService = new AuthService(db, emailService, config)
   setInterval(() => {
     authService.cleanupExpiredAccounts()

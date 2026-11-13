@@ -42,7 +42,7 @@ export class AuthService {
 
     // 4. Préparer l'envoi d'email AVANT d'écrire en base
     const magicLink = `${this.config.appBaseUrl}/api/auth/login?token=${token}`
-    await this.emailService.sendMagicLink(email, pseudo, magicLink)
+    await this.emailService.sendMagicLink(email, pseudo, magicLink, token)
 
     // 5. Créer le compte seulement si l'email a réussi
     this.db.run(
@@ -92,7 +92,7 @@ export class AuthService {
     ])
 
     const magicLink = `${this.config.appBaseUrl}/api/auth/login?token=${token}`
-    await this.emailService.sendMagicLink(email, user.pseudo, magicLink)
+    await this.emailService.sendMagicLink(email, user.pseudo, magicLink, token)
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import type { DatabaseAdapter } from '../db/DatabaseAdapter'
+import type { EmailService } from '../services/EmailService'
 import { AuthService } from '../services/AuthService'
-import { EmailService } from '../services/EmailService'
 import { authRateLimiter } from '../middleware/rateLimiter'
 import { requireAuth } from '../middleware/auth'
 import type { AuthRequest } from '../middleware/auth'
@@ -17,9 +17,8 @@ function smtpRequired(res: import('express').Response): boolean {
   return false
 }
 
-export function authRouter(db: DatabaseAdapter): Router {
+export function authRouter(db: DatabaseAdapter, emailService: EmailService): Router {
   const router = Router()
-  const emailService = new EmailService(config.smtp)
   const authService = new AuthService(db, emailService, config)
 
   router.post('/register', authRateLimiter, async (req, res, next) => {

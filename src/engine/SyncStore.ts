@@ -56,6 +56,16 @@ export class SyncStore implements ISyncStore {
     return this.localStore.hasSave(adventureId)
   }
 
+  /**
+   * Vérification async côté serveur (mode cloud uniquement).
+   * Utilisé par LibraryView pour activer le bouton Continuer.
+   */
+  async checkSaveAsync(adventureId: string): Promise<boolean> {
+    if (!this.api) return this.localStore.hasSave(adventureId)
+    const state = await this.api.getSave(adventureId)
+    return state !== null
+  }
+
   deleteSave(adventureId: string): void {
     this.localStore.deleteSave(adventureId)
   }

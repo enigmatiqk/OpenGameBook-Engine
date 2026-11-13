@@ -35,6 +35,7 @@ export class EmailService {
     to: string,
     pseudo: string,
     magicLink: string,
+    token: string,
   ): Promise<void> {
     if (this.degraded || !this.transporter) {
       throw new Error('SMTP non configuré — envoi email impossible')
@@ -45,9 +46,12 @@ export class EmailService {
         from: this.smtpConfig.from,
         to,
         subject: 'Votre lien de connexion OpenGameBook',
-        text: `Bonjour ${pseudo},\n\nCliquez sur ce lien pour vous connecter :\n${magicLink}\n\nCe lien est valide tant que vous n'en demandez pas un nouveau.`,
+        text: `Bonjour ${pseudo},\n\nCliquez sur ce lien pour vous connecter :\n${magicLink}\n\nOu collez votre token directement dans le champ de connexion :\n${token}\n\nCe token est permanent — il reste valide jusqu'à ce que vous en demandiez un nouveau.`,
         html: `<p>Bonjour <strong>${pseudo}</strong>,</p>
-               <p><a href="${magicLink}">Se connecter à OpenGameBook</a></p>`,
+               <p><a href="${magicLink}">Se connecter à OpenGameBook</a></p>
+               <p>Ou collez votre token directement dans le champ de connexion :</p>
+               <p><code style="font-family:monospace;font-size:0.85rem;word-break:break-all;background:#f4f4f4;padding:0.5rem;border-radius:4px;display:inline-block">${token}</code></p>
+               <p style="font-size:0.8rem;color:#666">Ce token est permanent — il reste valide jusqu'à ce que vous en demandiez un nouveau.</p>`,
       })
       console.log(`[EmailService] Email envoyé à ${to}`)
     } catch (err) {

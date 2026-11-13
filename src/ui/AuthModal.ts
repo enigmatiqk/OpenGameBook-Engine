@@ -98,7 +98,12 @@ export class AuthModal {
             <input class="auth-input" id="auth-login-email" type="email"
               autocomplete="email" required placeholder="votre@email.com" />
 
-            <button class="btn btn-primary auth-submit" type="submit">Recevoir un lien de connexion</button>
+            <label class="auth-checkbox-label">
+              <input class="auth-checkbox" id="auth-regenerate" type="checkbox" />
+              Régénérer mon token (ancien token invalide)
+            </label>
+
+            <button class="btn btn-primary auth-submit" type="submit">Recevoir mon lien de connexion</button>
           </form>
           <p class="auth-message" id="auth-login-message" aria-live="polite"></p>
 
@@ -218,6 +223,7 @@ export class AuthModal {
     if (!this.overlay) return
 
     const emailInput = this.overlay.querySelector<HTMLInputElement>('#auth-login-email')!
+    const regenInput = this.overlay.querySelector<HTMLInputElement>('#auth-regenerate')!
     const msgEl      = this.overlay.querySelector<HTMLElement>('#auth-login-message')!
     const submitBtn  = this.overlay.querySelector<HTMLButtonElement>('#auth-panel-login .auth-submit')!
 
@@ -234,17 +240,20 @@ export class AuthModal {
 
     try {
       await this.api.requestLogin(email)
+      const regen = regenInput?.checked ?? false
       this._setMessage(
         msgEl,
         'success',
-        '✅ Un lien de connexion vous a été envoyé.',
+        regen
+          ? '✅ Nouveau token généré. Un email avec le lien et le token vous a été envoyé.'
+          : '✅ Un email avec votre lien de connexion vous a été envoyé.',
       )
       emailInput.value = ''
     } catch (err) {
       this._setMessage(msgEl, 'error', this._errorMessage(err))
     } finally {
       submitBtn.disabled    = false
-      submitBtn.textContent = 'Recevoir un lien de connexion'
+      submitBtn.textContent = 'Recevoir mon lien de connexion'
     }
   }
 

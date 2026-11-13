@@ -37,6 +37,9 @@ function showView(name: ViewName): void {
   for (const v of views) {
     document.getElementById(`view-${v}`)?.classList.toggle('active', v === name)
   }
+  // Bouton déconnexion : visible uniquement dans la bibliothèque
+  const logoutBtn = document.getElementById('btn-logout')
+  if (logoutBtn) logoutBtn.style.display = name === 'library' ? '' : 'none'
 }
 
 // ── État global de synchronisation ────────────────────────────────────────────
