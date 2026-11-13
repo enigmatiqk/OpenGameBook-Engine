@@ -4,6 +4,7 @@
  * Sources collectées :
  *  - personnage.inventaire (inventaire de départ)
  *  - personnage.equipement (équipement de départ)
+ *  - personnage.choix_initial (options des sélections de départ)
  *  - effets de type 'item' dans chaque section (effets d'entrée + effets de chaque choix)
  *
  * Fonctionnalités :
@@ -14,12 +15,12 @@
  *  - Alerte ⚠️ sur les lignes sans image
  */
 
-import type { Adventure, InventaireItem, Section, Effet } from '../types'
+import type { Adventure, InventaireItem, PersonnageTemplate, Section, Effet } from '../types'
 import { buildItemImageSlot } from './ItemImageSlot'
 
 // ─── Type interne ─────────────────────────────────────────────────────────────
 
-export type ItemSourceKind = 'inventaire' | 'equipement' | 'section'
+export type ItemSourceKind = 'inventaire' | 'equipement' | 'choix_initial' | 'section'
 
 export interface ItemEntry {
   item:       InventaireItem
@@ -49,6 +50,12 @@ export class ItemsEditor {
   private container:   HTMLElement
   private options:     ItemsEditorOptions
   private adventure:   Adventure | null = null
+  // Source de vérité pour les items liés au personnage (inventaire, équipement,
+  // choix initiaux). On édite la DONNÉE STAGÉE du PersonnageEditor (même
+  // référence, mêmes instances d'items) plutôt que adventure.personnage, afin
+  // que les modifications soient incluses au commit (getData) et persistées
+  // dans le JSON sauvegardé.
+  private personnageSource: PersonnageTemplate | null = null
   private entries:     ItemEntry[] = []
   private activeFilters: Set<FilterKey> = new Set()
   private tableBody:   HTMLElement | null = null
@@ -61,9 +68,12 @@ export class ItemsEditor {
 
   // ── API publique ──────────────────────────────────────────────────────────
 
-  render(adventure: Adventure): void {
-    this.adventure    = adventure
-    this.imageBaseUrl = adventure.repertoire_images ?? ''
+  render(adventure: Adventure, personnageSource?: PersonnageTemplate): void {
+    this.adventure        = adventure
+    // On édite la même instance stagée que le PersonnageEditor quand elle est
+    // disponible ; sinon on retombe sur adventure.personnage.
+    this.personnageSource = personnageSource ?? adventure.personnage
+    this.imageBaseUrl     = adventure.repertoire_images ?? ''
     this._collectEntries()
     this._build()
   }
@@ -81,10 +91,13 @@ export class ItemsEditor {
     if (!this.adventure) return
     this.entries = []
 
-    const adv = this.adventure
+    const adv   = this.adventure
+    // Items liés au personnage : on lit depuis la source stagée (même instance
+    // que le PersonnageEditor) pour que les éditions soient commitées.
+    const perso = this.personnageSource ?? adv.personnage
 
     // ── Inventaire de départ ─────────────────────────────────────────────────
-    ;(adv.personnage.inventaire ?? []).forEach(raw => {
+    ;(perso.inventaire ?? []).forEach(raw => {
       if (typeof raw === 'string') return
       const item = raw as InventaireItem
       this.entries.push({
@@ -95,13 +108,26 @@ export class ItemsEditor {
     })
 
     // ── Équipement de départ ─────────────────────────────────────────────────
-    ;(adv.personnage.equipement ?? []).forEach(item => {
+    ;(perso.equipement ?? []).forEach(item => {
       this.entries.push({
         item,
         sourceKind: 'equipement',
         onItemChange: () => this.options.onPersonnageChange(),
       })
     })
+
+    // ── Choix initiaux (sélection de départ) ─────────────────────────────────
+    for (const choix of perso.choix_initial ?? []) {
+      for (const option of choix.options ?? []) {
+        this.entries.push({
+          item: option as unknown as InventaireItem,
+          sourceKind: 'choix_initial',
+          // choixTexte sert ici à porter le libellé du groupe de choix
+          choixTexte: choix.label,
+          onItemChange: () => this.options.onPersonnageChange(),
+        })
+      }
+    }
 
     // ── Effets de section ────────────────────────────────────────────────────
     for (const section of adv.sections) {
@@ -400,8 +426,10 @@ export class ItemsEditor {
     const labelVal = item.label ?? (item as unknown as Record<string, string>)['name'] ?? ''
     const labelInput = this._textInput(labelVal, 'nom affiché', v => {
       item.label = v
-      // Sync 'name' si c'est un EffetItem
-      ;(item as unknown as Record<string, string>)['name'] = v
+      // Sync 'name' si c'est un EffetItem (items de section uniquement)
+      if (sourceKind === 'section') {
+        ;(item as unknown as Record<string, string>)['name'] = v
+      }
       entry.onItemChange()
     })
     tdLabel.appendChild(labelInput)
@@ -448,6 +476,13 @@ export class ItemsEditor {
       tdSource.innerHTML = '<span class="source-badge source-perso">🧙 Inventaire</span>'
     } else if (sourceKind === 'equipement') {
       tdSource.innerHTML = '<span class="source-badge source-perso">⚔️ Équipement</span>'
+    } else if (sourceKind === 'choix_initial') {
+      const grp = choixTexte ?? ''
+      const badge = document.createElement('span')
+      badge.className = 'source-badge source-perso'
+      badge.title = grp ? `Choix initial — ${grp}` : 'Choix initial'
+      badge.textContent = grp ? `🎲 ${grp}` : '🎲 Choix initial'
+      tdSource.appendChild(badge)
     } else {
       const badgeText = choixTexte
         ? `§${sectionNum} › ${choixTexte.substring(0, 30)}${choixTexte.length > 30 ? '…' : ''}`

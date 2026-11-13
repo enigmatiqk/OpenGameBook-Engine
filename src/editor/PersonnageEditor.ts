@@ -39,6 +39,16 @@ export class PersonnageEditor {
     return JSON.parse(JSON.stringify(this.data)) as PersonnageTemplate
   }
 
+  /**
+   * Retourne la donnée stagée (référence live, pas une copie).
+   * Utilisée par ItemsEditor pour éditer les MÊMES instances d'items que le
+   * PersonnageEditor (inventaire, équipement, choix initiaux), afin que les
+   * modifications (image, label…) soient incluses au commit via getData().
+   */
+  getStagedData(): PersonnageTemplate {
+    return this.data
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
 
   private _build(): void {

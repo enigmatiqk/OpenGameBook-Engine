@@ -135,6 +135,8 @@ export class GameEngineInventaire {
       quantite_label: option.quantite_label,
       usage: option.usage,
       description: option.description,
+      image: option.image,
+      image_ia: option.image_ia,
     })
   }
 

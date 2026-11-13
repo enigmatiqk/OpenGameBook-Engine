@@ -33,6 +33,8 @@ export interface ChoixInitialOption {
   quantite_label?: string
   usage?: string
   description?: string      // description affichée au survol
+  image?: string            // image de l'item
+  image_ia?: string         // image IA de l'item
 }
 
 export interface ChoixInitial {

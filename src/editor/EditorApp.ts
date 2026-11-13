@@ -373,7 +373,7 @@ export class EditorApp {
       this.personnageEditor.render(this.adventure)
       this.reglesEditor.render(this.adventure)
       this.carteFixeEditor.render(this.adventure)
-      this.itemsEditor.render(this.adventure)
+      this.itemsEditor.render(this.adventure, this.personnageEditor.getStagedData())
 
       // Construit la carte pour la sidebar
       this.carteState = buildCarte(this.adventure.sections, undefined, this.adventure.cartefix)
@@ -610,7 +610,7 @@ export class EditorApp {
         this.dirtySections = false
         if (this.adventure) {
           this.personnageEditor.render(this.adventure)
-          this.itemsEditor.render(this.adventure)
+          this.itemsEditor.render(this.adventure, this.personnageEditor.getStagedData())
         }
         break
     }

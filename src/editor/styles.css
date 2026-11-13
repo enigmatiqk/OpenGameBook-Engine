@@ -2619,6 +2619,20 @@ html, body {
   text-overflow: ellipsis;
 }
 
+/* Statut d'upload (dev : écrit sur disque ; prod : réf. seulement) */
+.item-image-status {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+.item-image-status--ok         { color: var(--success, #4caf50); }
+.item-image-status--no-backend { color: var(--text-muted); }
+.item-image-status--error      { color: var(--warning); }
+.item-image-status--uploading  { color: var(--accent, #2196f3); }
+
 /* Ligne de deux slots images dans PersonnageEditor / EffetsEditor */
 .part-item-images-row {
   display: flex;

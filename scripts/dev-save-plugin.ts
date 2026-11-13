@@ -24,11 +24,24 @@ const ALLOWED_FILES = new Set([
   'cartefix.json',
 ])
 
+// Extensions d'image acceptées pour l'upload (dev uniquement)
+const ALLOWED_IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => chunks.push(chunk))
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+    req.on('error', reject)
+  })
+}
+
+/** Lit le corps brut (binaire) d'une requête. */
+function readBodyBuffer(req: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
@@ -48,6 +61,51 @@ export function devSavePlugin(): Plugin {
           if (req.method === 'GET' && url === '/ping') {
             res.writeHead(200, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ ok: true }))
+            return
+          }
+
+          // ── POST /api/dev-save/image/<relPath> ─────────────────────────────
+          // Écrit un fichier image binaire dans le répertoire images de
+          // l'aventure (dev uniquement). <relPath> est un chemin relatif depuis
+          // la racine du projet, ex. "adventures/<adv>/images/repas.png".
+          if (req.method === 'POST' && url.startsWith('/image/')) {
+            const relPathRaw = url.slice('/image/'.length)
+            let relPath = relPathRaw
+            try { relPath = decodeURIComponent(relPathRaw) } catch { /* garde brut */ }
+
+            const projectRoot    = path.resolve(process.cwd())
+            const adventuresRoot = path.resolve(projectRoot, 'adventures')
+            const targetPath     = path.resolve(projectRoot, relPath)
+
+            // Sécurité : la cible doit être sous adventures/
+            if (!targetPath.startsWith(adventuresRoot + path.sep)) {
+              res.writeHead(403, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ error: 'Chemin non autorisé' }))
+              return
+            }
+
+            // Sécurité : extension image autorisée uniquement
+            const ext = path.extname(targetPath).toLowerCase()
+            if (!ALLOWED_IMAGE_EXTS.has(ext)) {
+              res.writeHead(403, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ error: `Type d'image non autorisé : ${ext || '(aucun)'}` }))
+              return
+            }
+
+            readBodyBuffer(req)
+              .then(buf => {
+                fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+                fs.writeFileSync(targetPath, buf)
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ ok: true, path: targetPath, bytes: buf.length }))
+                console.log(`[dev-save] 🖼️ ${targetPath} (${buf.length} o)`)
+              })
+              .catch((err: unknown) => {
+                console.error('[dev-save] ❌ Erreur image :', err)
+                res.writeHead(500, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ error: String(err) }))
+              })
+
             return
           }
 

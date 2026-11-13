@@ -4,7 +4,10 @@
  * Identique au slot de SectionEditor mais :
  * - taille carrée fixe (CSS class item-image-slot)
  * - avertissement ⚠️ si l'image uploadée n'est pas carrée (ratio ≠ 1:1)
+ * - upload réel vers le backend dev (plugin dev-save) via uploadImageFile
  */
+
+import { uploadImageFile, type UploadStatus } from './imageUpload'
 
 export interface ItemImageSlotOptions {
   /** Champ cible : 'image' ou 'image_ia' */
@@ -95,6 +98,19 @@ export function buildItemImageSlot(options: ItemImageSlotOptions): HTMLElement {
   fname.textContent = filename ?? '(aucune)'
   slot.appendChild(fname)
 
+  // Statut d'upload (dev : écrit sur disque ; prod : réf. seulement)
+  const status = document.createElement('div')
+  status.className = 'item-image-status'
+  slot.appendChild(status)
+
+  const setStatus = (s: UploadStatus | 'uploading', error?: string): void => {
+    status.className = `item-image-status item-image-status--${s}`
+    if (s === 'uploading')      status.textContent = '⬆️ Upload…'
+    else if (s === 'ok')        status.textContent = '✅ Enregistrée'
+    else if (s === 'no-backend')status.textContent = '💾 Réf. enregistrée'
+    else if (s === 'error')     { status.textContent = `⚠️ Échec upload${error ? ` : ${error}` : ''}`; console.error('[item-image] upload échoué :', error) }
+  }
+
   // Input file caché
   const hiddenInput = document.createElement('input')
   hiddenInput.type = 'file'
@@ -110,35 +126,47 @@ export function buildItemImageSlot(options: ItemImageSlotOptions): HTMLElement {
   uploadBtn.addEventListener('click', () => hiddenInput.click())
   slot.appendChild(uploadBtn)
 
-  const handleFile = (file: File): void => {
+  const handleFile = async (file: File): Promise<void> => {
     if (!file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
 
-      // Mettre à jour l'aperçu
-      const existingImg = thumb.querySelector<HTMLImageElement>('.item-image-thumb-img')
-      if (existingImg) {
-        existingImg.src = dataUrl
-        existingImg.style.opacity = '1'
-        thumb.querySelector('.image-zoom-btn')?.remove()
-        existingImg.onload = () => checkRatio(existingImg)
-        addZoomBtn(existingImg)
-      } else {
-        thumb.innerHTML = ''
-        const newImg = document.createElement('img')
-        newImg.className = 'item-image-thumb-img'
-        newImg.alt = label
-        newImg.src = dataUrl
-        newImg.onload = () => checkRatio(newImg)
-        thumb.appendChild(newImg)
-        addZoomBtn(newImg)
-      }
+    // Aperçu immédiat via dataUrl
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload  = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
 
-      fname.textContent = file.name
-      onChange(file.name, dataUrl)
+    // Mettre à jour l'aperçu
+    const existingImg = thumb.querySelector<HTMLImageElement>('.item-image-thumb-img')
+    if (existingImg) {
+      existingImg.src = dataUrl
+      existingImg.style.opacity = '1'
+      thumb.querySelector('.image-zoom-btn')?.remove()
+      existingImg.onload = () => checkRatio(existingImg)
+      addZoomBtn(existingImg)
+    } else {
+      thumb.innerHTML = ''
+      const newImg = document.createElement('img')
+      newImg.className = 'item-image-thumb-img'
+      newImg.alt = label
+      newImg.src = dataUrl
+      newImg.onload = () => checkRatio(newImg)
+      thumb.appendChild(newImg)
+      addZoomBtn(newImg)
     }
-    reader.readAsDataURL(file)
+
+    fname.textContent = file.name
+
+    // Upload vers le backend dev (écrit le fichier dans le répertoire images)
+    setStatus('uploading')
+    const result = await uploadImageFile(file, imageBaseUrl)
+    setStatus(result.status, result.error)
+
+    // On enregistre le nom du fichier dans l'item (référence), quel que soit le
+    // résultat de l'upload : en dev le fichier est sur disque, en prod l'utilisateur
+    // le place à la main. Le dirty-flag est levé via onChange → onItemChange.
+    onChange(result.filename, dataUrl)
   }
 
   hiddenInput.addEventListener('change', () => {
