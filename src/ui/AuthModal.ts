@@ -26,18 +26,30 @@ export class AuthModal {
    */
   async tryAutoLogin(): Promise<boolean> {
     const params = new URLSearchParams(window.location.search)
+
+    // Cas 1 : lien magique email → ?session=<JWT> (redirigé par le backend)
+    const sessionToken = params.get('session')
+    if (sessionToken) {
+      this.api.setToken(sessionToken)
+      const cleanUrl = window.location.pathname + window.location.hash
+      history.replaceState(null, '', cleanUrl)
+      // Récupérer le pseudo depuis /api/auth/me
+      await this._fetchAndStorePseudo()
+      return true
+    }
+
+    // Cas 2 : token raw dans l'URL (usage direct du lien legacy ?token=...)
     const token = params.get('token')
     if (!token) return false
 
     try {
-      const { sessionToken } = await this.api.loginWithToken(token)
-      this.api.setToken(sessionToken)
-      // Nettoyer l'URL sans rechargement
+      const { sessionToken: jwt } = await this.api.loginWithToken(token)
+      this.api.setToken(jwt)
       const cleanUrl = window.location.pathname + window.location.hash
       history.replaceState(null, '', cleanUrl)
+      await this._fetchAndStorePseudo()
       return true
     } catch {
-      // Token invalide ou expiré — afficher la modale normalement
       return false
     }
   }
@@ -257,6 +269,7 @@ export class AuthModal {
     try {
       const { sessionToken } = await this.api.loginWithToken(token)
       this.api.setToken(sessionToken)
+      await this._fetchAndStorePseudo()
       this.close()
       this.onAuthenticated()
     } catch (err) {
@@ -288,6 +301,27 @@ export class AuthModal {
     if (type === 'error')   el.classList.add('auth-message--error')
   }
 
+  /** Récupère le pseudo depuis /api/auth/me et le stocke en sessionStorage. */
+  private async _fetchAndStorePseudo(): Promise<void> {
+    try {
+      const { pseudo } = await this.api.getMe()
+      sessionStorage.setItem('ogb_pseudo', pseudo)
+    } catch {
+      // Non bloquant — le pseudo sera absent mais l'accès reste possible
+    }
+  }
+
+  /** Retourne le pseudo stocké en sessionStorage (ou null). */
+  static getPseudo(): string | null {
+    return sessionStorage.getItem('ogb_pseudo')
+  }
+
+  /** Déconnexion : vide le token et le pseudo du sessionStorage. */
+  static logout(): void {
+    sessionStorage.removeItem('ogb_token')
+    sessionStorage.removeItem('ogb_pseudo')
+  }
+
   /** Ferme et supprime la modale du DOM. */
   close(): void {
     this.overlay?.remove()
@@ -317,6 +351,7 @@ export class AuthModal {
 
     // Cas 2 : token dans sessionStorage → déjà authentifié
     if (sessionStorage.getItem('ogb_token')) {
+      await this._fetchAndStorePseudo()
       this.onAuthenticated()
       return
     }

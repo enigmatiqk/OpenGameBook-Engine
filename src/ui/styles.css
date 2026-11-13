@@ -1568,3 +1568,21 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   font-size: 0.8rem;
   letter-spacing: 0.03em;
 }
+
+/* ── Badge pseudo connecté ── */
+.user-pseudo-badge {
+  display: inline-flex; align-items: center;
+  background: var(--bg-card); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.35rem 0.65rem; font-size: 0.8rem;
+  box-shadow: var(--shadow);
+  cursor: default; pointer-events: none; user-select: none;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Bouton déconnexion ── */
+.btn-logout {
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.btn-logout:hover { opacity: 1; }

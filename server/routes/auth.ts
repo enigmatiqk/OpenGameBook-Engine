@@ -3,6 +3,8 @@ import type { DatabaseAdapter } from '../db/DatabaseAdapter'
 import { AuthService } from '../services/AuthService'
 import { EmailService } from '../services/EmailService'
 import { authRateLimiter } from '../middleware/rateLimiter'
+import { requireAuth } from '../middleware/auth'
+import type { AuthRequest } from '../middleware/auth'
 import { config } from '../config'
 
 function smtpRequired(res: import('express').Response): boolean {
@@ -39,7 +41,16 @@ export function authRouter(db: DatabaseAdapter): Router {
         return
       }
       const sessionToken = authService.login(token)
-      res.status(200).json({ sessionToken })
+      const baseUrl = config.appBaseUrl.replace(/\/$/, '')
+
+      // Si la requête vient d'un navigateur (Accept: text/html), on redirige.
+      // Si la requête vient de l'API client (Accept: application/json), on retourne le JSON.
+      const acceptsHtml = (req.headers['accept'] ?? '').includes('text/html')
+      if (acceptsHtml) {
+        res.redirect(`${baseUrl}/?session=${encodeURIComponent(sessionToken)}`)
+      } else {
+        res.status(200).json({ sessionToken })
+      }
     } catch (err) {
       next(err)
     }
@@ -51,6 +62,21 @@ export function authRouter(db: DatabaseAdapter): Router {
       const { email } = req.body as { email: string }
       await authService.requestLogin(email)
       res.status(204).end()
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // GET /api/auth/me — retourne le pseudo de l'utilisateur connecté
+  router.get('/me', requireAuth({ jwtSecret: config.jwtSecret }), (req, res, next) => {
+    try {
+      const userId = (req as AuthRequest).userId!
+      const user = db.get<{ pseudo: string }>('SELECT pseudo FROM users WHERE id = ?', [userId])
+      if (!user) {
+        res.status(404).json({ message: 'Utilisateur introuvable' })
+        return
+      }
+      res.status(200).json({ pseudo: user.pseudo })
     } catch (err) {
       next(err)
     }

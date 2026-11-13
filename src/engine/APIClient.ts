@@ -89,4 +89,8 @@ export class APIClient {
       `/api/auth/login?token=${encodeURIComponent(token)}`,
     )
   }
+
+  async getMe(): Promise<{ pseudo: string }> {
+    return this.request<{ pseudo: string }>('GET', '/api/auth/me')
+  }
 }

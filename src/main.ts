@@ -459,6 +459,36 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         void modal.mountAndWait()
       })
+
+      // Afficher le pseudo + bouton déconnexion dans la barre globale
+      const pseudo = AuthModal.getPseudo()
+      if (pseudo) {
+        const globalBtns = document.getElementById('global-btns')
+        if (globalBtns) {
+          // Badge pseudo (non cliquable)
+          const pseudoBadge = document.createElement('span')
+          pseudoBadge.id = 'user-pseudo-badge'
+          pseudoBadge.className = 'user-pseudo-badge'
+          pseudoBadge.textContent = `👤 ${pseudo}`
+          pseudoBadge.title = `Connecté en tant que ${pseudo}`
+
+          // Bouton déconnexion (visible uniquement dans la bibliothèque)
+          const logoutBtn = document.createElement('button')
+          logoutBtn.id = 'btn-logout'
+          logoutBtn.className = 'btn-a11y-global btn-logout'
+          logoutBtn.type = 'button'
+          logoutBtn.title = 'Se déconnecter'
+          logoutBtn.setAttribute('aria-label', 'Se déconnecter')
+          logoutBtn.textContent = '🚪'
+          logoutBtn.addEventListener('click', () => {
+            AuthModal.logout()
+            window.location.reload()
+          })
+
+          globalBtns.prepend(logoutBtn)
+          globalBtns.prepend(pseudoBadge)
+        }
+      }
     }
 
     // Afficher la bibliothèque après la détection (et l'auth éventuelle)
