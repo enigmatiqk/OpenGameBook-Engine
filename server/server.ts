@@ -64,7 +64,8 @@ async function main(): Promise<void> {
       } else if (err instanceof ValidationError) {
         res.status(400).json({ message: err.message })
       } else {
-        console.error('[server] Erreur inattendue:', err)
+        console.error('[server] Erreur inattendue:', err.message ?? err)
+        if (err.stack) console.error(err.stack)
         res.status(500).json({ message: 'Erreur interne du serveur' })
       }
     },
