@@ -3,6 +3,7 @@ import type { HeroInitState, RollResult } from '../types'
 import { parseDiceFormula, rollDice } from '../engine/CombatResolver'
 import { srAnnounce } from './srAnnounce'
 import { tts } from './tts'
+import { resolveImage } from '../utils/imageUtils'
 
 /**
  * Affiche l'écran de création du héros.
@@ -166,13 +167,36 @@ export function showInventaireDepart(
 ): void {
   const items = engine.getInventaireDepart()
   if (items.length === 0) { onComplete(); return }
-  _renderInventaireDepart(container, engine, items, onComplete)
+
+  // Re-render au changement de mode d'affichage des images
+  let current = items
+  let onPrefs: (() => void) | null = null
+  let completed = false
+
+  const done = () => {
+    if (completed) return
+    completed = true
+    if (onPrefs) window.removeEventListener('imagePrefsChanged', onPrefs)
+    onComplete()
+  }
+
+  const render = (remaining: typeof items) => {
+    _renderInventaireDepart(container, engine, remaining, (next) => {
+      current = next
+      render(next)
+    }, done)
+  }
+
+  onPrefs = () => { if (!completed) render(current) }
+  window.addEventListener('imagePrefsChanged', onPrefs)
+  render(current)
 }
 
 function _renderInventaireDepart(
   container: HTMLElement,
   engine: GameEngine,
   remaining: Array<{ item: import('../types').InventaireItem; isEquipement: boolean }>,
+  advance: (next: Array<{ item: import('../types').InventaireItem; isEquipement: boolean }>) => void,
   onComplete: () => void
 ): void {
   container.innerHTML = ''
@@ -202,6 +226,7 @@ function _renderInventaireDepart(
 
     const grid = document.createElement('div')
     grid.className = 'inventaire-depart-grid'
+    const adventure = engine.getAdventure()
 
     for (const entry of remaining) {
       const { item, isEquipement } = entry
@@ -211,15 +236,24 @@ function _renderInventaireDepart(
       card.type = 'button'
       if (item.description) card.title = item.description
 
-      const badge = document.createElement('div')
-      badge.className = 'item-depart-badge'
-      badge.textContent = isEquipement ? '🛡️' : '🎒'
+      const visual = document.createElement('div')
+      visual.className = 'item-depart-badge'
+      const imageFile = resolveImage(item.image, item.image_ia)
+      if (imageFile && adventure) {
+        const img = document.createElement('img')
+        img.className = 'item-thumbnail'
+        img.src = adventure.repertoire_images.replace(/\/?$/, '/') + imageFile
+        img.alt = item.label
+        visual.appendChild(img)
+      } else {
+        visual.textContent = isEquipement ? '🛡️' : '🎒'
+      }
 
       const name = document.createElement('div')
       name.className = 'item-depart-name'
       name.textContent = item.label
 
-      card.appendChild(badge)
+      card.appendChild(visual)
       card.appendChild(name)
 
       if (item.quantite && item.quantite > 1) {
@@ -235,7 +269,7 @@ function _renderInventaireDepart(
         tts.speak(ramasseMsg)
         engine.applyItemDepart(item, isEquipement)
         const next = remaining.filter(e => e.item !== item)
-        _renderInventaireDepart(container, engine, next, onComplete)
+        advance(next)
       })
 
       grid.appendChild(card)
@@ -267,7 +301,29 @@ export function showChoixInitiaux(
 ): void {
   const choix = engine.getChoixInitiaux()
   if (choix.length === 0) { onComplete(); return }
-  _renderChoix(container, engine, choix, 0, onComplete)
+
+  // Re-render au changement de mode d'affichage des images
+  let current = 0
+  let onPrefs: (() => void) | null = null
+  let completed = false
+
+  const done = () => {
+    if (completed) return
+    completed = true
+    if (onPrefs) window.removeEventListener('imagePrefsChanged', onPrefs)
+    onComplete()
+  }
+
+  const render = (index: number) => {
+    _renderChoix(container, engine, choix, index, (nextIndex) => {
+      current = nextIndex
+      render(nextIndex)
+    }, done)
+  }
+
+  onPrefs = () => { if (!completed) render(current) }
+  window.addEventListener('imagePrefsChanged', onPrefs)
+  render(current)
 }
 
 function _renderChoix(
@@ -275,11 +331,13 @@ function _renderChoix(
   engine: GameEngine,
   choix: ReturnType<GameEngine['getChoixInitiaux']>,
   index: number,
+  advance: (nextIndex: number) => void,
   onComplete: () => void
 ): void {
   if (index >= choix.length) { onComplete(); return }
 
   const current = choix[index]
+  const adventure = engine.getAdventure()
   container.innerHTML = ''
 
   const wrap = document.createElement('div')
@@ -315,17 +373,27 @@ function _renderChoix(
     const qty = option.quantite !== undefined
       ? ` (${option.quantite}${option.quantite_label ? ' ' + option.quantite_label : ''})`
       : ''
-    btn.textContent = option.label + qty
     if (option.description) {
       btn.title = option.description
     }
+    const optionImageFile = resolveImage(option.image, option.image_ia)
+    if (optionImageFile && adventure) {
+      const img = document.createElement('img')
+      img.className = 'item-thumbnail'
+      img.src = adventure.repertoire_images.replace(/\/?$/, '/') + optionImageFile
+      img.alt = option.label
+      btn.appendChild(img)
+    }
+    const labelEl = document.createElement('span')
+    labelEl.textContent = option.label + qty
+    btn.appendChild(labelEl)
     btn.addEventListener('click', () => {
       const desc = option.description ? `. ${option.description}` : ''
       const choixMsg = `${option.label}${qty} choisi${desc}`
       srAnnounce(`${option.label}${qty} choisi.`)
       tts.speak(choixMsg, false)
       engine.applyChoixInitial(option)
-      _renderChoix(container, engine, choix, index + 1, onComplete)
+      advance(index + 1)
     })
     optionsEl.appendChild(btn)
   }

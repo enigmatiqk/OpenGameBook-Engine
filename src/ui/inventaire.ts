@@ -1,6 +1,7 @@
 import type { GameEngine } from '../engine/GameEngine'
 import type { Adventure, Hero } from '../types'
 import { buildItemContent } from './equipement'
+import { resolveImage } from '../utils/imageUtils'
 
 /**
  * Convertit un texte en slug utilisable comme id DOM
@@ -20,20 +21,24 @@ function slugify(text: string): string {
  * - null si la propriété monnaie n'est pas définie dans l'aventure
  * - { label, quantite } même si l'item n'existe pas encore dans l'inventaire (quantite = 0)
  */
-function getMonnaiInfo(adventure: Adventure, hero: Hero): { id: string; label: string; quantite: number } | null {
+function getMonnaiInfo(adventure: Adventure, hero: Hero): { id: string; label: string; quantite: number; imageFile?: string } | null {
   const monnaiId = adventure.personnage.monnaie
   if (!monnaiId) return null
 
+  // Définition de la monnaie dans le template (fallback pour l'image)
+  const itemDef = adventure.personnage.inventaire.find(i => typeof i !== 'string' && i.id === monnaiId)
+  const defImage = itemDef && typeof itemDef !== 'string' ? resolveImage(itemDef.image, itemDef.image_ia) : undefined
+
   const item = hero.inventaire.find(i => typeof i !== 'string' && i.id === monnaiId)
   if (item && typeof item !== 'string') {
-    return { id: monnaiId, label: item.label, quantite: item.quantite ?? 0 }
+    // Image : priorité à l'item du héros, sinon la définition du template
+    const imageFile = resolveImage(item.image, item.image_ia) ?? defImage
+    return { id: monnaiId, label: item.label, quantite: item.quantite ?? 0, imageFile }
   }
 
   // Monnaie définie mais pas encore dans l'inventaire → afficher 0
-  // Cherche le label dans l'inventaire initial du personnage
-  const itemDef = adventure.personnage.inventaire.find(i => typeof i !== 'string' && i.id === monnaiId)
   const label = itemDef && typeof itemDef !== 'string' ? itemDef.label : monnaiId
-  return { id: monnaiId, label, quantite: 0 }
+  return { id: monnaiId, label, quantite: 0, imageFile: defImage }
 }
 
 /**
@@ -58,7 +63,7 @@ export class InventaireView {
    * Retourne null si la propriété monnaie n'est pas définie dans cette aventure
    * Affiche 0 si la monnaie est définie mais que le héros n'en a pas
    */
-  static buildMonnaiWidget(adventure: Adventure, hero: Hero, _escHtml: (s: string) => string): HTMLElement | null {
+  static buildMonnaiWidget(adventure: Adventure, hero: Hero, _escHtml: (s: string) => string, escAttr: (s: string) => string): HTMLElement | null {
     const monnaie = getMonnaiInfo(adventure, hero)
     if (!monnaie) return null
 
@@ -67,8 +72,12 @@ export class InventaireView {
     widget.setAttribute('aria-label', `${monnaie.label} : ${monnaie.quantite}`)
     widget.title = monnaie.label
 
+    const iconHtml = monnaie.imageFile
+      ? `<img class="monnaie-icon-img" src="${escAttr(adventure.repertoire_images.replace(/\/?$/, '/') + monnaie.imageFile)}" alt="${escAttr(monnaie.label)}">`
+      : `<span class="monnaie-icon" aria-hidden="true">🪙</span>`
+
     widget.innerHTML =
-      `<span class="monnaie-icon" aria-hidden="true">🪙</span>` +
+      iconHtml +
       `<span class="monnaie-value" id="monnaie-${slugify(monnaie.id)}">${monnaie.quantite}</span>`
 
     return widget
@@ -194,13 +203,17 @@ export class InventaireView {
    * Retourne une chaîne vide si la propriété monnaie n'est pas définie dans cette aventure
    * Affiche 0 si la monnaie est définie mais que le héros n'en a pas
    */
-  static buildMonnaiSection(adventure: Adventure, hero: Hero, escHtml: (s: string) => string): string {
+  static buildMonnaiSection(adventure: Adventure, hero: Hero, escHtml: (s: string) => string, escAttr: (s: string) => string): string {
     const monnaie = getMonnaiInfo(adventure, hero)
     if (!monnaie) return ''
 
+    const iconHtml = monnaie.imageFile
+      ? `<img class="monnaie-icon-img" src="${escAttr(adventure.repertoire_images.replace(/\/?$/, '/') + monnaie.imageFile)}" alt="${escAttr(monnaie.label)}">`
+      : `🪙`
+
     return `<div class="hero-monnaie-section">` +
       `<h3>Monnaie</h3>` +
-      `<p class="monnaie-modal-line">🪙 <strong>${monnaie.quantite}</strong> ${escHtml(monnaie.label)}</p>` +
+      `<p class="monnaie-modal-line">${iconHtml} <strong>${monnaie.quantite}</strong> ${escHtml(monnaie.label)}</p>` +
       `</div>`
   }
 

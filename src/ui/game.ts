@@ -370,7 +370,7 @@ export class GameView {
     }
 
     // Affiche la monnaie à côté des stats si définie
-    const monnaiWidget = InventaireView.buildMonnaiWidget(adventure, hero, (s) => this._escHtml(s))
+    const monnaiWidget = InventaireView.buildMonnaiWidget(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s))
     if (monnaiWidget) statsEl.appendChild(monnaiWidget)
 
     panel.appendChild(statsEl)
@@ -745,7 +745,7 @@ export class GameView {
     content += '</tbody></table>'
 
     // Section Monnaie (entre les stats et l'inventaire, si définie)
-    content += InventaireView.buildMonnaiSection(adventure, hero, (s) => this._escHtml(s))
+    content += InventaireView.buildMonnaiSection(adventure, hero, (s) => this._escHtml(s), (s) => this._escAttr(s))
 
     // Conteneur pour inventaire et équipement côte à côte
     content += '<div class="hero-layout">'
