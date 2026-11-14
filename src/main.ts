@@ -49,6 +49,68 @@ let appMode: 'local' | 'server' = 'local'
 
 let libraryView: LibraryView | null = null
 
+// ── Sauvegarde bloquante par section (mode cloud) ─────────────────────────────
+// Empêche deux syncs concurrentes : si une sync est en cours, les nouvelles
+// saves sont ignorées (le localStorage contient déjà le dernier état).
+let saveSyncInProgress = false
+
+/**
+ * Affiche une modal bloquante (z-index 1200) au-dessus du jeu quand la
+ * sauvegarde cloud échoue. Le joueur ne peut pas interagir avec le jeu tant
+ * que la sync n'a pas réussi. Un seul bouton "Réessayer" est proposé.
+ *
+ * Le message est volontairement générique — aucune raison technique n'est
+ * divulguée au joueur (sécurité anti-triche).
+ */
+function showSaveBlockingDialog(): Promise<void> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div')
+    overlay.className = 'save-block-overlay'
+    overlay.setAttribute('role', 'dialog')
+    overlay.setAttribute('aria-modal', 'true')
+    overlay.setAttribute('aria-label', 'Sauvegarde impossible')
+    overlay.innerHTML = `
+      <div class="save-block-modal">
+        <p class="save-block-message">Sauvegarde impossible. Vérifiez votre connexion et réessayez.</p>
+        <div class="save-block-actions">
+          <button class="btn btn-primary" id="save-retry-btn" type="button">Réessayer</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(overlay)
+
+    overlay.querySelector<HTMLButtonElement>('#save-retry-btn')!.addEventListener('click', () => {
+      overlay.remove()
+      resolve()
+    })
+  })
+}
+
+/**
+ * Synchronise la sauvegarde vers le backend. En cas d'échec, affiche la modal
+ * bloquante et relance la sync tant que le joueur clique "Réessayer".
+ */
+async function syncSaveBlocking(adventureTitle: string): Promise<void> {
+  if (saveSyncInProgress) return
+  saveSyncInProgress = true
+  try {
+    await syncStore.syncSaveToBackend(adventureTitle)
+  } catch {
+    // Échec → modal bloquante jusqu'à succès
+    while (true) {
+      await showSaveBlockingDialog()
+      try {
+        await syncStore.syncSaveToBackend(adventureTitle)
+        break // Succès → on sort de la boucle
+      } catch {
+        // Échec à nouveau → on reboucle pour réafficher la modal
+      }
+    }
+  } finally {
+    saveSyncInProgress = false
+  }
+}
+
 // ── Modal d'erreur de synchronisation (tâche 9.3) ─────────────────────────────
 /**
  * Affiche une modal bloquante proposant de réessayer ou de rester sur la page.
@@ -122,6 +184,15 @@ async function startGame(meta: AdventureMetadata, resume: boolean): Promise<void
 
     // Rend l'adventure accessible à la modal de debug
     setAdventureProvider(() => engine.getAdventure())
+
+    // ── Sauvegarde bloquante par section (mode cloud) ─────────────────────────
+    // Chaque saveGame() déclenche une sync vers le backend. En cas d'échec,
+    // une modal bloquante empêche le joueur de continuer jusqu'à succès.
+    if (appMode === 'server') {
+      engine.setOnSave(() => {
+        void syncSaveBlocking(adventure.titre)
+      })
+    }
 
     // ── Applique le thème de collection si activé ────────────────────────────
     void themeManager.applyGameTheme(meta.collection)

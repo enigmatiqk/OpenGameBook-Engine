@@ -11,6 +11,7 @@ import { securityHeadersMiddleware } from './middleware/securityHeaders'
 import { config } from './config'
 import { AuthService } from './services/AuthService'
 import { EmailService } from './services/EmailService'
+import { AdventureCache } from './services/AdventureCache'
 import {
   ConflictError,
   NotFoundError,
@@ -29,10 +30,13 @@ async function main(): Promise<void> {
   // EmailService instancié une seule fois, partagé entre les routes et le cleanup
   const emailService = new EmailService(config.smtp)
 
+  // Cache des sections d'aventure pour la validation anti-triche côté serveur
+  const adventureCache = new AdventureCache()
+
   // Déterminer le mode DB pour le health endpoint — intentionnellement non exposé
   app.use('/api/health', healthRouter())
   app.use('/api/auth', authRouter(db, emailService))
-  app.use('/api/saves', savesRouter(db))
+  app.use('/api/saves', savesRouter(db, adventureCache))
   app.use('/api/leaderboard', leaderboardRouter(db))
 
   // Nettoyage périodique des comptes non activés (toutes les heures)

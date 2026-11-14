@@ -1601,3 +1601,31 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   width: 1rem; height: 1rem; accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* ── Modal bloquante de sauvegarde (mode cloud) ──────────────────────────── */
+/* z-index 1200 : au-dessus du jeu et des autres modales (auth: 1100) */
+.save-block-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+.save-block-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%; max-width: 420px;
+  padding: 2rem;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+.save-block-message {
+  font-size: 1rem; line-height: 1.6;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+}
+.save-block-actions {
+  display: flex; justify-content: center;
+}

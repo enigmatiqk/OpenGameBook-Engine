@@ -1,13 +1,14 @@
 import { Router } from 'express'
 import type { DatabaseAdapter } from '../db/DatabaseAdapter'
 import { SaveService } from '../services/SaveService'
+import { AdventureCache } from '../services/AdventureCache'
 import { requireAuth, type AuthRequest } from '../middleware/auth'
 import { config } from '../config'
 import type { SaveState } from '../../src/types'
 
-export function savesRouter(db: DatabaseAdapter): Router {
+export function savesRouter(db: DatabaseAdapter, adventureCache: AdventureCache): Router {
   const router = Router()
-  const saveService = new SaveService(db)
+  const saveService = new SaveService(db, adventureCache)
   const auth = requireAuth(config)
 
   // PUT /api/saves/:adventureId

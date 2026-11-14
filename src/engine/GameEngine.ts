@@ -26,6 +26,7 @@ export class GameEngine {
   private victory: boolean = false
   private finalTimeMs: number | null = null
   private saveState: SaveState | null = null
+  private onSaveCallback?: (state: SaveState) => void
 
   // État combat en cours
   private combatState: CombatState | null = null
@@ -1383,6 +1384,10 @@ export class GameEngine {
 
   // ─── Sauvegarde ───────────────────────────────────────────────────────────
 
+  setOnSave(callback: (state: SaveState) => void): void {
+    this.onSaveCallback = callback
+  }
+
   saveGame(): void {
     const state = this.saveModule.saveGame(this.adventure, this.hero, this.currentSection)
     if (state) {
@@ -1407,6 +1412,7 @@ export class GameEngine {
         state.currentSectionParams = { ...this.currentSectionParams }
       }
       this.saveState = state
+      if (this.onSaveCallback) this.onSaveCallback(state)
     }
   }
 
