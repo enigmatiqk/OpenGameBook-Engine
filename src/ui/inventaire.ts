@@ -77,7 +77,7 @@ export class InventaireView {
   /**
    * Construit le panneau d'inventaire pour la vue principale
    */
-  static buildHeroInventoryPanel(adventure: Adventure, _hero: Hero, engine: GameEngine, escHtml: (s: string) => string, onDrop?: () => void): HTMLElement {
+  static buildHeroInventoryPanel(adventure: Adventure, _hero: Hero, engine: GameEngine, escHtml: (s: string) => string, escAttr: (s: string) => string, onDrop?: () => void): HTMLElement {
     const panel = document.createElement('div')
     panel.className = 'hero-inventory'
 
@@ -124,8 +124,8 @@ export class InventaireView {
             btn.type = 'button'
             btn.id = slugify(item.id)
             if (item.quantite !== undefined) btn.dataset.count = String(item.quantite)
-            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-            btn.textContent = escHtml(item.label) + qty
+            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + escHtml(item.quantite_label) : ''})` : ''
+            btn.innerHTML = buildItemContent(item, adventure, escHtml, escAttr, { warnOnMissing: false }) + qty
             btn.title = item.description || 'Cliquez pour consommer'
             btn.addEventListener('click', () => {
               const result = engine.consumeItem(item.id)
@@ -141,8 +141,8 @@ export class InventaireView {
             const span = document.createElement('span')
             span.id = slugify(item.id)
             if (item.quantite !== undefined) span.dataset.count = String(item.quantite)
-            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + item.quantite_label : ''})` : ''
-            span.textContent = escHtml(item.label) + qty
+            const qty = item.quantite !== undefined ? ` (${item.quantite}${item.quantite_label ? ' ' + escHtml(item.quantite_label) : ''})` : ''
+            span.innerHTML = buildItemContent(item, adventure, escHtml, escAttr, { warnOnMissing: false }) + qty
             if (item.description) {
               span.title = item.description
             }

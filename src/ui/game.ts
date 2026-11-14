@@ -376,7 +376,7 @@ export class GameView {
     panel.appendChild(statsEl)
 
     // Affiche l'inventaire (sans les items équipés ni la monnaie)
-    const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s), () => this._render())
+    const inventoryPanel = InventaireView.buildHeroInventoryPanel(adventure, hero, this.engine, (s) => this._escHtml(s), (s) => this._escAttr(s), () => this._render())
     panel.appendChild(inventoryPanel)
 
     return panel

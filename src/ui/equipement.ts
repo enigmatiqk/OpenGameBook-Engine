@@ -11,15 +11,18 @@ export function buildItemContent(
   item: InventaireItem,
   adventure: Adventure,
   escHtml: (s: string) => string,
-  escAttr: (s: string) => string
+  escAttr: (s: string) => string,
+  options?: { warnOnMissing?: boolean }
 ): string {
   const imageFile = resolveImage(item.image, item.image_ia)
   if (imageFile) {
     const src = adventure.repertoire_images.replace(/\/?$/, '/') + imageFile
     return `<img src="${escAttr(src)}" alt="${escAttr(item.label)}" title="${escAttr(item.label)}" class="item-thumbnail">`
   }
-  // Pas d'image : fallback texte avec warning
-  console.warn(`[Item] Pas d'image pour l'item "${item.id}" (${item.label})`)
+  // Pas d'image : fallback texte (warning optionnel pour le débogage)
+  if (options?.warnOnMissing !== false) {
+    console.warn(`[Item] Pas d'image pour l'item "${item.id}" (${item.label})`)
+  }
   return escHtml(item.label)
 }
 

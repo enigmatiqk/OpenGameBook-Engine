@@ -1329,6 +1329,14 @@ html, body { height: 100%; background: var(--bg-primary); color: var(--text-prim
   flex-shrink: 0;
 }
 
+/* Dans l'inventaire inline (hero-panel) : image compacte alignée sur la ligne */
+.inv-items .item-thumbnail {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+
 /* ── Accessibilité écran — élément visible uniquement par les lecteurs d'écran ── */
 .sr-only {
   position: absolute;
