@@ -236,24 +236,19 @@ function _renderInventaireDepart(
       card.type = 'button'
       if (item.description) card.title = item.description
 
-      const visual = document.createElement('div')
-      visual.className = 'item-depart-badge'
       const imageFile = resolveImage(item.image, item.image_ia)
       if (imageFile && adventure) {
         const img = document.createElement('img')
         img.className = 'item-thumbnail'
         img.src = adventure.repertoire_images.replace(/\/?$/, '/') + imageFile
         img.alt = item.label
-        visual.appendChild(img)
-      } else {
-        visual.textContent = isEquipement ? '🛡️' : '🎒'
+        card.appendChild(img)
       }
 
       const name = document.createElement('div')
       name.className = 'item-depart-name'
       name.textContent = item.label
 
-      card.appendChild(visual)
       card.appendChild(name)
 
       if (item.quantite && item.quantite > 1) {
