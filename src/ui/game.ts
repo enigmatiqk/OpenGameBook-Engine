@@ -39,8 +39,11 @@ export class GameView {
     this.engine.applyDebugNavHistory()
     this._render()
 
-    // Recharge l'image de la section courante quand les préférences changent
-    this._onImagePrefsChanged = () => this._refreshSectionImage()
+    // Recharge l'image de la section courante et le panneau héros inline quand les préférences changent
+    this._onImagePrefsChanged = () => {
+      this._refreshSectionImage()
+      this._refreshHeroPanel()
+    }
     window.addEventListener('imagePrefsChanged', this._onImagePrefsChanged)
   }
 
@@ -91,6 +94,20 @@ export class GameView {
       }
       // Sinon rien à faire
     }
+  }
+
+  /**
+   * Rafraîchit le panneau héros inline (stats, monnaie, inventaire)
+   * quand le mode d'affichage des images change, sans re-render complet.
+   */
+  private _refreshHeroPanel(): void {
+    const container = this.container
+    if (!container) return
+    const { adventure, hero } = this.engine.getGameState()
+    if (!adventure || !hero) return
+    const existing = container.querySelector<HTMLElement>('.hero-panel')
+    if (!existing) return
+    existing.replaceWith(this._buildHeroPanel(adventure, hero))
   }
 
   private _render(): void {
