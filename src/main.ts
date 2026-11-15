@@ -371,16 +371,41 @@ function initVictoryView(engine: GameEngine): void {
   const minutes = Math.floor(finalTime / 60000)
   const seconds = Math.floor((finalTime % 60000) / 1000)
 
+  const cloudPseudo = sessionStorage.getItem('ogb_pseudo')
+
   container.innerHTML = `
     <h2>🏆 Victoire !</h2>
     <p class="end-message">Félicitations, vous avez terminé l'aventure en ${minutes}m ${seconds}s !</p>
     <div class="name-input-group">
-      <input class="name-input" type="text" placeholder="Votre nom (optionnel)" maxlength="40" id="winner-name" />
+      <input class="name-input" type="text" placeholder="Votre nom (optionnel)" maxlength="40" id="winner-name" value="${cloudPseudo ?? ''}" />
       <button class="btn btn-primary" id="btn-submit-score" type="button">Valider</button>
     </div>
     <div id="leaderboard-area"></div>
     <button class="btn btn-secondary" id="btn-back-library" type="button" style="margin-top:1rem">Retour à la bibliothèque</button>
   `
+
+  // En mode cloud, masquer la saisie du nom et soumettre automatiquement
+  if (cloudPseudo && adventure) {
+    const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
+    if (inputGroup) inputGroup.style.display = 'none'
+    const journal = engine.getHero()?.journal ?? []
+    const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
+    const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
+    const statistiques = engine.getHero()?.statistiques || {}
+    const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
+    const entry = {
+      nom: cloudPseudo,
+      resultat: 'victoire' as const,
+      tempsJeuMs: finalTime,
+      date: new Date().toISOString(),
+      nombreSectionsParcourues,
+      nombreOuverturesCarte,
+      statistiques,
+      statistiques_initiales,
+    }
+    void syncStore.submitLeaderboardEntry(adventure.titre, entry)
+    syncStore.deleteSave(adventure.titre)
+  }
 
   const renderLeaderboard = () => {
     if (!adventure) return
@@ -407,7 +432,7 @@ function initVictoryView(engine: GameEngine): void {
   container.querySelector<HTMLButtonElement>('#btn-submit-score')!.addEventListener('click', () => {
     if (!adventure) return
     const nameInput = container.querySelector<HTMLInputElement>('#winner-name')
-    const nom = nameInput?.value.trim() || 'Anonyme'
+    const nom = cloudPseudo ?? nameInput?.value.trim() ?? 'Anonyme'
     const journal = engine.getHero()?.journal ?? []
     const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
@@ -444,12 +469,13 @@ function initDefeatView(engine: GameEngine): void {
   const minutes = Math.floor(finalTime / 60000)
   const seconds = Math.floor((finalTime % 60000) / 1000)
   const sectionMort = engine.getCurrentSection()
+  const cloudPseudo = sessionStorage.getItem('ogb_pseudo')
 
   container.innerHTML = `
     <h2>💀 Défaite</h2>
     <p class="end-message">Votre aventure s'arrête ici en ${minutes}m ${seconds}s… Mais rien ne vous empêche de recommencer !</p>
     <div class="name-input-group">
-      <input class="name-input" type="text" placeholder="Votre nom (optionnel)" maxlength="40" id="loser-name" />
+      <input class="name-input" type="text" placeholder="Votre nom (optionnel)" maxlength="40" id="loser-name" value="${cloudPseudo ?? ''}" />
       <button class="btn btn-primary" id="btn-submit-defeat-score" type="button">Enregistrer</button>
     </div>
     <div id="defeat-leaderboard-area"></div>
@@ -459,11 +485,35 @@ function initDefeatView(engine: GameEngine): void {
     </div>
   `
 
+  // En mode cloud, masquer la saisie et soumettre automatiquement
+  if (cloudPseudo && adventure) {
+    const inputGroup = container.querySelector<HTMLElement>('.name-input-group')
+    if (inputGroup) inputGroup.style.display = 'none'
+    const journal = engine.getHero()?.journal ?? []
+    const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
+    const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
+    const statistiques = engine.getHero()?.statistiques || {}
+    const statistiques_initiales = engine.getHero()?.statistiques_initiales || {}
+    const entry = {
+      nom: cloudPseudo,
+      resultat: 'defaite' as const,
+      tempsJeuMs: finalTime,
+      date: new Date().toISOString(),
+      nombreSectionsParcourues,
+      nombreOuverturesCarte,
+      sectionMort,
+      statistiques,
+      statistiques_initiales,
+    }
+    void syncStore.submitLeaderboardEntry(adventure.titre, entry)
+    syncStore.deleteSave(adventure.titre)
+  }
+
   // Tâche 9.5 : submitLeaderboardEntry via syncStore
   container.querySelector<HTMLButtonElement>('#btn-submit-defeat-score')!.addEventListener('click', () => {
     if (!adventure) return
     const nameInput = container.querySelector<HTMLInputElement>('#loser-name')
-    const nom = nameInput?.value.trim() || 'Anonyme'
+    const nom = cloudPseudo ?? nameInput?.value.trim() ?? 'Anonyme'
     const journal = engine.getHero()?.journal ?? []
     const nombreSectionsParcourues = journal.filter(e => e.tags.includes('section')).length
     const nombreOuverturesCarte = journal.filter(e => e.tags.includes('carte')).length
