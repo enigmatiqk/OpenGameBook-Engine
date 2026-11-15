@@ -1,0 +1,576 @@
+{
+  "27": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "INPUT_CONTEXT"
+    }
+  },
+  "28": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "INPUT_SECTION_TEXT"
+    }
+  },
+  "107": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "INPUT_STYLE_GLOBAL"
+    }
+  },
+  "108": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "INPUT_UNIVERS_GLOBAL"
+    }
+  },
+  "109": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "INPUT_CONTEXT_SECTION"
+    }
+  },
+  "110": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "INPUT_WITH_HEROS"
+    }
+  },
+  "124": {
+    "inputs": {
+      "images": [
+        "101:99:69",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "22:5": {
+    "inputs": {
+      "model_name": "Qwen2.5-VL-7B-Instruct",
+      "quantization": "8-bit (Balanced)",
+      "attention_mode": "auto",
+      "preset_prompt": "🖼️ Detailed Analysis",
+      "custom_prompt": [
+        "22:13",
+        0
+      ],
+      "max_tokens": 512,
+      "keep_model_loaded": false,
+      "seed": 1983274745
+    },
+    "class_type": "AILab_QwenVL",
+    "_meta": {
+      "title": "QwenVL"
+    }
+  },
+  "22:6": {
+    "inputs": {
+      "value": "You are a visual scene extractor for an illustrated adventure gamebook pipeline. The source text may be in French; translate everything into English — no French word may remain anywhere except in \"last_action_quote\".\n\nBOOK CONTEXT (use ONLY to determine genre, era, tone and setting style — NEVER as a source of characters, creatures, or objects for the scene):\n\"\"\"\n{CONTEXT}\n\"\"\"\n\nHERO VISIBILITY RULE:\n{HERO_RULE}\n\nOutput ONLY a single valid JSON object. No markdown, no text before or after.\n\nStructure (fields must appear in this exact order):\n{\n  \"last_action_quote\": \"Copy, in the ORIGINAL language, the VERY LAST physical action or observation described in the text below — the closest possible sentence(s) to the end of the whole passage. Do not stop at an earlier action if the text continues afterward.\",\n  \"scene\": \"A description of ONE frozen instant, English only, 1-2 sentences, based on last_action_quote above.\",\n  \"environment\": \"2-4 word location label, English only, only if stated or clearly implied in the text below\",\n  \"characters\": [\"people or sentient beings ONLY, no duplicates. If the text addresses the reader as 'you'/'vous', include an entry for them unless HERO VISIBILITY RULE says otherwise.\"],\n  \"creatures\": [\"monsters/animals ONLY, empty array if none explicitly named in the text below\"],\n  \"objects\": [\"short concrete nouns, English only, maximum 4 items, only if literally mentioned in the text below\"],\n  \"lighting\": \"short phrase, max 5 words, based only on light explicitly mentioned in the text below; write 'unspecified' if none\",\n  \"action\": \"1-2 words maximum\",\n  \"composition\": \"short phrase, max 8 words\"\n}\n\nSTRICT rules:\n- Every character, creature, object and detail in your answer must come from the TEXT OF THE SECTION below, never from BOOK CONTEXT. BOOK CONTEXT only tells you the genre/setting style to match — it does not describe what is happening right now.\n- Never invent proper names, weather, or scenery details not explicitly present in the text below.\n- Never classify a person as an object or an object as a character.\n- Every word must be in English, except \"last_action_quote\".\n- Match the genre/era of BOOK CONTEXT exactly, but only describe elements from the text below.\n\nText of the section:\n\"\"\"\n{SECTION_TEXT}\n\"\"\""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "prompt"
+    }
+  },
+  "22:9": {
+    "inputs": {
+      "string": [
+        "22:6",
+        0
+      ],
+      "find": "{CONTEXT}",
+      "replace": ""
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:10": {
+    "inputs": {
+      "string": [
+        "22:9",
+        0
+      ],
+      "find": "{HERO_RULE}",
+      "replace": [
+        "22:26",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:11": {
+    "inputs": {
+      "value": "The hero/reader (\"you\"/\"vous\") MUST be clearly present and visible in this scene as the main character. Always include them explicitly in \"characters\" (e.g. \"the adventurer\"), even if the source text does not name them directly — if the text describes an action from their point of view, they are physically present and doing it. The scene description must show them as a clear, central figure taking part in the action, not just implied or off-screen."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "HERO_RULE"
+    }
+  },
+  "22:12": {
+    "inputs": {
+      "value": "CRITICAL: The hero/reader (\"you\"/\"vous\") must be COMPLETELY ABSENT from this scene. Do not include them in \"characters\" under any name (not \"the adventurer\", not \"you\", not \"the hero\", not any pronoun-based entry). Describe ONLY the environment, creatures, or objects visible — as if the scene were an empty room or landscape with no human figure present. If the source text only makes sense with someone acting, describe the RESULT of that action (the object, the door, the creature) rather than the act of a person doing it."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "HERO_RULE NOT"
+    }
+  },
+  "22:13": {
+    "inputs": {
+      "string": [
+        "22:10",
+        0
+      ],
+      "find": "{SECTION_TEXT}",
+      "replace": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:14": {
+    "inputs": {
+      "code": "import json\nimport re\nimport difflib\n\nresponse_text = arg0\nsource_text = arg1\n\nFR_TO_EN = {\n    \"epee\": \"sword\",\n    \"bouclier\": \"shield\",\n    \"torche\": \"torch\",\n    \"cape\": \"cloak\",\n}\n\nfor fr, en in FR_TO_EN.items():\n    response_text = re.sub(fr, en, response_text, flags=re.IGNORECASE)\n\nmatch = re.search(r\"\\{.*\\}\", response_text, re.DOTALL)\nwarnings = []\n\ndef normalize(name):\n    n = name.lower().strip()\n    for prefix in [\"the \", \"a \", \"an \"]:\n        if n.startswith(prefix):\n            n = n[len(prefix):]\n    return n\n\ndef clean_list(lst):\n    return [x for x in lst if isinstance(x, str) and x.strip()]\n\ndef find_position_ratio(quote, source):\n    if not quote or not source:\n        return None\n    # Recherche approximative : on cherche le meilleur point d'ancrage\n    # d'un extrait du début de la citation dans le texte source.\n    anchor = quote.strip()[:40]\n    idx = source.find(anchor)\n    if idx == -1:\n        # Recherche floue si la correspondance exacte échoue\n        matcher = difflib.SequenceMatcher(None, source, quote)\n        block = matcher.find_longest_match(0, len(source), 0, len(quote))\n        if block.size < 15:\n            return None\n        idx = block.a\n    return idx / max(len(source), 1)\n\nif not match:\n    data = {\"error\": \"no_json_found\", \"raw\": response_text}\n    warnings.append(\"no_json_found\")\nelse:\n    try:\n        data = json.loads(match.group(0))\n\n        if \"characters\" in data and isinstance(data[\"characters\"], list):\n            seen = set()\n            deduped = []\n            for c in clean_list(data[\"characters\"]):\n                key = normalize(c)\n                if key not in seen:\n                    seen.add(key)\n                    deduped.append(c)\n            data[\"characters\"] = deduped\n\n        if \"objects\" in data and isinstance(data[\"objects\"], list):\n            data[\"objects\"] = clean_list(data[\"objects\"])\n        if \"creatures\" in data and isinstance(data[\"creatures\"], list):\n            data[\"creatures\"] = clean_list(data[\"creatures\"])\n\n        if isinstance(data.get(\"objects\"), list) and len(data[\"objects\"]) > 4:\n            warnings.append(f\"too_many_objects_{len(data['objects'])}\")\n\n        if not data.get(\"characters\"):\n            warnings.append(\"no_characters\")\n\n        for field in [\"scene\", \"environment\", \"action\", \"composition\"]:\n            val = data.get(field, \"\")\n            if not isinstance(val, str) or not val.strip():\n                warnings.append(f\"empty_field_{field}\")\n\n        # Détection mécanique : la citation est-elle trop tôt dans le texte ?\n        quote = data.get(\"last_action_quote\", \"\")\n        ratio = find_position_ratio(quote, source_text)\n        if ratio is not None and ratio < 0.6:\n            warnings.append(f\"last_action_quote_too_early_ratio_{ratio:.2f}\")\n\n        check_data = {k: v for k, v in data.items() if k != \"last_action_quote\"}\n        full_text = json.dumps(check_data, ensure_ascii=False)\n        if re.search(r\"[a-zA-Z]*[\\xc0-\\xff]\", full_text):\n            warnings.append(\"residual_non_english_characters\")\n\n    except json.JSONDecodeError as e:\n        data = {\"error\": \"invalid_json\", \"detail\": str(e), \"raw\": response_text}\n        warnings.append(\"invalid_json\")\n\ndata[\"_warnings\"] = warnings\nresult = json.dumps(data, ensure_ascii=False, indent=2)",
+      "n_outputs": 1,
+      "arg0": [
+        "22:5",
+        0
+      ],
+      "arg1": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "ExecutePythonb36101038d58cf49d4274ca289a421de9c9cb8054cbce78e546990b010e18c7c",
+    "_meta": {
+      "title": "Execute Python"
+    }
+  },
+  "22:16": {
+    "inputs": {
+      "model_name": "Qwen2.5-VL-7B-Instruct",
+      "quantization": "8-bit (Balanced)",
+      "attention_mode": "auto",
+      "preset_prompt": "🖼️ Detailed Analysis",
+      "custom_prompt": [
+        "22:20",
+        0
+      ],
+      "max_tokens": 512,
+      "keep_model_loaded": false,
+      "seed": 1983274745
+    },
+    "class_type": "AILab_QwenVL",
+    "_meta": {
+      "title": "QwenVL"
+    }
+  },
+  "22:17": {
+    "inputs": {
+      "string": [
+        "22:18",
+        0
+      ],
+      "find": "{SECTION_TEXT}",
+      "replace": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:18": {
+    "inputs": {
+      "value": "You are reviewing and correcting a JSON scene extraction for an illustrated adventure gamebook. The source text may be in French.\n\nORIGINAL SECTION TEXT:\n\"\"\"\n{SECTION_TEXT}\n\"\"\"\n\nBOOK CONTEXT:\n\"\"\"\n{CONTEXT}\n\"\"\"\n\nJSON TO REVIEW:\n\"\"\"\n{PREVIOUS_JSON}\n\"\"\"\n\nThe JSON above contains a \"_warnings\" field listing issues to fix. For each warning:\n- \"empty_field_X\" → fill field X based on the ORIGINAL SECTION TEXT, following the same rules as a normal extraction (concrete, visual, English only).\n- \"residual_non_english_characters\" → translate any remaining non-English word to English (except inside \"last_action_quote\", which must stay in the original language).\n- \"too_many_objects_N\" → keep only the 4 most explicitly stated objects, remove the rest.\n- \"no_characters\" → add the reader/hero as a character (e.g. \"the adventurer\"), unless BOOK CONTEXT or the JSON indicates they must stay hidden.\n- \"last_action_quote_too_early_ratio_X\" → the quoted moment is too early in the text (only X% of the way through). Re-read the ORIGINAL SECTION TEXT and find a LATER action or observation, closer to the end, then update \"last_action_quote\" and rewrite \"scene\" accordingly.\n- \"invalid_json\" or \"no_json_found\" → re-extract the scene entirely from the ORIGINAL SECTION TEXT, following the same structure.\n- Any other warning not listed above → use your best judgment based on the ORIGINAL SECTION TEXT to fix it.\n\nDo not change any field that has no related warning — copy it exactly as-is.\n\nOutput ONLY the corrected JSON object, same structure and field order, WITHOUT the \"_warnings\" field (remove it entirely). No markdown, no text before or after."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "FIX PROMPT"
+    }
+  },
+  "22:19": {
+    "inputs": {
+      "string": [
+        "22:17",
+        0
+      ],
+      "find": "{CONTEXT}\n",
+      "replace": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:20": {
+    "inputs": {
+      "string": [
+        "22:19",
+        0
+      ],
+      "find": "{PREVIOUS_JSON}",
+      "replace": [
+        "22:14",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "Replace Text"
+    }
+  },
+  "22:23": {
+    "inputs": {
+      "value": [
+        "110",
+        0
+      ]
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean"
+    }
+  },
+  "22:26": {
+    "inputs": {
+      "switch": [
+        "22:23",
+        0
+      ],
+      "on_false": [
+        "22:12",
+        0
+      ],
+      "on_true": [
+        "22:11",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "If/Else Switch"
+    }
+  },
+  "101:98": {
+    "inputs": {
+      "code": "import json\nfrom json_repair import repair_json\n\ndata = json.loads(repair_json(arg0))\n\nSTYLE_GLOBAL = arg1\nUNIVERS_GLOBAL = arg2\nCONTEXTE_LOCAL = arg3\n\n\ndef to_text(value):\n    \"\"\"Convertit n'importe quelle valeur (str, dict, list, autre) en une\n    chaîne de texte lisible, quelle que soit la forme envoyée par le LLM.\"\"\"\n    if value is None:\n        return \"\"\n    if isinstance(value, str):\n        return value\n    if isinstance(value, dict):\n        parts = [to_text(v) for v in value.values()]\n        return \", \".join(p for p in parts if p)\n    if isinstance(value, list):\n        parts = [to_text(v) for v in value]\n        return \", \".join(p for p in parts if p)\n    return str(value)\n\n\ndef to_str_list(value):\n    \"\"\"Convertit n'importe quelle valeur en liste de chaînes de texte.\"\"\"\n    if value is None:\n        return []\n    if isinstance(value, list):\n        return [to_text(v) for v in value if to_text(v)]\n    if isinstance(value, dict):\n        return [to_text(v) for v in value.values() if to_text(v)]\n    if isinstance(value, str) and value.strip():\n        return [value]\n    return []\n\n\ncharacters = \", \".join(to_str_list(data.get(\"characters\"))) or \"no characters\"\ncreatures = \", \".join(to_str_list(data.get(\"creatures\")))\nobjects = \", \".join(to_str_list(data.get(\"objects\")))\n\nscene_line = to_text(data.get(\"scene\"))\nenvironment = to_text(data.get(\"environment\"))\nlighting = to_text(data.get(\"lighting\"))\ncomposition = to_text(data.get(\"composition\"))\n\ndetails = []\nif environment:\n    details.append(f\"Environment: {environment}.\")\nif creatures:\n    details.append(f\"Creatures present: {creatures}.\")\nif objects:\n    details.append(f\"Visible objects: {objects}.\")\nif lighting:\n    details.append(f\"Lighting: {lighting}.\")\nif composition:\n    details.append(f\"Composition: {composition}.\")\n\nscene_block = scene_line + \" \" + \" \".join(details)\n\nresult = f\"{STYLE_GLOBAL}\\n\\n{UNIVERS_GLOBAL}\\n\\n{CONTEXTE_LOCAL}\\n\\n{scene_block}\"",
+      "n_outputs": 1,
+      "arg0": [
+        "22:16",
+        0
+      ],
+      "arg1": [
+        "107",
+        0
+      ],
+      "arg2": [
+        "108",
+        0
+      ],
+      "arg3": [
+        "109",
+        0
+      ]
+    },
+    "class_type": "ExecutePythonb36101038d58cf49d4274ca289a421de9c9cb8054cbce78e546990b010e18c7c",
+    "_meta": {
+      "title": "Execute Python"
+    }
+  },
+  "101:99:39": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "101:99:38": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "101:99:58": {
+    "inputs": {
+      "width": 896,
+      "height": 1344,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "101:99:66": {
+    "inputs": {
+      "shift": 3.1000000000000005,
+      "sampling": "flow",
+      "model": [
+        "101:99:78",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "101:99:37": {
+    "inputs": {
+      "unet_name": "qwen_image_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "101:99:67": {
+    "inputs": {
+      "text": [
+        "101:98",
+        0
+      ],
+      "clip": [
+        "101:99:38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "101:99:68": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "101:99:38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "101:99:69": {
+    "inputs": {
+      "samples": [
+        "101:99:3",
+        0
+      ],
+      "vae": [
+        "101:99:39",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "101:99:73": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V1.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "101:99:37",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "101:99:3": {
+    "inputs": {
+      "seed": 922098323243993,
+      "steps": 28,
+      "cfg": 3.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "101:99:66",
+        0
+      ],
+      "positive": [
+        "101:99:67",
+        0
+      ],
+      "negative": [
+        "101:99:68",
+        0
+      ],
+      "latent_image": [
+        "101:99:58",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "101:99:78": {
+    "inputs": {
+      "switch": [
+        "101:99:86",
+        0
+      ],
+      "on_false": [
+        "101:99:37",
+        0
+      ],
+      "on_true": [
+        "101:99:73",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Model)"
+    }
+  },
+  "101:99:79": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Steps"
+    }
+  },
+  "101:99:81": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "101:99:82": {
+    "inputs": {
+      "switch": [
+        "101:99:86",
+        0
+      ],
+      "on_false": [
+        "101:99:84",
+        0
+      ],
+      "on_true": [
+        "101:99:79",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Steps)"
+    }
+  },
+  "101:99:83": {
+    "inputs": {
+      "switch": [
+        "101:99:86",
+        0
+      ],
+      "on_false": [
+        "101:99:85",
+        0
+      ],
+      "on_true": [
+        "101:99:81",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (CFG)"
+    }
+  },
+  "101:99:84": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Steps"
+    }
+  },
+  "101:99:85": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "101:99:86": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Enable Lightning LoRA"
+    }
+  },
+  "101:102": {
+    "inputs": {
+      "code": "import json\n\ndata = json.loads(arg0)\n\nSTYLE_GLOBAL = \"\"\"Traditional hand-drawn fantasy adventure illustration.\nBlack and white ink illustration.\nDetailed pen linework.\nCross-hatching for shadows.\nSlightly rough traditional paper texture.\nDark medieval fantasy.\nConsistent printed-book illustration aesthetic.\"\"\"\n\nUNIVERS_GLOBAL = \"\"\"Dark medieval fantasy world.\nAncient underground environments.\nRealistic medieval architecture and objects.\nDark and mysterious atmosphere.\nNo modern elements.\"\"\"\n\nCONTEXTE_LOCAL = \"\"\"The current story location is an underground cave system.\nWet dark rock walls.\nThe main light sources are lanterns and torches.\nNo sky and no natural daylight.\"\"\"\n\ncharacters = \", \".join(data.get(\"characters\", [])) or \"no characters\"\ncreatures = \", \".join(data.get(\"creatures\", []))\nobjects = \", \".join(data.get(\"objects\", []))\n\nscene_line = data.get(\"scene\", \"\")\n\ndetails = []\nif creatures:\n    details.append(f\"Creatures present: {creatures}.\")\nif objects:\n    details.append(f\"Visible objects: {objects}.\")\nif data.get(\"lighting\"):\n    details.append(f\"Lighting: {data['lighting']}.\")\nif data.get(\"composition\"):\n    details.append(f\"Composition: {data['composition']}.\")\n\nscene_block = scene_line + \" \" + \" \".join(details)\n\nresult = f\"{STYLE_GLOBAL}\\n\\n{UNIVERS_GLOBAL}\\n\\n{CONTEXTE_LOCAL}\\n\\n{scene_block}\"",
+      "n_outputs": 1
+    },
+    "class_type": "ExecutePythonb36101038d58cf49d4274ca289a421de9c9cb8054cbce78e546990b010e18c7c",
+    "_meta": {
+      "title": "Execute Python"
+    }
+  }
+}
