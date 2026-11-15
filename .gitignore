@@ -40,7 +40,9 @@ Thumbs.db
 .env.local
 test-results/.last-run.json
 graphify-out/cache
-ia
+ia/**
+!ia/images/
+!ia/images/**
 old
 scannerPDF
 
